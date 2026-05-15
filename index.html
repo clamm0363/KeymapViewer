@@ -382,18 +382,33 @@
         }
 
         // --- App Component ---
+        const STORAGE_KEY = 'keymapViewer_state';
+
+        const loadSavedState = () => {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) return JSON.parse(raw);
+            } catch (e) { console.warn('Failed to load saved state:', e); }
+            return null;
+        };
+
         function App() {
-            const [devices, setDevices] = useState([{
-                id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System'
-            }]);
-            const [layoutMode, setLayoutMode] = useState('stack');
+            const saved = useMemo(() => loadSavedState(), []);
+            const [devices, setDevices] = useState(() => {
+                if (saved?.devices?.length > 0) return saved.devices;
+                return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System' }];
+            });
+            const [layoutMode, setLayoutMode] = useState(() => saved?.layoutMode || 'stack');
             const [editingDeviceId, setEditingDeviceId] = useState(null);
             const [editingName, setEditingName] = useState('');
             const [draggedSlotId, setDraggedSlotId] = useState(null);
             const [dragOverTarget, setDragOverTarget] = useState(null);
             const [showHelp, setShowHelp] = useState(false);
-            // Dev: デフォルトデバイスの自動読み込み（GMK70 + Q0 Plus）
+            const isInitialMount = useRef(true);
+
+            // Dev: デフォルトデバイスの自動読み込み（保存データがない場合のみ）
             useEffect(() => {
+                if (saved) return; // 保存データがあればスキップ
                 const devs = [];
                 if (window.DEFAULT_LAYOUT_DATA && window.DEFAULT_MAPPING_DATA) {
                     devs.push({ id: Date.now(), name: window.DEFAULT_LAYOUT_DATA.name || 'ZUOYA GMK70', design: window.DEFAULT_LAYOUT_DATA, keymapJson: window.DEFAULT_MAPPING_DATA, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System' });
@@ -403,6 +418,15 @@
                 }
                 if (devs.length > 0) setDevices(devs);
             }, []);
+
+            // 状態変更時に自動保存
+            useEffect(() => {
+                if (isInitialMount.current) { isInitialMount.current = false; return; }
+                try {
+                    const state = { devices, layoutMode };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                } catch (e) { console.warn('Failed to save state:', e); }
+            }, [devices, layoutMode]);
 
 
             const addSlot = () => {
