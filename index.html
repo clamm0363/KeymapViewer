@@ -9,12 +9,14 @@
     <script src="json_mapped/defaultData.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { background-color: #020617; color: #f1f5f9; font-family: 'Inter', sans-serif; }
+        body { margin: 0; font-family: 'Inter', sans-serif; }
+        .app-dark { background-color: #020617; background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 40px 40px; color: #f1f5f9; }
+        .app-light { background-color: #f8fafc; background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 40px 40px; color: #0f172a; }
         .key-cap { transition: transform 0.1s ease; cursor: help; overflow: hidden; }
-        .kbd-container { position: relative; border-radius: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); }
+        .kbd-container { position: relative; border-radius: 2rem; }
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        .legend-text { white-space: normal; overflow: hidden; word-break: normal; overflow-wrap: anywhere; width: 100%; text-align: center; display: block; color: #fff; font-weight: 800; line-height: 1; max-height: 2.2em; }
+        .legend-text { white-space: normal; overflow: hidden; word-break: normal; overflow-wrap: anywhere; width: 100%; text-align: center; display: block; font-weight: 800; line-height: 1; max-height: 2.2em; }
     </style>
 </head>
 <body>
@@ -59,6 +61,70 @@
             'L4': KBD_PATH + 'keyboard_4_outline.svg', 'L5': KBD_PATH + 'keyboard_5_outline.svg', 'L6': KBD_PATH + 'keyboard_6_outline.svg', 'L7': KBD_PATH + 'keyboard_7_outline.svg'
         };
 
+        const SAMPLE_HHKB = {
+          "name": "Sample Keyboard",
+          "layouts": {
+            "keymap": [
+              ["0,0", "0,1", "0,2", "0,3", "0,4", "0,5", "0,6", "0,7", "0,8", "0,9", "0,10", "0,11", "0,12", "0,13", "0,14"],
+              [{"w": 1.5}, "1,0", "1,1", "1,2", "1,3", "1,4", "1,5", "1,6", "1,7", "1,8", "1,9", "1,10", "1,11", "1,12", {"w": 1.5}, "1,13"],
+              [{"w": 1.75}, "2,0", "2,1", "2,2", "2,3", "2,4", "2,5", "2,6", "2,7", "2,8", "2,9", "2,10", "2,11", {"w": 2.25}, "2,12"],
+              [{"w": 2.25}, "3,0", "3,1", "3,2", "3,3", "3,4", "3,5", "3,6", "3,7", "3,8", "3,9", "3,10", {"w": 1.75}, "3,11", "3,12"],
+              [{"x": 1.5}, "4,1", {"w": 1.5}, "4,2", {"w": 6}, "4,3", {"w": 1.5}, "4,4", "4,5", "4,6"]
+            ]
+          },
+          "matrix": { "rows": 5, "cols": 15 },
+          "layers": [
+            [
+              "KC_ESC", "KC_1", "KC_2", "KC_3", "KC_4", "KC_5", "KC_6", "KC_7", "KC_8", "KC_9", "KC_0", "KC_MINS", "KC_EQL", "KC_BSLS", "KC_GRV",
+              "KC_TAB", "KC_Q", "KC_W", "KC_E", "KC_R", "KC_T", "KC_Y", "KC_U", "KC_I", "KC_O", "KC_P", "KC_LBRC", "KC_RBRC", "KC_BSPC", null,
+              "KC_LCTL", "KC_A", "KC_S", "KC_D", "KC_F", "KC_G", "KC_H", "KC_J", "KC_K", "KC_L", "KC_SCLN", "KC_QUOT", "KC_ENT", null, null,
+              "KC_LSFT", "KC_Z", "KC_X", "KC_C", "KC_V", "KC_B", "KC_N", "KC_M", "KC_COMM", "KC_DOT", "KC_SLSH", "KC_RSFT", "MO(1)", null, null,
+              null, "KC_LGUI", "KC_LALT", "KC_SPC", "KC_RALT", "KC_RGUI", "MO(1)", null, null, null, null, null, null, null, null
+            ],
+            [
+              "KC_PWR", "KC_F1", "KC_F2", "KC_F3", "KC_F4", "KC_F5", "KC_F6", "KC_F7", "KC_F8", "KC_F9", "KC_F10", "KC_F11", "KC_F12", "KC_INS", "KC_DEL",
+              "TRNS", "KC_VOLD", "KC_VOLU", "KC_MUTE", "TRNS", "TRNS", "TRNS", "TRNS", "KC_PSCR", "KC_SLCK", "KC_PAUS", "KC_UP", "TRNS", "TRNS", null,
+              "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "KC_PAST", "KC_PSLS", "KC_HOME", "KC_PGUP", "KC_LEFT", "KC_RGHT", "TRNS", null, null,
+              "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "KC_PPLS", "KC_PMNS", "KC_END", "KC_PGDN", "KC_DOWN", "TRNS", "TRNS", null, null,
+              null, "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", null, null, null, null, null, null, null, null
+            ]
+          ],
+          "macroAliases": {}
+        };
+
+        const SAMPLE_NUMPAD = {
+          "name": "Sample Numpad (8 Layers)",
+          "layouts": {
+            "keymap": [
+              ["0,0", "0,1", "0,2", "0,3"],
+              ["1,0", "1,1", "1,2", "1,3"],
+              ["2,0", "2,1", "2,2", "2,3"],
+              ["3,0", "3,1", "3,2", "3,3"]
+            ]
+          },
+          "matrix": { "rows": 4, "cols": 4 },
+          "layers": [
+            [
+              "KC_P7", "KC_P8", "KC_P9", "KC_PSLS",
+              "KC_P4", "KC_P5", "KC_P6", "KC_PAST",
+              "KC_P1", "KC_P2", "KC_P3", "KC_PMNS",
+              "KC_P0", "KC_PDOT", "KC_PENT", "KC_PPLS"
+            ],
+            ["MACRO(0)", "MACRO(1)", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"],
+            ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"],
+            ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"],
+            ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"],
+            ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"],
+            ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"],
+            ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"]
+          ],
+          "macros": [
+            "Hello! This is a sample macro.",
+            "LSFT(KC_C)"
+          ],
+          "macroAliases": { "0": "GREET", "1": "COPY" }
+        };
+
         const KC_DICT = {
             0x00: 'None', 0x04: 'A', 0x05: 'B', 0x06: 'C', 0x07: 'D', 0x08: 'E', 0x09: 'F', 0x0A: 'G', 0x0B: 'H', 0x0C: 'I', 0x0D: 'J', 0x0E: 'K', 0x0F: 'L', 0x10: 'M', 0x11: 'N', 0x12: 'O', 0x13: 'P', 0x14: 'Q', 0x15: 'R', 0x16: 'S', 0x17: 'T', 0x18: 'U', 0x19: 'V', 0x1A: 'W', 0x1B: 'X', 0x1C: 'Y', 0x1D: 'Z',
             0x1E: '1', 0x1F: '2', 0x20: '3', 0x21: '4', 0x22: '5', 0x23: '6', 0x24: '7', 0x25: '8', 0x26: '9', 0x27: '0',
@@ -80,7 +146,7 @@
         };
 
         // --- Keyboard Component ---
-        function Keyboard({ design, layer = 0, externalMap = null, iconMapOverride = null, keyScales = {}, onUpdateScale, displayMode = 'Fluent', theme = 'System', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false }) {
+        function Keyboard({ design, layer = 0, externalMap = null, iconMapOverride = null, keyScales = {}, onUpdateScale, displayMode = 'Fluent', theme = 'System', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, appTheme = 'dark' }) {
             const [codes, setCodes] = useState({});
             const containerRef = useRef(null);
             const [scale, setScale] = useState(1);
@@ -98,17 +164,28 @@
 
             const keys = useMemo(() => {
                 if (!design || !design.layouts || !design.layouts.keymap) return [];
-                const list = []; let x = 0, y = 0, w = 1, h = 1;
+                const list = [];
+                const UNIT = 56;
+                let x = 0, y = 0, w = 1, h = 1;
                 design.layouts.keymap.forEach(row => {
                     x = 0;
                     row.forEach(item => {
                         if (typeof item === 'string') {
                             const m = item.split('\n')[0].match(/(\d+),(\d+)/);
-                            list.push({ id: item, matrix: m ? [parseInt(m[1]), parseInt(m[2])] : null, x: x * UNIT, y: y * UNIT, w: w * UNIT, h: h * UNIT });
+                            list.push({ 
+                                id: item, 
+                                matrix: m ? [parseInt(m[1]), parseInt(m[2])] : null, 
+                                x: x * UNIT, 
+                                y: y * UNIT, 
+                                w: w * UNIT, 
+                                h: h * UNIT 
+                            });
                             x += w; w = 1; h = 1;
                         } else {
-                            if (item.x !== undefined) x += item.x; if (item.y !== undefined) y += item.y;
-                            if (item.w !== undefined) w = item.w; if (item.h !== undefined) h = item.h;
+                            if (item.x !== undefined) x += item.x; 
+                            if (item.y !== undefined) y += item.y;
+                            if (item.w !== undefined) w = item.w; 
+                            if (item.h !== undefined) h = item.h;
                         }
                     });
                     y++;
@@ -116,21 +193,32 @@
                 return list;
             }, [design]);
 
-            const maxWidth = useMemo(() => keys.length ? Math.max(...keys.map(k => k.x + k.w), 0) + 120 : 0, [keys]);
-            const maxHeight = useMemo(() => keys.length ? Math.max(...keys.map(k => k.y + k.h), 0) + 120 : 0, [keys]);
+            const maxWidth = useMemo(() => keys.length ? Math.max(...keys.map(k => k.x + k.w), 0) + 40 : 0, [keys]);
+            const maxHeight = useMemo(() => keys.length ? Math.max(...keys.map(k => k.y + k.h), 0) + 40 : 0, [keys]);
 
             useEffect(() => {
+                if (forcedScale !== null) {
+                    setScale(forcedScale);
+                    return;
+                }
+
                 if (!containerRef.current || maxWidth === 0) return;
                 const observer = new ResizeObserver(entries => {
                     for (let entry of entries) {
                         const containerWidth = entry.contentRect.width;
-                        if (containerWidth < maxWidth) setScale(containerWidth / maxWidth);
-                        else setScale(1);
+                        // Account for p-6 (48px total horizontal padding)
+                        const available = Math.max(0, containerWidth - 48);
+                        let nextScale = available / maxWidth;
+                        
+                        // Limit maximum scale to 1.4x for visual balance
+                        if (nextScale > 1.4) nextScale = 1.4;
+                        
+                        setScale(nextScale);
                     }
                 });
                 observer.observe(containerRef.current);
                 return () => observer.disconnect();
-            }, [maxWidth]);
+            }, [maxWidth, forcedScale]);
 
             useEffect(() => {
                 if (externalMap?.layers?.[layer]) {
@@ -147,17 +235,22 @@
             if (keys.length === 0) return null;
 
             return html`
-                <div ref=${containerRef} class="w-full overflow-visible flex justify-center py-8">
-                    <div style=${{ width: `${maxWidth * finalScale}px`, height: `${maxHeight * finalScale}px`, position: 'relative' }}>
+                <div ref=${containerRef} class="keyboard-container relative overflow-hidden flex items-center justify-center py-1 px-6" style=${{ width: '100%', height: `${maxHeight * finalScale + 8}px` }}>
+                    <div class="keyboard-inner relative" style=${{ 
+                        width: `${maxWidth}px`, 
+                        height: `${maxHeight}px`, 
+                        transform: `scale(${finalScale})`,
+                        transformOrigin: 'center center',
+                        flexShrink: 0
+                    }}>
                         <div class="kbd-container relative transition-all duration-200 border-2 ${
                             isLight
                             ? 'bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]'
                             : 'bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]'
                         }" style=${{ 
-                            width: `${maxWidth}px`, 
-                            height: `${maxHeight}px`,
-                            transform: finalScale === 1 ? 'none' : `scale(${finalScale})`,
-                            transformOrigin: 'top left'
+                            width: '100%', 
+                            height: '100%',
+                            transform: 'none'
                         }}>
                         ${keys.map((k, i) => {
                             const mK = k.matrix ? `${k.matrix[0]},${k.matrix[1]}` : null;
@@ -239,7 +332,7 @@
                             let manualWrap = false;
                             
                             // If symbols exist, prioritize wrapping BEFORE the LAST symbol
-                            if (isExportMode && (displayText.includes('_') || displayText.includes('-'))) {
+                            if (displayText.includes('_') || displayText.includes('-')) {
                                 const lastU = displayText.lastIndexOf('_');
                                 const lastH = displayText.lastIndexOf('-');
                                 const splitIdx = Math.max(lastU, lastH);
@@ -253,10 +346,9 @@
                             const lines = finalDisplayText.split('\n');
                             const maxLineChars = Math.max(...lines.map(l => l.length));
                             const kWidth = (k.w - 6);
-                            
-                            const baseCharWidth = isExportMode ? 16.0 : 10.5; 
+                            const baseCharWidth = 16.0;
                             const estimatedWidth = maxLineChars * baseCharWidth;
-                            const availableWidth = kWidth - (isExportMode ? 4 : 12); 
+                            const availableWidth = kWidth - (isExportMode ? 4 : 6);
                             
                             let targetScale = 1.0;
                             let canWrap = manualWrap;
@@ -264,7 +356,7 @@
                             if (estimatedWidth > availableWidth) {
                                 targetScale = availableWidth / estimatedWidth;
                                 if (!manualWrap && targetScale < 0.65) {
-                                    targetScale = isExportMode ? 0.62 : 0.75;
+                                    targetScale = isExportMode ? 0.62 : 0.7;
                                     canWrap = true;
                                 }
                             }
@@ -287,7 +379,7 @@
                                     : (isLight ? 'border-slate-300 bg-white shadow-md hover:bg-slate-50 hover:border-blue-500' : 'border-slate-700 bg-slate-900/60 shadow-2xl hover:bg-slate-800 hover:border-blue-400')
                                 }`;
                             
-                            const paddingOffset = 60;
+                            const paddingOffset = 20;
 
                             const tLabels = ['CTRL', 'LCTL', 'RCTL', 'SHIFT', 'LSFT', 'RSFT', 'ALT', 'LALT', 'RALT', 'TAB', 'CAPS', 'BSPC', 'ENT', 'SPC', 'SPACE', 'ENTER', 'RETURN'];
                             const isTarget = tLabels.includes(raw) || tLabels.includes(fullRaw) || (complex && (tLabels.includes(complex.mod) || tLabels.includes(complex.base)));
@@ -357,7 +449,7 @@
                                             flexDirection: 'column',
                                             justifyContent: 'center', 
                                             alignItems: 'center',
-                                            width: isExportMode && canWrap ? `${availableWidth / labelScale}px` : 'auto'
+                                            width: canWrap ? `${availableWidth / labelScale}px` : 'auto'
                                         }}>
                                             <span class="legend-text uppercase tracking-tight font-bold" style=${{ 
                                                 color: isLight ? '#1e293b' : '#fff',
@@ -380,49 +472,51 @@
                     </div>
                     </div>
                     ${popupInfo && html`
-                        <div class="fixed z-50 bg-slate-800 border border-slate-600 rounded-xl p-4 shadow-[0_0_50px_rgba(0,0,0,0.8)] min-w-[200px]"
+                        <div class="fixed z-50 ${appTheme === 'light' ? 'bg-white border-slate-200 shadow-[0_0_50px_rgba(0,0,0,0.1)]' : 'bg-slate-800 border-slate-600 shadow-[0_0_50_rgba(0,0,0,0.8)]'} border rounded-xl p-4 min-w-[200px]"
                              style=${{ left: popupInfo.x + 'px', top: popupInfo.y + 'px', transform: 'translate(-50%, -100%)' }}
+                             draggable="true"
+                             onDragStart=${(e) => { e.preventDefault(); e.stopPropagation(); }}
                              onClick=${e => e.stopPropagation()}>
-                             <div class="text-[10px] font-black text-slate-300 mb-3 uppercase tracking-widest text-center flex justify-between items-center">
+                             <div class="text-[10px] font-black ${appTheme === 'light' ? 'text-slate-500' : 'text-slate-300'} mb-3 uppercase tracking-widest text-center flex justify-between items-center">
                                  <span>Icon Scale</span>
-                                 <button onClick=${() => setPopupInfo(null)} class="text-slate-500 hover:text-white ml-4">✕</button>
+                                 <button onClick=${() => setPopupInfo(null)} class="text-slate-500 hover:text-blue-500 ml-4 transition-colors">✕</button>
                              </div>
                              
                              <div class="flex flex-col gap-2">
                                  <div class="flex items-center gap-2">
-                                     <span class="text-[9px] text-slate-400 font-bold w-12 text-right">ALL</span>
+                                     <span class="text-[9px] ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-400'} font-bold w-12 text-right">ALL</span>
                                      <input type="range" min="0.5" max="4.0" step="0.1" value=${popupInfo.scaleObj.scale}
                                             onInput=${e => {
                                                 const newObj = { ...popupInfo.scaleObj, scale: parseFloat(e.target.value) };
                                                 setPopupInfo(prev => ({ ...prev, scaleObj: newObj }));
                                                 if (onUpdateScale) onUpdateScale(popupInfo.keyIndex, newObj);
                                             }}
-                                            class="w-24 accent-blue-500 cursor-pointer" />
-                                     <span class="text-xs text-blue-400 font-bold w-6 text-right">${popupInfo.scaleObj.scale.toFixed(1)}</span>
+                                            class="w-24 h-1.5 ${appTheme === 'light' ? 'bg-slate-100' : 'bg-slate-700'} rounded-lg appearance-none cursor-pointer accent-blue-500" />
+                                     <span class="text-xs text-blue-500 font-bold w-6 text-right">${popupInfo.scaleObj.scale.toFixed(1)}</span>
                                  </div>
 
                                  <div class="flex items-center gap-2">
-                                     <span class="text-[9px] text-slate-400 font-bold w-12 text-right">WIDTH</span>
+                                     <span class="text-[9px] ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-400'} font-bold w-12 text-right">WIDTH</span>
                                      <input type="range" min="0.5" max="4.0" step="0.1" value=${popupInfo.scaleObj.scaleX}
                                             onInput=${e => {
                                                 const newObj = { ...popupInfo.scaleObj, scaleX: parseFloat(e.target.value) };
                                                 setPopupInfo(prev => ({ ...prev, scaleObj: newObj }));
                                                 if (onUpdateScale) onUpdateScale(popupInfo.keyIndex, newObj);
                                             }}
-                                            class="w-24 accent-emerald-500 cursor-pointer" />
-                                     <span class="text-xs text-emerald-400 font-bold w-6 text-right">${popupInfo.scaleObj.scaleX.toFixed(1)}</span>
+                                            class="w-24 h-1.5 ${appTheme === 'light' ? 'bg-slate-100' : 'bg-slate-700'} rounded-lg appearance-none cursor-pointer accent-emerald-500" />
+                                     <span class="text-xs text-emerald-500 font-bold w-6 text-right">${popupInfo.scaleObj.scaleX.toFixed(1)}</span>
                                  </div>
 
                                  <div class="flex items-center gap-2">
-                                     <span class="text-[9px] text-slate-400 font-bold w-12 text-right">HEIGHT</span>
+                                     <span class="text-[9px] ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-400'} font-bold w-12 text-right">HEIGHT</span>
                                      <input type="range" min="0.5" max="4.0" step="0.1" value=${popupInfo.scaleObj.scaleY}
                                             onInput=${e => {
                                                 const newObj = { ...popupInfo.scaleObj, scaleY: parseFloat(e.target.value) };
                                                 setPopupInfo(prev => ({ ...prev, scaleObj: newObj }));
                                                 if (onUpdateScale) onUpdateScale(popupInfo.keyIndex, newObj);
                                             }}
-                                            class="w-24 accent-rose-500 cursor-pointer" />
-                                     <span class="text-xs text-rose-400 font-bold w-6 text-right">${popupInfo.scaleObj.scaleY.toFixed(1)}</span>
+                                            class="w-24 h-1.5 ${appTheme === 'light' ? 'bg-slate-100' : 'bg-slate-700'} rounded-lg appearance-none cursor-pointer accent-rose-500" />
+                                     <span class="text-xs text-rose-500 font-bold w-6 text-right">${popupInfo.scaleObj.scaleY.toFixed(1)}</span>
                                  </div>
                              </div>
 
@@ -431,7 +525,7 @@
                                      const defaultObj = { scale: 1.3, scaleX: 1.0, scaleY: 1.0 };
                                      setPopupInfo(prev => ({ ...prev, scaleObj: defaultObj }));
                                      if (onUpdateScale) onUpdateScale(popupInfo.keyIndex, defaultObj);
-                                 }} class="text-[9px] px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold text-slate-300 transition-colors uppercase tracking-widest">
+                                 }} class="text-[9px] px-3 py-1 ${appTheme === 'light' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'} rounded-lg font-bold transition-all uppercase tracking-widest">
                                      Reset
                                  </button>
                              </div>
@@ -459,6 +553,7 @@
                 return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System' }];
             });
             const [layoutMode, setLayoutMode] = useState(() => saved?.layoutMode || 'stack');
+            const [appTheme, setAppTheme] = useState(() => saved?.appTheme || 'dark');
             const [editingDeviceId, setEditingDeviceId] = useState(null);
             const [editingName, setEditingName] = useState('');
             const [draggedSlotId, setDraggedSlotId] = useState(null);
@@ -472,25 +567,22 @@
 
             // Dev: デフォルトデバイスの自動読み込み（保存データがない場合のみ）
             useEffect(() => {
-                if (saved) return; // 保存データがあればスキップ
-                const devs = [];
-                if (window.DEFAULT_LAYOUT_DATA && window.DEFAULT_MAPPING_DATA) {
-                    devs.push({ id: Date.now(), name: window.DEFAULT_LAYOUT_DATA.name || 'ZUOYA GMK70', design: window.DEFAULT_LAYOUT_DATA, keymapJson: window.DEFAULT_MAPPING_DATA, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System' });
-                }
-                if (window.DEFAULT_LAYOUT_DATA_2 && window.DEFAULT_MAPPING_DATA_2) {
-                    devs.push({ id: Date.now() + 1, name: window.DEFAULT_LAYOUT_DATA_2.name || 'Keychron Q0 Plus', design: window.DEFAULT_LAYOUT_DATA_2, keymapJson: window.DEFAULT_MAPPING_DATA_2, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System' });
-                }
-                if (devs.length > 0) setDevices(devs);
+                if (saved) return; 
+                const devs = [
+                    { id: Date.now(), name: SAMPLE_HHKB.name, design: SAMPLE_HHKB, keymapJson: SAMPLE_HHKB, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System', macroAliases: SAMPLE_HHKB.macroAliases || {} },
+                    { id: Date.now() + 1, name: SAMPLE_NUMPAD.name, design: SAMPLE_NUMPAD, keymapJson: SAMPLE_NUMPAD, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System', macroAliases: SAMPLE_NUMPAD.macroAliases || {} }
+                ];
+                setDevices(devs);
             }, []);
 
             // 状態変更時に自動保存
             useEffect(() => {
                 if (isInitialMount.current) { isInitialMount.current = false; return; }
                 try {
-                    const state = { devices, layoutMode };
+                    const state = { devices, layoutMode, appTheme };
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
                 } catch (e) { console.warn('Failed to save state:', e); }
-            }, [devices, layoutMode]);
+            }, [devices, layoutMode, appTheme]);
 
             const handleExportClick = async (dev) => {
                 setIsExporting(true);
@@ -665,37 +757,45 @@
             };
 
             return html`
-                <div class="min-h-screen p-6 md:p-10 max-w-[1600px] mx-auto flex flex-col">
-                    <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+                <div class="${appTheme === 'light' ? 'app-light' : 'app-dark'} min-h-screen p-6 md:p-8 flex flex-col transition-colors duration-300">
+                    <header class="flex flex-col md:flex-row justify-between items-center mb-12 gap-6 w-full">
                         <div class="flex items-center gap-6" onClick=${() => window.location.reload()} style=${{cursor: 'pointer'}}>
                             <div class="bg-blue-600 w-14 h-14 rounded-3xl flex items-center justify-center shadow-2xl font-black text-white text-2xl tracking-tighter">KM</div>
                             <div>
-                                <h1 class="text-3xl font-black tracking-tighter text-white uppercase italic leading-none">Keymap <span class="text-blue-500 not-italic">Viewer</span></h1>
-                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em] mt-2">
-                                    Mode: <span class="text-blue-400">${layoutMode.toUpperCase()}</span> | <span class="text-white">${devices.length}</span> Slot${devices.length !== 1 ? 's' : ''}
+                                <h1 class="text-3xl font-black tracking-tighter ${appTheme === 'light' ? 'text-slate-900' : 'text-white'} uppercase italic leading-none">Keymap <span class="text-blue-500 not-italic">Viewer</span></h1>
+                                <p class="text-[10px] ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-500'} font-bold uppercase tracking-[0.3em] mt-2">
+                                    Mode: <span class="text-blue-400">${layoutMode.toUpperCase()}</span> | <span class="${appTheme === 'light' ? 'text-slate-900' : 'text-white'}">${devices.length}</span> Slot${devices.length !== 1 ? 's' : ''}
                                 </p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-4 bg-slate-900/50 p-2 rounded-2xl border border-slate-800">
-                            <button onClick=${() => setShowHelp(true)} class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest text-white mr-1">HOW TO USE</button>
+                        <div class="flex items-center gap-4 ${appTheme === 'light' ? 'bg-white/80 border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} p-2 rounded-2xl border backdrop-blur-sm transition-all">
+                            <button onClick=${() => setShowHelp(true)} class="${appTheme === 'light' ? 'bg-slate-200 hover:bg-slate-300 text-slate-700' : 'bg-slate-700 hover:bg-slate-600 text-white'} px-4 py-2 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest mr-1">HOW TO USE</button>
                             ${devices.length < 4 && html`
                                 <button onClick=${addSlot} class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest text-white mr-2">ADD SLOT</button>
                             `}
-                            <div class="flex gap-1">
-                                <button onClick=${() => setLayoutMode('grid')} class="px-4 py-2 rounded-xl text-xs font-bold transition-all ${layoutMode === 'grid' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30' : 'text-slate-500 hover:text-slate-300'}">GRID</button>
-                                <button onClick=${() => setLayoutMode('stack')} class="px-4 py-2 rounded-xl text-xs font-bold transition-all ${layoutMode === 'stack' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30' : 'text-slate-500 hover:text-slate-300'}">STACK</button>
+                            <div class="flex gap-1 border-r ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-800'} pr-4 mr-2">
+                                <button onClick=${() => setLayoutMode('grid')} class="px-4 py-2 rounded-xl text-xs font-bold transition-all ${layoutMode === 'grid' ? 'bg-blue-600 text-white shadow-lg' : (appTheme === 'light' ? 'text-slate-400 hover:text-slate-600' : 'text-slate-500 hover:text-slate-300')}">GRID</button>
+                                <button onClick=${() => setLayoutMode('stack')} class="px-4 py-2 rounded-xl text-xs font-bold transition-all ${layoutMode === 'stack' ? 'bg-blue-600 text-white shadow-lg' : (appTheme === 'light' ? 'text-slate-400 hover:text-slate-600' : 'text-slate-500 hover:text-slate-300')}">STACK</button>
+                            </div>
+                            <div class="flex p-1 rounded-xl gap-1 ${appTheme === 'light' ? 'bg-slate-100' : 'bg-slate-800/50'}">
+                                <button onClick=${() => setAppTheme('light')} class="w-9 h-9 rounded-lg flex items-center justify-center transition-all ${appTheme === 'light' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-500 hover:text-slate-400'}" title="Light Mode" style=${{ fontFamily: 'Segoe Fluent Icons' }}>
+                                    ${String.fromCharCode(0xE706)}
+                                </button>
+                                <button onClick=${() => setAppTheme('dark')} class="w-9 h-9 rounded-lg flex items-center justify-center transition-all ${appTheme === 'dark' ? (appTheme === 'light' ? 'bg-slate-700 text-blue-400 shadow-sm' : 'bg-slate-700 text-blue-400 shadow-sm') : 'text-slate-500 hover:text-slate-400'}" title="Dark Mode" style=${{ fontFamily: 'Segoe Fluent Icons' }}>
+                                    ${String.fromCharCode(0xE708)}
+                                </button>
                             </div>
                         </div>
                     </header>
 
                     ${showHelp && html`
                         <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick=${() => setShowHelp(false)}>
-                            <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-xl w-full mx-4 max-h-[80vh] overflow-y-auto" onClick=${(e) => e.stopPropagation()}>
-                                <div class="sticky top-0 bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center rounded-t-2xl">
-                                    <h3 class="text-lg font-black text-white uppercase tracking-wide">使い方ガイド</h3>
-                                    <button onClick=${() => setShowHelp(false)} class="text-slate-500 hover:text-white transition-colors text-xl font-bold">✕</button>
+                            <div class="${appTheme === 'light' ? 'bg-white' : 'bg-slate-900'} border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-700'} rounded-2xl shadow-2xl max-w-xl w-full mx-4 max-h-[80vh] overflow-y-auto" onClick=${(e) => e.stopPropagation()}>
+                                <div class="sticky top-0 ${appTheme === 'light' ? 'bg-slate-50' : 'bg-slate-900'} border-b ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-800'} px-6 py-4 flex justify-between items-center rounded-t-2xl">
+                                    <h3 class="text-lg font-black ${appTheme === 'light' ? 'text-slate-900' : 'text-white'} uppercase tracking-wide">使い方ガイド</h3>
+                                    <button onClick=${() => setShowHelp(false)} class="text-slate-500 hover:text-blue-500 transition-colors text-xl font-bold">✕</button>
                                 </div>
-                                <div class="px-6 py-5 space-y-5 text-sm text-slate-300 leading-relaxed">
+                                <div class="px-6 py-5 space-y-5 text-sm ${appTheme === 'light' ? 'text-slate-600' : 'text-slate-300'} leading-relaxed">
                                     <div>
                                         <h4 class="text-blue-400 font-black text-xs uppercase tracking-widest mb-2">📂 キーマップの読み込み</h4>
                                         <ul class="space-y-1 list-disc list-inside text-slate-400">
@@ -753,38 +853,43 @@
 
                             return html`
                             <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick=${() => setMacroModalState(null)}>
-                                <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col" onClick=${(e) => e.stopPropagation()}>
-                                    <div class="sticky top-0 bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center rounded-t-2xl z-10">
+                                <div class="${appTheme === 'light' ? 'bg-white' : 'bg-slate-900'} border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-700'} rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col" onClick=${(e) => e.stopPropagation()}>
+                                    <div class="sticky top-0 ${appTheme === 'light' ? 'bg-slate-50' : 'bg-slate-900'} border-b ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-800'} px-6 py-4 flex justify-between items-center rounded-t-2xl z-10">
                                         <div>
-                                            <h3 class="text-lg font-black text-white uppercase tracking-wide">
+                                            <h3 class="text-lg font-black ${appTheme === 'light' ? 'text-slate-900' : 'text-white'} uppercase tracking-wide">
                                                 ${specificMacroId !== null && specificMacroId !== undefined ? 'Edit Macro(' + specificMacroId + ') Alias' : 'Macro List & Aliases'}
                                             </h3>
                                             <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">${dev.name || 'Device'}</p>
                                         </div>
-                                        <button onClick=${() => setMacroModalState(null)} class="text-slate-500 hover:text-white transition-colors text-xl font-bold">✕</button>
+                                        <button onClick=${() => setMacroModalState(null)} class="text-slate-500 hover:text-blue-500 transition-colors text-xl font-bold">✕</button>
                                     </div>
                                     <div class="px-6 py-5 overflow-y-auto">
                                         ${allMacros.length === 0 ? html`
                                             <div class="text-center py-10 text-slate-500 text-sm font-bold">No macros defined in this keymap.</div>
                                         ` : html`
                                             <div class="space-y-3">
-                                                <div class="grid grid-cols-[80px_1fr_2fr] gap-4 px-3 py-2 border-b border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                                <div class="grid grid-cols-[80px_1fr_2fr] gap-4 px-3 py-2 border-b ${appTheme === 'light' ? 'border-slate-100' : 'border-slate-800'} text-[10px] font-black ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-widest">
                                                     <div>ID</div>
                                                     <div>Alias (Name)</div>
                                                     <div>Macro Content</div>
                                                 </div>
                                                 ${macrosToShow.map(m => html`
-                                                    <div key=${m.id} class="grid grid-cols-[80px_1fr_2fr] gap-4 items-center bg-slate-950/50 p-3 rounded-xl border border-slate-800/50 hover:border-slate-700 transition-colors">
-                                                        <div class="text-xs font-black text-blue-400 bg-blue-500/10 px-2 py-1 rounded w-fit">MACRO(${m.id})</div>
+                                                    <div key=${m.id} class="grid grid-cols-[80px_1fr_2fr] gap-4 items-center ${appTheme === 'light' ? 'bg-slate-50/80' : 'bg-slate-950/50'} p-3 rounded-xl border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-800/50'} hover:border-blue-400 transition-colors">
+                                                        <div class="text-xs font-black text-blue-500 bg-blue-500/10 px-2 py-1 rounded w-fit">MACRO(${m.id})</div>
                                                         <input 
                                                             type="text" 
                                                             placeholder="e.g. Copy"
                                                             value=${(dev.macroAliases || {})[m.id] || ''}
                                                             onInput=${(e) => updateDevice(dev.id, { macroAliases: { ...(dev.macroAliases || {}), [m.id]: e.target.value } })}
-                                                            class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white font-bold outline-none focus:border-blue-500 w-full placeholder:text-slate-600"
+                                                            onKeyDown=${(e) => {
+                                                                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                                                    setMacroModalState(null);
+                                                                }
+                                                            }}
+                                                            class="${appTheme === 'light' ? 'bg-white text-slate-900 border-slate-200 focus:border-blue-500' : 'bg-slate-800 text-white border-slate-700 focus:border-blue-500'} border rounded-lg px-3 py-1.5 text-sm font-bold outline-none w-full placeholder:text-slate-400"
                                                         />
-                                                        <div class="text-xs text-slate-400 font-mono break-all line-clamp-2" title=${m.content}>
-                                                            ${m.content || html`<span class="text-slate-600 italic">Empty</span>`}
+                                                        <div class="text-xs ${appTheme === 'light' ? 'text-slate-600' : 'text-slate-400'} font-mono break-all line-clamp-2" title=${m.content}>
+                                                            ${m.content || html`<span class="text-slate-400 italic">Empty</span>`}
                                                         </div>
                                                     </div>
                                                 `)}
@@ -802,24 +907,28 @@
                             const dev = devices.find(d => d.id === exportModalDevId);
                             return html`
                             <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick=${() => !isExporting && setExportModalDevId(null)}>
-                                <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full mx-4 flex flex-col" onClick=${(e) => e.stopPropagation()}>
-                                    <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
-                                        <h3 class="text-lg font-black text-white uppercase tracking-wide">Export Image</h3>
-                                        <button onClick=${() => !isExporting && setExportModalDevId(null)} class="text-slate-500 hover:text-white transition-colors text-xl font-bold" disabled=${isExporting}>✕</button>
+                                <div class="${appTheme === 'light' ? 'bg-white' : 'bg-slate-900'} border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-700'} rounded-2xl shadow-2xl max-w-md w-full mx-4 flex flex-col" onClick=${(e) => e.stopPropagation()}>
+                                    <div class="px-6 py-4 border-b ${appTheme === 'light' ? 'border-slate-100' : 'border-slate-800'} flex justify-between items-center">
+                                        <h3 class="text-lg font-black ${appTheme === 'light' ? 'text-slate-900' : 'text-white'} uppercase tracking-wide">Export Image</h3>
+                                        <button onClick=${() => !isExporting && setExportModalDevId(null)} class="text-slate-500 hover:text-blue-500 transition-colors text-xl font-bold" disabled=${isExporting}>✕</button>
                                     </div>
                                     <div class="px-6 py-5 space-y-6">
                                         <div>
                                             <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Layers to Export</h4>
                                             <div class="flex gap-3">
-                                                ${[0, 1, 2, 3].map(l => html`
-                                                    <label class="flex items-center gap-2 cursor-pointer ${isExporting ? 'opacity-50 pointer-events-none' : ''}">
-                                                        <input type="checkbox" checked=${exportSettings.layers.includes(l)} onChange=${() => {
-                                                            const newLayers = exportSettings.layers.includes(l) ? exportSettings.layers.filter(x => x !== l) : [...exportSettings.layers, l].sort();
-                                                            setExportSettings(s => ({ ...s, layers: newLayers }));
-                                                        }} class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-blue-500" />
-                                                        <span class="text-sm font-bold text-slate-300">L${l}</span>
-                                                    </label>
-                                                `)}
+                                                ${(() => {
+                                                    const layers = dev.keymapJson?.layers || dev.design?.layers;
+                                                    const layerCount = layers?.length || 4;
+                                                    return Array.from({ length: layerCount }, (_, l) => html`
+                                                        <label key=${l} class="flex items-center gap-2 cursor-pointer ${isExporting ? 'opacity-50 pointer-events-none' : ''}">
+                                                            <input type="checkbox" checked=${exportSettings.layers.includes(l)} onChange=${() => {
+                                                                const newLayers = exportSettings.layers.includes(l) ? exportSettings.layers.filter(x => x !== l) : [...exportSettings.layers, l].sort();
+                                                                setExportSettings(s => ({ ...s, layers: newLayers }));
+                                                            }} class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-blue-500" />
+                                                            <span class="text-sm font-bold text-slate-300">L${l}</span>
+                                                        </label>
+                                                    `);
+                                                })()}
                                             </div>
                                         </div>
                                         <div>
@@ -920,17 +1029,18 @@
                                     onDragOver=${(e) => handleDragOver(e, dev.id)}
                                     onDragLeave=${handleDragLeave}
                                     onDrop=${(e) => handleDrop(e, dev.id)}
-                                    class="relative flex flex-col bg-slate-900/40 rounded-[2rem] border-2 transition-all p-6 ${
-                                        isDragOver ? 'border-blue-400 bg-blue-500/10 shadow-2xl shadow-blue-900/20 scale-[1.01]'
-                                        : draggedSlotId === dev.id ? 'border-slate-700 opacity-50'
-                                        : 'border-slate-800 hover:border-slate-700'
+                                    class="relative flex flex-col ${appTheme === 'light' ? 'bg-white/80 border-slate-200 shadow-sm' : 'bg-slate-900/40 border-slate-800'} rounded-[2rem] border-2 transition-all p-6 ${
+                                        isDragOver ? (appTheme === 'light' ? 'border-blue-400 bg-blue-50 scale-[1.01]' : 'border-blue-400 bg-blue-500/10 shadow-2xl shadow-blue-900/20 scale-[1.01]')
+                                        : draggedSlotId === dev.id ? (appTheme === 'light' ? 'border-slate-100 opacity-50' : 'border-slate-700 opacity-50')
+                                        : (appTheme === 'light' ? 'border-slate-200 hover:border-blue-200' : 'border-slate-800 hover:border-slate-700')
                                     }">
                                     ${isDragOver && html`
                                         <div class="absolute inset-0 rounded-[2rem] border-2 border-dashed border-blue-400/50 pointer-events-none z-10 flex items-center justify-center">
-                                            <span class="text-blue-400/60 text-xs font-black uppercase tracking-widest">Drop here</span>
+                                            <span class="text-blue-500/60 text-xs font-black uppercase tracking-widest">Drop here</span>
                                         </div>
                                     `}
-                                    <div class="flex justify-between items-center mb-6">
+                                    <!-- Header: Title and Controls -->
+                                    <div class="flex justify-between items-start mb-4">
                                         <div class="flex flex-col gap-1">
                                             <div class="flex items-center gap-3">
                                                 <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-blue-600 text-white uppercase cursor-grab active:cursor-grabbing">Slot ${idx + 1}</span>
@@ -941,94 +1051,132 @@
                                                         onInput=${(e) => setEditingName(e.target.value)}
                                                         onBlur=${() => finishEditing(dev.id)}
                                                         onKeyDown=${(e) => { if (e.key === 'Enter') finishEditing(dev.id); if (e.key === 'Escape') setEditingDeviceId(null); }}
-                                                        class="text-lg font-black text-slate-100 tracking-tight uppercase bg-slate-800 border border-blue-500 rounded-lg px-2 py-0.5 outline-none w-48"
+                                                        class="text-lg font-black ${appTheme === 'light' ? 'text-slate-900' : 'text-slate-100'} tracking-tight uppercase ${appTheme === 'light' ? 'bg-white' : 'bg-slate-800'} border border-blue-500 rounded-lg px-2 py-0.5 outline-none w-48"
                                                         ref=${(el) => el && el.focus()}
                                                     />
                                                 ` : html`
-                                                    <h2 class="text-lg font-black text-slate-100 tracking-tight uppercase">${dev.name || 'No Device'}</h2>
+                                                    <h2 class="text-lg font-black ${appTheme === 'light' ? 'text-slate-900' : 'text-slate-100'} tracking-tight uppercase">${dev.name || 'No Device'}</h2>
                                                     ${dev.name && html`
-                                                        <button onClick=${(e) => { e.stopPropagation(); startEditing(dev); }} class="p-1 text-slate-600 hover:text-blue-400 transition-colors" title="Rename">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
+                                                        <button onClick=${(e) => { e.stopPropagation(); startEditing(dev); }} class="p-1 text-slate-400 hover:text-blue-400 transition-colors" title="Rename">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
                                                         </button>
                                                     `}
                                                 `}
                                             </div>
                                         </div>
-                                        <div class="flex items-center gap-3">
-                                            <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-[9px] font-black cursor-pointer transition-all uppercase tracking-widest border border-slate-700">
-                                                LOAD LAYOUT <input type="file" class="hidden" onChange=${(e) => handleFile(e, dev.id, 'layout')} />
-                                            </label>
-                                            <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-[9px] font-black cursor-pointer transition-all uppercase tracking-widest border border-slate-700">
-                                                LOAD MAPPING <input type="file" class="hidden" onChange=${(e) => handleFile(e, dev.id, 'mapping')} />
-                                            </label>
-                                            <button onClick=${(e) => { e.stopPropagation(); setMacroModalState({ deviceId: dev.id, macroId: null }); }} class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-[9px] font-black cursor-pointer transition-all uppercase tracking-widest border border-slate-700">
-                                                MACROS
+                                        <div class="flex items-center gap-1">
+                                            <button onClick=${(e) => { e.stopPropagation(); removeDevice(dev.id); }} class="p-2 text-slate-400 hover:text-red-400 transition-colors" title="Remove Slot">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
                                             </button>
-                                            <button onClick=${(e) => { e.stopPropagation(); setExportModalDevId(dev.id); setExportSettings({ layers: [dev.layer], includeMacros: true, background: dev.theme || 'Dark' }); }} class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-[9px] font-black cursor-pointer transition-all uppercase tracking-widest border border-slate-700">
-                                                EXPORT
-                                            </button>
-                                            <button onClick=${(e) => { e.stopPropagation(); removeDevice(dev.id); }} class="p-2 text-slate-500 hover:text-red-400 transition-colors">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-                                            </button>
-                                            <button onClick=${(e) => { e.stopPropagation(); updateDevice(dev.id, { showSettings: !dev.showSettings }); }} class="p-2 text-slate-500 hover:text-blue-400 transition-colors ${dev.showSettings ? 'text-blue-400 bg-blue-500/10 rounded-lg' : ''}">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                                            <button onClick=${(e) => { e.stopPropagation(); updateDevice(dev.id, { showSettings: !dev.showSettings }); }} class="p-2 text-slate-400 hover:text-blue-400 transition-colors ${dev.showSettings ? 'text-blue-400 bg-blue-500/10 rounded-lg' : ''}" title="Display Settings">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                                             </button>
                                         </div>
                                     </div>
 
-                                    <div class="flex-1 flex flex-col items-center justify-center min-h-[350px]">
+                                    <!-- Action Toolbar -->
+                                    <div class="flex flex-wrap items-center gap-2 mb-6 p-2 ${appTheme === 'light' ? 'bg-slate-100/50' : 'bg-slate-950/30'} rounded-xl border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-800/50'}">
+                                        <label class="flex-1 min-w-[100px] ${appTheme === 'light' ? 'bg-white/80 hover:bg-white text-slate-700 shadow-sm' : 'bg-slate-800/40 backdrop-blur-sm hover:bg-slate-700/60 text-slate-200'} px-3 py-2 rounded-lg text-[10px] font-black cursor-pointer transition-all uppercase tracking-widest border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-700/50'} flex items-center justify-center">
+                                            LAYOUT <input type="file" class="hidden" onChange=${(e) => handleFile(e, dev.id, 'layout')} />
+                                        </label>
+                                        <label class="flex-1 min-w-[100px] ${appTheme === 'light' ? 'bg-white/80 hover:bg-white text-slate-700 shadow-sm' : 'bg-slate-800/40 backdrop-blur-sm hover:bg-slate-700/60 text-slate-200'} px-3 py-2 rounded-lg text-[10px] font-black cursor-pointer transition-all uppercase tracking-widest border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-700/50'} flex items-center justify-center">
+                                            MAPPING <input type="file" class="hidden" onChange=${(e) => handleFile(e, dev.id, 'mapping')} />
+                                        </label>
+                                        <button onClick=${(e) => { e.stopPropagation(); setMacroModalState({ deviceId: dev.id, macroId: null }); }} class="flex-1 min-w-[80px] ${appTheme === 'light' ? 'bg-white/80 hover:bg-white text-slate-700 shadow-sm' : 'bg-slate-800/40 backdrop-blur-sm hover:bg-slate-700/60 text-slate-200'} px-3 py-2 rounded-lg text-[10px] font-black cursor-pointer transition-all uppercase tracking-widest border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-700/50'} flex items-center justify-center">
+                                            MACROS
+                                        </button>
+                                        <button onClick=${(e) => { e.stopPropagation(); setExportModalDevId(dev.id); setExportSettings({ layers: [dev.layer], includeMacros: true, background: dev.theme || 'Dark' }); }} class="flex-1 min-w-[80px] ${appTheme === 'light' ? 'bg-blue-50 hover:bg-blue-100 text-blue-600' : 'bg-blue-600/20 backdrop-blur-sm hover:bg-blue-600/40 text-blue-400'} px-3 py-2 rounded-lg text-[10px] font-black cursor-pointer transition-all uppercase tracking-widest border ${appTheme === 'light' ? 'border-blue-200' : 'border-blue-500/30'} flex items-center justify-center">
+                                            EXPORT
+                                        </button>
+                                    </div>
+
+                                    <div class="flex flex-col items-center justify-center">
                                         ${dev.design ? html`
                                             <div class="w-full flex flex-col items-center gap-6">
-                                                <div class="flex flex-col gap-4 w-full px-4">
-                                                    <div class="flex items-center gap-4 bg-slate-950/50 p-1.5 rounded-xl border border-slate-800 self-start">
-                                                        <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest px-2">Layer</span>
-                                                        ${[0, 1, 2, 3].map(l => html`
-                                                            <button onClick=${(e) => { e.stopPropagation(); updateDevice(dev.id, { layer: l }); }} class="w-8 h-8 rounded-lg font-bold text-[10px] transition-all ${dev.layer === l ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-800'}">${l}</button>
-                                                        `)}
+                                                <div class="flex flex-col gap-4 w-full">
+                                                    <div class="flex items-center gap-4 ${appTheme === 'light' ? 'bg-white/80 border-slate-200 shadow-sm' : 'bg-slate-800/40 backdrop-blur-sm border-slate-700/50'} p-1.5 rounded-xl border self-start ml-2">
+                                                        <span class="text-[9px] font-black ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-400'} uppercase tracking-widest px-2">Layer</span>
+                                                        ${(() => {
+                                                            if (!dev) return null;
+                                                            const layers = dev.keymapJson?.layers || dev.design?.layers;
+                                                            const layerCount = layers?.length || 4;
+                                                            const pageSize = 5;
+                                                            const currentPage = dev.layerPage || 0;
+                                                            
+                                                            if (layerCount <= pageSize) {
+                                                                return Array.from({ length: layerCount }, (_, l) => html`
+                                                                    <button key=${l} onClick=${(e) => { e.stopPropagation(); updateDevice(dev.id, { layer: l }); }} class="w-8 h-8 rounded-lg font-bold text-[10px] transition-all ${dev.layer === l ? 'bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.4)]' : (appTheme === 'light' ? 'text-slate-400 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-200 hover:bg-slate-700/50 hover:text-white')}">${l}</button>
+                                                                `);
+                                                            }
+                                                            
+                                                            const buttons = [];
+                                                            const hasPrev = currentPage > 0;
+                                                            const hasNext = (currentPage + 1) * (pageSize - 1) < layerCount - 1;
+                                                            const startIdx = currentPage * (pageSize - 1);
+                                                            const numToDisplay = pageSize - (hasPrev ? 1 : 0) - (hasNext ? 1 : 0);
+                                                            const displayOffset = hasPrev ? startIdx + 1 : startIdx;
+
+                                                            if (hasPrev) {
+                                                                buttons.push(html`<button key="prev" onClick=${(e) => { e.stopPropagation(); updateDevice(dev.id, { layerPage: currentPage - 1 }); }} class="w-8 h-8 rounded-lg font-bold text-sm text-blue-500 ${appTheme === 'light' ? 'hover:bg-blue-50' : 'hover:bg-slate-700/50'} transition-all" style=${{ fontFamily: 'Segoe Fluent Icons' }}>${String.fromCharCode(0xE76B)}</button>`);
+                                                            }
+                                                            
+                                                            for (let i = 0; i < numToDisplay; i++) {
+                                                                const l = displayOffset + i;
+                                                                if (l < layerCount) {
+                                                                    buttons.push(html`<button key=${l} onClick=${(e) => { e.stopPropagation(); updateDevice(dev.id, { layer: l }); }} class="w-8 h-8 rounded-lg font-bold text-[10px] transition-all ${dev.layer === l ? 'bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.4)]' : (appTheme === 'light' ? 'text-slate-400 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-200 hover:bg-slate-700/50 hover:text-white')}">${l}</button>`);
+                                                                }
+                                                            }
+                                                            
+                                                            if (hasNext) {
+                                                                buttons.push(html`<button key="next" onClick=${(e) => { e.stopPropagation(); updateDevice(dev.id, { layerPage: currentPage + 1 }); }} class="w-8 h-8 rounded-lg font-bold text-sm text-blue-500 ${appTheme === 'light' ? 'hover:bg-blue-50' : 'hover:bg-slate-700/50'} transition-all" style=${{ fontFamily: 'Segoe Fluent Icons' }}>${String.fromCharCode(0xE76C)}</button>`);
+                                                            }
+                                                            
+                                                            return buttons;
+                                                        })()}
                                                     </div>
 
                                                     ${dev.showSettings && html`
-                                                        <div class="flex flex-wrap items-center gap-4 bg-slate-900/80 p-4 rounded-xl border border-slate-700 w-full">
-                                                            <div class="flex items-center gap-4 bg-slate-950/30 p-2 px-4 rounded-xl border border-slate-800/50">
-                                                                <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest">DISPLAY MODE:</span>
+                                                        <div class="flex flex-wrap items-center gap-4 ${appTheme === 'light' ? 'bg-white/90 border-slate-200' : 'bg-slate-900/80 border-slate-700'} p-4 rounded-xl border w-full">
+                                                            <div class="flex items-center gap-4 ${appTheme === 'light' ? 'bg-slate-50' : 'bg-slate-950/30'} p-2 px-4 rounded-xl border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-800/50'}">
+                                                                <span class="text-[9px] font-black ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-600'} uppercase tracking-widest">DISPLAY MODE:</span>
                                                                 <div class="flex gap-4">
                                                                     ${['Icon', 'Text', 'Fluent'].map(opt => html`
                                                                         <label class="flex items-center gap-1.5 cursor-pointer group">
                                                                             <input type="radio" name=${`displayMode-${dev.id}`} checked=${dev.displayMode === opt} onChange=${() => updateDevice(dev.id, { displayMode: opt })} class="hidden" />
-                                                                            <div class="w-3 h-3 rounded-full border border-slate-600 flex items-center justify-center ${dev.displayMode === opt ? 'border-blue-500' : ''}">
+                                                                            <div class="w-3 h-3 rounded-full border ${appTheme === 'light' ? 'border-slate-300' : 'border-slate-600'} flex items-center justify-center ${dev.displayMode === opt ? 'border-blue-500' : ''}">
                                                                                 ${dev.displayMode === opt && html`<div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>`}
                                                                             </div>
-                                                                            <span class="text-[9px] font-bold ${dev.displayMode === opt ? 'text-white' : 'text-slate-500'} uppercase">${opt}</span>
+                                                                            <span class="text-[9px] font-bold ${dev.displayMode === opt ? (appTheme === 'light' ? 'text-slate-900' : 'text-white') : 'text-slate-500'} uppercase">${opt}</span>
                                                                         </label>
                                                                     `)}
                                                                 </div>
                                                             </div>
 
-                                                            <div class="flex items-center gap-4 bg-slate-950/30 p-2 px-4 rounded-xl border border-slate-800/50">
-                                                                <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest">ENTER KEY STYLE:</span>
+                                                            <div class="flex items-center gap-4 ${appTheme === 'light' ? 'bg-slate-50' : 'bg-slate-950/30'} p-2 px-4 rounded-xl border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-800/50'}">
+                                                                <span class="text-[9px] font-black ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-600'} uppercase tracking-widest">ENTER KEY STYLE:</span>
                                                                 <div class="flex gap-4">
                                                                     ${['TEXT', 'TEXT (ISO)', 'RETURN'].map(opt => html`
                                                                         <label class="flex items-center gap-1.5 cursor-pointer group">
                                                                             <input type="radio" name=${`enterStyle-${dev.id}`} checked=${dev.enterStyle === opt} onChange=${() => updateDevice(dev.id, { enterStyle: opt })} class="hidden" />
-                                                                            <div class="w-3 h-3 rounded-full border border-slate-600 flex items-center justify-center ${dev.enterStyle === opt ? 'border-blue-500' : ''}">
+                                                                            <div class="w-3 h-3 rounded-full border ${appTheme === 'light' ? 'border-slate-300' : 'border-slate-600'} flex items-center justify-center ${dev.enterStyle === opt ? 'border-blue-500' : ''}">
                                                                                 ${dev.enterStyle === opt && html`<div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>`}
                                                                             </div>
-                                                                            <span class="text-[9px] font-bold ${dev.enterStyle === opt ? 'text-white' : 'text-slate-500'} uppercase">${opt}</span>
+                                                                            <span class="text-[9px] font-bold ${dev.enterStyle === opt ? (appTheme === 'light' ? 'text-slate-900' : 'text-white') : 'text-slate-500'} uppercase">${opt}</span>
                                                                         </label>
                                                                     `)}
                                                                 </div>
                                                             </div>
 
-                                                            <div class="flex items-center gap-4 bg-slate-950/30 p-2 px-4 rounded-xl border border-slate-800/50">
-                                                                <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest">THEME:</span>
+                                                            <div class="flex items-center gap-4 ${appTheme === 'light' ? 'bg-slate-50' : 'bg-slate-950/30'} p-2 px-4 rounded-xl border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-800/50'}">
+                                                                <span class="text-[9px] font-black ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-600'} uppercase tracking-widest">THEME:</span>
                                                                 <div class="flex gap-4">
                                                                     ${['Dark', 'Light', 'System'].map(opt => html`
                                                                         <label class="flex items-center gap-1.5 cursor-pointer group">
                                                                             <input type="radio" name=${`theme-${dev.id}`} checked=${(dev.theme || 'System') === opt} onChange=${() => updateDevice(dev.id, { theme: opt })} class="hidden" />
-                                                                            <div class="w-3 h-3 rounded-full border border-slate-600 flex items-center justify-center ${(dev.theme || 'System') === opt ? 'border-blue-500' : ''}">
+                                                                            <div class="w-3 h-3 rounded-full border ${appTheme === 'light' ? 'border-slate-300' : 'border-slate-600'} flex items-center justify-center ${(dev.theme || 'System') === opt ? 'border-blue-500' : ''}">
                                                                                 ${(dev.theme || 'System') === opt && html`<div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>`}
                                                                             </div>
-                                                                            <span class="text-[9px] font-bold ${(dev.theme || 'System') === opt ? 'text-white' : 'text-slate-500'} uppercase">${opt}</span>
+                                                                            <span class="text-[9px] font-bold ${(dev.theme || 'System') === opt ? (appTheme === 'light' ? 'text-slate-900' : 'text-white') : 'text-slate-500'} uppercase">${opt}</span>
                                                                         </label>
                                                                     `)}
                                                                 </div>
@@ -1046,6 +1194,7 @@
                                                         onUpdateScale=${(kIdx, scale) => updateDevice(dev.id, { keyScales: { ...(dev.keyScales || {}), [kIdx]: scale } })} 
                                                         displayMode=${dev.displayMode}
                                                         theme=${dev.theme || 'System'}
+                                                        appTheme=${appTheme}
                                                         macroAliases=${dev.macroAliases || {}}
                                                         onMacroClick=${(macroId) => setMacroModalState({ deviceId: dev.id, macroId })}
                                                     />
@@ -1079,7 +1228,7 @@
                         `}
                     </main>
 
-                    <footer class="mt-16 text-center text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">
+                    <footer class="mt-16 text-center text-[10px] font-bold ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-600'} uppercase tracking-[0.2em] pb-10">
                         © 2026 Keymapping Viewer | Icons provided by <a href="https://www.kenney.nl" target="_blank" class="text-blue-500 hover:text-blue-400 underline decoration-blue-500/30">Kenney.nl</a>
                     </footer>
                 </div>
