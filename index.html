@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keymap Viewer</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="json_mapped/defaultData.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
@@ -13,7 +14,7 @@
         .kbd-container { position: relative; border-radius: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); }
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        .legend-text { white-space: normal; overflow: hidden; word-break: break-all; width: 100%; text-align: center; display: block; color: #fff; font-weight: 800; line-height: 1; max-height: 2em; }
+        .legend-text { white-space: normal; overflow: hidden; word-break: normal; overflow-wrap: anywhere; width: 100%; text-align: center; display: block; color: #fff; font-weight: 800; line-height: 1; max-height: 2.2em; }
     </style>
 </head>
 <body>
@@ -79,7 +80,7 @@
         };
 
         // --- Keyboard Component ---
-        function Keyboard({ design, layer = 0, externalMap = null, iconMapOverride = null, keyScales = {}, onUpdateScale, displayMode = 'Fluent', theme = 'System', macroAliases = {}, onMacroClick = null }) {
+        function Keyboard({ design, layer = 0, externalMap = null, iconMapOverride = null, keyScales = {}, onUpdateScale, displayMode = 'Fluent', theme = 'System', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false }) {
             const [codes, setCodes] = useState({});
             const containerRef = useRef(null);
             const [scale, setScale] = useState(1);
@@ -141,11 +142,13 @@
                 }
             }, [design, layer, externalMap]);
 
+            const finalScale = forcedScale !== null ? forcedScale : scale;
+
             if (keys.length === 0) return null;
 
             return html`
                 <div ref=${containerRef} class="w-full overflow-visible flex justify-center py-8">
-                    <div style=${{ width: `${maxWidth * scale}px`, height: `${maxHeight * scale}px`, position: 'relative' }}>
+                    <div style=${{ width: `${maxWidth * finalScale}px`, height: `${maxHeight * finalScale}px`, position: 'relative' }}>
                         <div class="kbd-container relative transition-all duration-200 border-2 ${
                             isLight
                             ? 'bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]'
@@ -153,7 +156,7 @@
                         }" style=${{ 
                             width: `${maxWidth}px`, 
                             height: `${maxHeight}px`,
-                            transform: `scale(${scale})`,
+                            transform: finalScale === 1 ? 'none' : `scale(${finalScale})`,
                             transformOrigin: 'top left'
                         }}>
                         ${keys.map((k, i) => {
@@ -231,12 +234,49 @@
                                 }
                             }
 
-                            const charCount = Math.max(1, displayText.length);
+                            // Intelligent Wrapping & Scaling Logic
+                            let finalDisplayText = displayText;
+                            let manualWrap = false;
+                            
+                            // If symbols exist, prioritize wrapping BEFORE the LAST symbol
+                            if (isExportMode && (displayText.includes('_') || displayText.includes('-'))) {
+                                const lastU = displayText.lastIndexOf('_');
+                                const lastH = displayText.lastIndexOf('-');
+                                const splitIdx = Math.max(lastU, lastH);
+                                if (splitIdx > 0 && splitIdx < displayText.length - 1) {
+                                    // Split BEFORE the symbol so the symbol stays with the next word
+                                    finalDisplayText = displayText.substring(0, splitIdx) + '\n' + displayText.substring(splitIdx);
+                                    manualWrap = true;
+                                }
+                            }
+
+                            const lines = finalDisplayText.split('\n');
+                            const maxLineChars = Math.max(...lines.map(l => l.length));
                             const kWidth = (k.w - 6);
-                            let targetSize = 10;
-                            if (charCount * 6 > kWidth) targetSize = (kWidth / charCount) * 1.5;
-                            targetSize = Math.max(5, Math.min(11, targetSize));
-                            const labelScale = (icon || combinedIconsExist) ? 0 : targetSize / 10;
+                            
+                            const baseCharWidth = isExportMode ? 16.0 : 10.5; 
+                            const estimatedWidth = maxLineChars * baseCharWidth;
+                            const availableWidth = kWidth - (isExportMode ? 4 : 12); 
+                            
+                            let targetScale = 1.0;
+                            let canWrap = manualWrap;
+
+                            if (estimatedWidth > availableWidth) {
+                                targetScale = availableWidth / estimatedWidth;
+                                if (!manualWrap && targetScale < 0.65) {
+                                    targetScale = isExportMode ? 0.62 : 0.75;
+                                    canWrap = true;
+                                }
+                            }
+
+                            // Ensure legibility by setting a minimum scale
+                            const minScale = isExportMode ? 0.52 : 0.6;
+                            targetScale = Math.max(minScale, targetScale);
+                            if (manualWrap) targetScale = Math.min(0.85, targetScale);
+
+                            const labelScale = (icon || combinedIconsExist) ? 0 : targetScale;
+                            const wrapStyle = (canWrap || manualWrap) ? 'pre-wrap' : 'nowrap';
+                            const lineH = (canWrap || manualWrap) ? '1.05' : '1';
 
                             const isIconMode = displayMode === 'Icon';
                             const baseClass = (icon || combinedIconsExist)
@@ -285,7 +325,8 @@
                                         top: `${k.y + paddingOffset}px`, 
                                         width: `${k.w - 6}px`, 
                                         height: `${k.h - 6}px`,
-                                        cursor: isTarget ? 'pointer' : ''
+                                        cursor: isTarget ? 'pointer' : '',
+                                        overflow: isExportMode ? 'visible' : 'hidden'
                                     }}>
                                     ${combinedIconsExist ? html`
                                         <div class="flex items-center justify-center w-full h-full" style=${{ filter: isLight ? 'invert(1)' : 'none' }}>
@@ -309,14 +350,28 @@
                                     ` : icon ? html`
                                         <img src="${icon}" class="w-full h-full block object-contain" style=${{ transform: `scale(${totalScaleX}, ${totalScaleY})`, filter: isLight ? 'invert(1)' : 'none' }} />
                                     ` : html`
-                                        <div style=${{ transform: `scale(${labelScale})`, transformOrigin: 'center', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                        <div style=${{ 
+                                            transform: `scale(${labelScale})`, 
+                                            transformOrigin: 'center', 
+                                            display: 'flex', 
+                                            flexDirection: 'column',
+                                            justifyContent: 'center', 
+                                            alignItems: 'center',
+                                            width: isExportMode && canWrap ? `${availableWidth / labelScale}px` : 'auto'
+                                        }}>
                                             <span class="legend-text uppercase tracking-tight font-bold" style=${{ 
                                                 color: isLight ? '#1e293b' : '#fff',
                                                 fontWeight: isFluentIcon ? '400' : '700',
                                                 fontFamily: isFluentIcon ? '"Segoe Fluent Icons", "Inter", sans-serif' : 'inherit',
                                                 fontSize: isFluentIcon && displayText.length === 1 ? '1.4em' : 'inherit',
-                                                marginTop: !isFluentIcon ? '0.15em' : '0'
-                                            }}>${displayText}</span>
+                                                position: 'relative',
+                                                top: isExportMode ? '-10px' : '0',
+                                                marginTop: (!isExportMode && !isFluentIcon) ? '0.15em' : '0',
+                                                whiteSpace: wrapStyle,
+                                                lineHeight: lineH,
+                                                maxHeight: isExportMode ? 'none' : '2.2em',
+                                                overflow: isExportMode ? 'visible' : 'hidden'
+                                            }}>${finalDisplayText}</span>
                                         </div>
                                     `}
                                 </div>
@@ -410,6 +465,9 @@
             const [dragOverTarget, setDragOverTarget] = useState(null);
             const [showHelp, setShowHelp] = useState(false);
             const [macroModalState, setMacroModalState] = useState(null); // { deviceId, macroId: null | number }
+            const [exportModalDevId, setExportModalDevId] = useState(null);
+            const [exportSettings, setExportSettings] = useState({ layers: [], includeMacros: true, background: 'Dark' });
+            const [isExporting, setIsExporting] = useState(false);
             const isInitialMount = useRef(true);
 
             // Dev: デフォルトデバイスの自動読み込み（保存データがない場合のみ）
@@ -433,6 +491,34 @@
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
                 } catch (e) { console.warn('Failed to save state:', e); }
             }, [devices, layoutMode]);
+
+            const handleExportClick = async (dev) => {
+                setIsExporting(true);
+                // Ensure all fonts are loaded before capturing
+                if (document.fonts) await document.fonts.ready;
+                
+                // Give a small extra buffer for rendering
+                setTimeout(async () => {
+                    const el = document.getElementById('export-container');
+                    if (el) {
+                        try {
+                            const canvas = await html2canvas(el, { 
+                                backgroundColor: exportSettings.background === 'Transparent' ? null : (exportSettings.background === 'Light' ? '#f1f5f9' : '#020617'),
+                                scale: 2
+                            });
+                            const link = document.createElement('a');
+                            link.download = `${dev.name || 'Keymap'}_export.png`;
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                        } catch(e) { 
+                            console.error('Export failed:', e); 
+                            alert('画像の書き出しに失敗しました。\nローカルファイル（file://）から直接開いている場合、ブラウザのセキュリティ制限によりアイコン画像（SVG）のキャプチャがブロックされます。\n\n【解決策】\n・一時的に DISPLAY MODE を「FLUENT」か「TEXT」に変更してから出力する\n・ローカルサーバー（Live Server等）経由でプレビューする\n・GitHub Pages等のサーバー上に公開する');
+                        }
+                    }
+                    setIsExporting(false);
+                    setExportModalDevId(null);
+                }, 500);
+            };
 
 
             const addSlot = () => {
@@ -711,6 +797,116 @@
                         })()}
                     `}
 
+                    ${exportModalDevId && devices.find(d => d.id === exportModalDevId) && html`
+                        ${(() => {
+                            const dev = devices.find(d => d.id === exportModalDevId);
+                            return html`
+                            <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick=${() => !isExporting && setExportModalDevId(null)}>
+                                <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full mx-4 flex flex-col" onClick=${(e) => e.stopPropagation()}>
+                                    <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                                        <h3 class="text-lg font-black text-white uppercase tracking-wide">Export Image</h3>
+                                        <button onClick=${() => !isExporting && setExportModalDevId(null)} class="text-slate-500 hover:text-white transition-colors text-xl font-bold" disabled=${isExporting}>✕</button>
+                                    </div>
+                                    <div class="px-6 py-5 space-y-6">
+                                        <div>
+                                            <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Layers to Export</h4>
+                                            <div class="flex gap-3">
+                                                ${[0, 1, 2, 3].map(l => html`
+                                                    <label class="flex items-center gap-2 cursor-pointer ${isExporting ? 'opacity-50 pointer-events-none' : ''}">
+                                                        <input type="checkbox" checked=${exportSettings.layers.includes(l)} onChange=${() => {
+                                                            const newLayers = exportSettings.layers.includes(l) ? exportSettings.layers.filter(x => x !== l) : [...exportSettings.layers, l].sort();
+                                                            setExportSettings(s => ({ ...s, layers: newLayers }));
+                                                        }} class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-blue-500" />
+                                                        <span class="text-sm font-bold text-slate-300">L${l}</span>
+                                                    </label>
+                                                `)}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="flex items-center gap-2 cursor-pointer ${isExporting ? 'opacity-50 pointer-events-none' : ''}">
+                                                <input type="checkbox" checked=${exportSettings.includeMacros} onChange=${(e) => setExportSettings(s => ({ ...s, includeMacros: e.target.checked }))} class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-blue-500" />
+                                                <span class="text-sm font-bold text-slate-300">Include Macro List</span>
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Background</h4>
+                                            <div class="flex gap-4">
+                                                ${['Dark', 'Light', 'Transparent'].map(bg => html`
+                                                    <label class="flex items-center gap-2 cursor-pointer ${isExporting ? 'opacity-50 pointer-events-none' : ''}">
+                                                        <input type="radio" name="export-bg" checked=${exportSettings.background === bg} onChange=${() => setExportSettings(s => ({ ...s, background: bg }))} class="w-4 h-4 bg-slate-800 border-slate-600 text-blue-500" />
+                                                        <span class="text-sm font-bold text-slate-300">${bg}</span>
+                                                    </label>
+                                                `)}
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick=${() => handleExportClick(dev)} 
+                                            disabled=${isExporting || exportSettings.layers.length === 0}
+                                            class="w-full py-3 rounded-xl font-black uppercase tracking-widest transition-all ${isExporting || exportSettings.layers.length === 0 ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/50'}"
+                                        >
+                                            ${isExporting ? 'Generating PNG...' : 'Download PNG'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            `;
+                        })()}
+                    `}
+
+                    ${isExporting && exportModalDevId && devices.find(d => d.id === exportModalDevId) && html`
+                        ${(() => {
+                            const dev = devices.find(d => d.id === exportModalDevId);
+                            const isLight = exportSettings.background === 'Light' || (exportSettings.background === 'System' && dev.theme === 'Light');
+                            const isTrans = exportSettings.background === 'Transparent';
+                            const bgClass = isTrans ? 'bg-transparent' : (isLight ? 'bg-slate-100' : 'bg-[#020617]');
+                            const textClass = isLight ? 'text-slate-900' : 'text-slate-100';
+                            
+                            return html`
+                            <div style=${{ position: 'fixed', top: 0, left: 0, width: 0, height: 0, overflow: 'hidden', zIndex: -1000, pointerEvents: 'none' }}>
+                                <div id="export-container" class="p-12 flex flex-col gap-16 ${bgClass} ${textClass}" style=${{ width: 'fit-content', minWidth: '1000px' }}>
+                                    <div class="text-4xl font-black uppercase tracking-widest text-center opacity-90">${dev.name || 'Keymap'}</div>
+                                    ${exportSettings.layers.map(l => html`
+                                        <div key=${l} class="flex flex-col gap-8 items-center">
+                                            <div class="text-2xl font-bold opacity-50 uppercase tracking-widest border-b-4 border-current pb-2 px-12">Layer ${l}</div>
+                                            <${Keyboard} 
+                                                design=${dev.design} 
+                                                layer=${l} 
+                                                externalMap=${dev.keymapJson} 
+                                                iconMapOverride=${dev.displayMode !== 'Icon' ? {} : getIconMap(dev.enterStyle)} 
+                                                keyScales=${dev.keyScales} 
+                                                displayMode=${dev.displayMode}
+                                                theme=${exportSettings.background === 'Transparent' ? dev.theme : exportSettings.background}
+                                                macroAliases=${dev.macroAliases || {}}
+                                                forcedScale=${1}
+                                                isExportMode=${true}
+                                            />
+                                        </div>
+                                    `)}
+                                    ${exportSettings.includeMacros && dev.keymapJson?.macros ? html`
+                                        <div class="mt-8 flex flex-col gap-4 w-full px-12 pb-12">
+                                            <div class="text-2xl font-bold opacity-50 uppercase tracking-widest border-b-4 border-current pb-2">Macros</div>
+                                            <div class="grid grid-cols-[80px_200px_1fr] gap-4 text-base border-b-2 border-current pb-2 font-black opacity-70 uppercase tracking-widest">
+                                                <div>ID</div><div>Alias</div><div>Content</div>
+                                            </div>
+                                            ${dev.keymapJson.macros.map((m, idx) => m ? html`
+                                                <div key=${idx} class="grid grid-cols-[80px_200px_1fr] gap-4 text-base items-center py-8 border-b border-current/20">
+                                                    <div class="flex justify-start">
+                                                        <div class="font-black text-blue-500 bg-blue-500/10 px-2 h-7 rounded flex items-center justify-center overflow-visible" style=${{ position: 'relative', top: '-13px', minWidth: '42px' }}>
+                                                            <span style=${{ position: 'relative', top: '-9px' }}>M${idx}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="font-bold" style=${{ position: 'relative', top: '-21px' }}>${(dev.macroAliases || {})[idx] || '-'}</div>
+                                                    <div class="font-mono opacity-80 break-all leading-tight" style=${{ position: 'relative', top: '-21px' }}>${m}</div>
+                                                </div>
+                                            ` : null)}
+                                        </div>
+                                    ` : null}
+                                </div>
+                            </div>
+                            `;
+                        })()}
+                    `}
+
                     <main class="flex-1 flex flex-col gap-8">
                         <div class="grid gap-8 ${layoutMode === 'grid' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}">
                             ${devices.map((dev, idx) => {
@@ -767,6 +963,9 @@
                                             </label>
                                             <button onClick=${(e) => { e.stopPropagation(); setMacroModalState({ deviceId: dev.id, macroId: null }); }} class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-[9px] font-black cursor-pointer transition-all uppercase tracking-widest border border-slate-700">
                                                 MACROS
+                                            </button>
+                                            <button onClick=${(e) => { e.stopPropagation(); setExportModalDevId(dev.id); setExportSettings({ layers: [dev.layer], includeMacros: true, background: dev.theme || 'Dark' }); }} class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-[9px] font-black cursor-pointer transition-all uppercase tracking-widest border border-slate-700">
+                                                EXPORT
                                             </button>
                                             <button onClick=${(e) => { e.stopPropagation(); removeDevice(dev.id); }} class="p-2 text-slate-500 hover:text-red-400 transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
