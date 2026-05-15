@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keymap Viewer</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="json_mapped/defaultData.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         body { background-color: #020617; color: #f1f5f9; font-family: 'Inter', sans-serif; }
@@ -391,7 +392,17 @@
             const [draggedSlotId, setDraggedSlotId] = useState(null);
             const [dragOverTarget, setDragOverTarget] = useState(null);
             const [showHelp, setShowHelp] = useState(false);
-
+            // Dev: デフォルトデバイスの自動読み込み（GMK70 + Q0 Plus）
+            useEffect(() => {
+                const devs = [];
+                if (window.DEFAULT_LAYOUT_DATA && window.DEFAULT_MAPPING_DATA) {
+                    devs.push({ id: Date.now(), name: window.DEFAULT_LAYOUT_DATA.name || 'ZUOYA GMK70', design: window.DEFAULT_LAYOUT_DATA, keymapJson: window.DEFAULT_MAPPING_DATA, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System' });
+                }
+                if (window.DEFAULT_LAYOUT_DATA_2 && window.DEFAULT_MAPPING_DATA_2) {
+                    devs.push({ id: Date.now() + 1, name: window.DEFAULT_LAYOUT_DATA_2.name || 'Keychron Q0 Plus', design: window.DEFAULT_LAYOUT_DATA_2, keymapJson: window.DEFAULT_MAPPING_DATA_2, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System' });
+                }
+                if (devs.length > 0) setDevices(devs);
+            }, []);
 
 
             const addSlot = () => {

@@ -1,4 +1,4 @@
-﻿window.DEFAULT_LAYOUT_DATA = {
+window.DEFAULT_LAYOUT_DATA = {
   "name": "ZUOYA GMK70",
   "vendorId": "0x342d",
   "productId": "0xe491",
@@ -686,4 +686,34 @@ window.DEFAULT_MAPPING_DATA = {
       ["KC_VOLD", "KC_VOLU"]
     ]
   ]
+};
+
+window.DEFAULT_LAYOUT_DATA_2 = {
+  "name": "Keychron Q0 Plus",
+  "vendorId": "0x3434",
+  "productId": "0x0131",
+  "matrix": {"rows": 6, "cols": 5},
+  "layouts": {
+    "keymap":[
+      ["0,0\n\n\n\n\n\n\n\n\ne0",{"x":0.25},"0,1","0,2","0,3","0,4"],
+      [{"y":0.25},"1,0",{"x":0.25},"1,1","1,2","1,3","1,4"],
+      ["2,0",{"x":0.25},"2,1","2,2","2,3",{"h":2},"2,4"],
+      ["3,0",{"x":0.25},"3,1","3,2","3,3"],
+      ["4,0",{"x":0.25},"4,1","4,2","4,3",{"h":2},"4,4"],
+      ["5,0",{"x":0.25,"w":2},"5,1","5,3"]
+    ]
+  }
+};
+
+window.DEFAULT_MAPPING_DATA_2 = {
+  "name": "Keychron Q0 Plus",
+  "vendorProductId": 875823409,
+  "macros": ["{+KC_LCTL}{+KC_LGUI}v{-KC_LGUI}{-KC_LCTL}","","","","","","","","","","","","","","",""],
+  "layers": [
+    ["KC_ESC","TO(0)","TO(1)","TO(2)","TO(3)","MACRO(1)","KC_ESC","KC_TAB","KC_BSPC","KC_DEL","MACRO(2)","C(KC_7)","C(KC_8)","C(KC_9)","C(KC_G)","KC_F","C(KC_4)","C(KC_5)","C(KC_6)","KC_NO","TT(2)","C(KC_1)","C(KC_2)","C(KC_3)","C(KC_ENT)","MACRO(0)","C(KC_0)","KC_NO","RCS(KC_SPC)","KC_NO"],
+    ["KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_NLCK","KC_PSLS","KC_PAST","KC_PMNS","KC_TRNS","KC_P7","KC_P8","KC_P9","KC_PPLS","KC_TRNS","KC_P4","KC_P5","KC_P6","KC_NO","KC_TRNS","KC_P1","KC_P2","KC_P3","KC_PENT","KC_TRNS","KC_P0","KC_NO","KC_PDOT","KC_NO"],
+    ["KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_NO","KC_NO","KC_NO","KC_PGUP","KC_TRNS","KC_HOME","KC_UP","KC_END","KC_PGDN","KC_TRNS","KC_LEFT","KC_DOWN","KC_RGHT","KC_NO","KC_TRNS","A(KC_LEFT)","KC_F5","A(KC_RGHT)","KC_ENT","KC_TRNS","KC_NO","KC_NO","KC_NO","KC_NO"],
+    ["RGB_TOG","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","RGB_M_P","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","RGB_M_B","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","RGB_M_R","KC_TRNS","KC_TRNS","KC_TRNS","KC_NO","RGB_MOD","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","RGB_RMOD","KC_TRNS","KC_NO","KC_TRNS","KC_NO"]
+  ],
+  "encoders": [[["KC_PGUP","KC_PGDN"],["KC_TRNS","KC_TRNS"],["KC_TRNS","KC_TRNS"],["RGB_VAD","RGB_VAI"]]]
 };
