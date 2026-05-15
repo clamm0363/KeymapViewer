@@ -708,7 +708,15 @@ window.DEFAULT_LAYOUT_DATA_2 = {
 window.DEFAULT_MAPPING_DATA_2 = {
   "name": "Keychron Q0 Plus",
   "vendorProductId": 875823409,
-  "macros": ["{+KC_LCTL}{+KC_LGUI}v{-KC_LGUI}{-KC_LCTL}","","","","","","","","","","","","","","",""],
+  "macros": [
+    "{+KC_LCTL}{+KC_LGUI}v{-KC_LGUI}{-KC_LCTL}",
+    "{KC_TAB}{+KC_LCTL}a{5}c{-KC_LCTL}{+KC_LGUI}t{-KC_LGUI}v{500}{KC_ENT}{150}{+KC_LCTL}a{10}v{-KC_LCTL}{5}{KC_LALT,KC_TAB}",
+    "{+KC_LCTL}c{-KC_LCTL}{100}{+KC_LGUI}t{-KC_LGUI}{100}t{300}{KC_ENT}{KC_LALT,KC_LEFT}{50}{+KC_LCTL}l{-KC_LCTL}{KC_END}/search?q={+KC_LCTL}v{-KC_LCTL}{KC_ENT}",
+    "",
+    "{+KC_LCTL}c{-KC_LCTL}",
+    "{+KC_LCTL}v{-KC_LCTL}",
+    "", "", "", "", "", "", "", "", "", ""
+  ],
   "layers": [
     ["KC_ESC","TO(0)","TO(1)","TO(2)","TO(3)","MACRO(1)","KC_ESC","KC_TAB","KC_BSPC","KC_DEL","MACRO(2)","C(KC_7)","C(KC_8)","C(KC_9)","C(KC_G)","KC_F","C(KC_4)","C(KC_5)","C(KC_6)","KC_NO","TT(2)","C(KC_1)","C(KC_2)","C(KC_3)","C(KC_ENT)","MACRO(0)","C(KC_0)","KC_NO","RCS(KC_SPC)","KC_NO"],
     ["KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_TRNS","KC_NLCK","KC_PSLS","KC_PAST","KC_PMNS","KC_TRNS","KC_P7","KC_P8","KC_P9","KC_PPLS","KC_TRNS","KC_P4","KC_P5","KC_P6","KC_NO","KC_TRNS","KC_P1","KC_P2","KC_P3","KC_PENT","KC_TRNS","KC_P0","KC_NO","KC_PDOT","KC_NO"],

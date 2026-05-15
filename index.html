@@ -79,11 +79,11 @@
         };
 
         // --- Keyboard Component ---
-        function Keyboard({ design, layer, externalMap, iconMapOverride, keyScales, onUpdateScale, displayMode, theme }) {
+        function Keyboard({ design, layer = 0, externalMap = null, iconMapOverride = null, keyScales = {}, onUpdateScale, displayMode = 'Fluent', theme = 'System', macroAliases = {}, onMacroClick = null }) {
             const [codes, setCodes] = useState({});
+            const containerRef = useRef(null);
             const [scale, setScale] = useState(1);
             const [popupInfo, setPopupInfo] = useState(null);
-            const containerRef = useRef(null);
             
             const isLight = theme === 'Light' || (theme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
             const currentIconMap = iconMapOverride || ICON_MAP;
@@ -189,9 +189,10 @@
                                 if (m) complex = { type: 'mod', mod: multiMap[m[1]], base: m[2], symbol: '+' };
                             }
 
-                            const raw = fullRaw.replace(/MACRO\((\d+)\)/g, 'M$1').replace(/CUSTOM\((\d+)\)/g, 'C$1');
-                            const icon = currentIconMap[raw] || currentIconMap[fullRaw];
-                            const combinedIconsExist = complex && (currentIconMap[complex.mod] || complex.mod.includes('+')) && (currentIconMap[complex.base] || currentIconMap[complex.base.replace('KC_','')]);
+                            const isAlias = macroAliases && fullRaw.match(/MACRO\((\d+)\)/) && macroAliases[fullRaw.match(/MACRO\((\d+)\)/)[1]];
+                            const raw = fullRaw.replace(/MACRO\((\d+)\)/g, (match, p1) => (macroAliases && macroAliases[p1] ? macroAliases[p1] : `M${p1}`)).replace(/CUSTOM\((\d+)\)/g, 'C$1');
+                            const icon = (isAlias || displayMode === 'Text') ? null : (currentIconMap[raw] || currentIconMap[fullRaw]);
+                            const combinedIconsExist = complex && !isAlias && (currentIconMap[complex.mod] || complex.mod.includes('+')) && (currentIconMap[complex.base] || currentIconMap[complex.base.replace('KC_','')]);
                             
                             const SYMBOL_MAP = {
                                 'MINS': '-', 'EQL': '=', 'LBRC': '[', 'RBRC': ']', 'BSLS': '\\',
@@ -264,7 +265,11 @@
                                 <div key=${i} class=${baseClass}
                                     title=${fullRaw}
                                     onClick=${(e) => {
-                                        if (isTarget) {
+                                        const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);
+                                        if (macroMatch && onMacroClick) {
+                                            e.stopPropagation();
+                                            onMacroClick(parseInt(macroMatch[1], 10));
+                                        } else if (isTarget) {
                                             e.stopPropagation();
                                             const rect = e.currentTarget.getBoundingClientRect();
                                             setPopupInfo({
@@ -404,6 +409,7 @@
             const [draggedSlotId, setDraggedSlotId] = useState(null);
             const [dragOverTarget, setDragOverTarget] = useState(null);
             const [showHelp, setShowHelp] = useState(false);
+            const [macroModalState, setMacroModalState] = useState(null); // { deviceId, macroId: null | number }
             const isInitialMount = useRef(true);
 
             // Dev: デフォルトデバイスの自動読み込み（保存データがない場合のみ）
@@ -620,6 +626,14 @@
                                         </ul>
                                     </div>
                                     <div>
+                                        <h4 class="text-blue-400 font-black text-xs uppercase tracking-widest mb-2">📝 マクロとエイリアス</h4>
+                                        <ul class="space-y-1 list-disc list-inside text-slate-400">
+                                            <li><strong class="text-slate-200">MACROS ボタン</strong> — 登録されている全てのマクロ一覧を表示し、名前（エイリアス）を設定できます</li>
+                                            <li><strong class="text-slate-200">キーボード連動表示</strong> — エイリアスを設定すると、キーボード上のMACRO印字がその名前に置き換わります</li>
+                                            <li><strong class="text-slate-200">個別編集モード</strong> — キーボード上のマクロキーをクリックすると、そのマクロ専用の編集画面が素早く開きます</li>
+                                        </ul>
+                                    </div>
+                                    <div>
                                         <h4 class="text-blue-400 font-black text-xs uppercase tracking-widest mb-2">⚙️ 表示設定（☰メニュー）</h4>
                                         <ul class="space-y-1 list-disc list-inside text-slate-400">
                                             <li><strong class="text-slate-200">DISPLAY MODE</strong> — Icon（SVGアイコン）/ Text（テキスト）/ Fluent（Segoe Fluent Icons）の3種から選択</li>
@@ -640,6 +654,61 @@
                                 </div>
                             </div>
                         </div>
+                    `}
+
+                    ${macroModalState && devices.find(d => d.id === macroModalState.deviceId) && html`
+                        ${(() => {
+                            const dev = devices.find(d => d.id === macroModalState.deviceId);
+                            const allMacros = dev.keymapJson?.macros || [];
+                            const specificMacroId = macroModalState.macroId;
+                            const macrosToShow = specificMacroId !== null && specificMacroId !== undefined
+                                ? [{ id: specificMacroId, content: allMacros[specificMacroId] }]
+                                : allMacros.map((content, id) => ({ id, content }));
+
+                            return html`
+                            <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick=${() => setMacroModalState(null)}>
+                                <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col" onClick=${(e) => e.stopPropagation()}>
+                                    <div class="sticky top-0 bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center rounded-t-2xl z-10">
+                                        <div>
+                                            <h3 class="text-lg font-black text-white uppercase tracking-wide">
+                                                ${specificMacroId !== null && specificMacroId !== undefined ? 'Edit Macro(' + specificMacroId + ') Alias' : 'Macro List & Aliases'}
+                                            </h3>
+                                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">${dev.name || 'Device'}</p>
+                                        </div>
+                                        <button onClick=${() => setMacroModalState(null)} class="text-slate-500 hover:text-white transition-colors text-xl font-bold">✕</button>
+                                    </div>
+                                    <div class="px-6 py-5 overflow-y-auto">
+                                        ${allMacros.length === 0 ? html`
+                                            <div class="text-center py-10 text-slate-500 text-sm font-bold">No macros defined in this keymap.</div>
+                                        ` : html`
+                                            <div class="space-y-3">
+                                                <div class="grid grid-cols-[80px_1fr_2fr] gap-4 px-3 py-2 border-b border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                                    <div>ID</div>
+                                                    <div>Alias (Name)</div>
+                                                    <div>Macro Content</div>
+                                                </div>
+                                                ${macrosToShow.map(m => html`
+                                                    <div key=${m.id} class="grid grid-cols-[80px_1fr_2fr] gap-4 items-center bg-slate-950/50 p-3 rounded-xl border border-slate-800/50 hover:border-slate-700 transition-colors">
+                                                        <div class="text-xs font-black text-blue-400 bg-blue-500/10 px-2 py-1 rounded w-fit">MACRO(${m.id})</div>
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="e.g. Copy"
+                                                            value=${(dev.macroAliases || {})[m.id] || ''}
+                                                            onInput=${(e) => updateDevice(dev.id, { macroAliases: { ...(dev.macroAliases || {}), [m.id]: e.target.value } })}
+                                                            class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white font-bold outline-none focus:border-blue-500 w-full placeholder:text-slate-600"
+                                                        />
+                                                        <div class="text-xs text-slate-400 font-mono break-all line-clamp-2" title=${m.content}>
+                                                            ${m.content || html`<span class="text-slate-600 italic">Empty</span>`}
+                                                        </div>
+                                                    </div>
+                                                `)}
+                                            </div>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+                            `;
+                        })()}
                     `}
 
                     <main class="flex-1 flex flex-col gap-8">
@@ -696,6 +765,9 @@
                                             <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-[9px] font-black cursor-pointer transition-all uppercase tracking-widest border border-slate-700">
                                                 LOAD MAPPING <input type="file" class="hidden" onChange=${(e) => handleFile(e, dev.id, 'mapping')} />
                                             </label>
+                                            <button onClick=${(e) => { e.stopPropagation(); setMacroModalState({ deviceId: dev.id, macroId: null }); }} class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-[9px] font-black cursor-pointer transition-all uppercase tracking-widest border border-slate-700">
+                                                MACROS
+                                            </button>
                                             <button onClick=${(e) => { e.stopPropagation(); removeDevice(dev.id); }} class="p-2 text-slate-500 hover:text-red-400 transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
                                             </button>
@@ -775,6 +847,8 @@
                                                         onUpdateScale=${(kIdx, scale) => updateDevice(dev.id, { keyScales: { ...(dev.keyScales || {}), [kIdx]: scale } })} 
                                                         displayMode=${dev.displayMode}
                                                         theme=${dev.theme || 'System'}
+                                                        macroAliases=${dev.macroAliases || {}}
+                                                        onMacroClick=${(macroId) => setMacroModalState({ deviceId: dev.id, macroId })}
                                                     />
                                                 </div>
                                             </div>
