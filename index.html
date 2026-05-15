@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keymap Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { background-color: #020617; color: #f1f5f9; font-family: 'Inter', sans-serif; }
+        .key-cap { transition: transform 0.1s ease; cursor: help; overflow: hidden; }
+        .kbd-container { position: relative; border-radius: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .legend-text { white-space: normal; overflow: hidden; word-break: break-all; width: 100%; text-align: center; display: block; color: #fff; font-weight: 800; line-height: 1; max-height: 2em; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="module">
+        import { createElement, useState, useEffect, useMemo, useRef } from 'https://esm.sh/react@18';
+        import { createRoot } from 'https://esm.sh/react-dom@18/client';
+        import htm from 'https://esm.sh/htm@3';
+
+        const html = htm.bind(createElement);
+
+        // --- Constants & Utilities ---
+        const BASE_PATH = 'kenney_input-prompts_1.5/';
+        const KBD_PATH = BASE_PATH + 'Keyboard & Mouse/Vector/';
+        const GEN_PATH = BASE_PATH + 'Generic/Vector/';
+
+        const ICON_MAP = {
+            'ENT': KBD_PATH + 'keyboard_return_outline.svg', 'ESC': KBD_PATH + 'keyboard_escape_outline.svg', 'BSPC': KBD_PATH + 'keyboard_backspace_icon_alternative_outline.svg',
+            'TAB': KBD_PATH + 'keyboard_tab_outline.svg', 'SPC': KBD_PATH + 'keyboard_space_outline.svg', 'LSFT': KBD_PATH + 'keyboard_shift_outline.svg',
+            'RSFT': KBD_PATH + 'keyboard_shift_outline.svg', 'CAPS': KBD_PATH + 'keyboard_capslock_outline.svg', 'HOME': KBD_PATH + 'keyboard_home_outline.svg',
+            'END': KBD_PATH + 'keyboard_end_outline.svg', 'PGUP': KBD_PATH + 'keyboard_page_up_outline.svg', 'PGDN': KBD_PATH + 'keyboard_page_down_outline.svg',
+            'DEL': KBD_PATH + 'keyboard_delete_outline.svg', 'PSCR': KBD_PATH + 'keyboard_printscreen_outline.svg', 'SLCK': KBD_PATH + 'keyboard_scroll_lock_outline.svg',
+            'PAUS': KBD_PATH + 'keyboard_pause_outline.svg', 'INS': KBD_PATH + 'keyboard_insert_outline.svg',
+            'UP': KBD_PATH + 'keyboard_arrow_up_outline.svg', 'DOWN': KBD_PATH + 'keyboard_arrow_down_outline.svg', 'LEFT': KBD_PATH + 'keyboard_arrow_left_outline.svg', 'RGHT': KBD_PATH + 'keyboard_arrow_right_outline.svg',
+            'WIN': KBD_PATH + 'keyboard_win_outline.svg', 'GUI': KBD_PATH + 'keyboard_win_outline.svg', 'LGUI': KBD_PATH + 'keyboard_win_outline.svg', 'RGUI': KBD_PATH + 'keyboard_win_outline.svg',
+            'CTRL': KBD_PATH + 'keyboard_ctrl_outline.svg', 'LCTL': KBD_PATH + 'keyboard_ctrl_outline.svg', 'RCTL': KBD_PATH + 'keyboard_ctrl_outline.svg',
+            'ALT': KBD_PATH + 'keyboard_alt_outline.svg', 'LALT': KBD_PATH + 'keyboard_alt_outline.svg', 'RALT': KBD_PATH + 'keyboard_alt_outline.svg',
+            'MINS': KBD_PATH + 'keyboard_minus_outline.svg', 'EQL': KBD_PATH + 'keyboard_equals_outline.svg', 'LBRC': KBD_PATH + 'keyboard_bracket_open_outline.svg', 'RBRC': KBD_PATH + 'keyboard_bracket_close_outline.svg',
+            'BSLS': KBD_PATH + 'keyboard_slash_back_outline.svg', 'SCLN': KBD_PATH + 'keyboard_semicolon_outline.svg', 'QUOT': KBD_PATH + 'keyboard_quote_outline.svg', 'GRV': KBD_PATH + 'keyboard_tilde_outline.svg',
+            'COMM': KBD_PATH + 'keyboard_comma_outline.svg', 'DOT': KBD_PATH + 'keyboard_period_outline.svg', 'SLSH': KBD_PATH + 'keyboard_slash_forward_outline.svg',
+            'TRNS': GEN_PATH + 'generic_button_square_outline.svg',
+            'A': KBD_PATH + 'keyboard_a_outline.svg', 'B': KBD_PATH + 'keyboard_b_outline.svg', 'C': KBD_PATH + 'keyboard_c_outline.svg', 'D': KBD_PATH + 'keyboard_d_outline.svg', 'E': KBD_PATH + 'keyboard_e_outline.svg', 'F': KBD_PATH + 'keyboard_f_outline.svg',
+            'G': KBD_PATH + 'keyboard_g_outline.svg', 'H': KBD_PATH + 'keyboard_h_outline.svg', 'I': KBD_PATH + 'keyboard_i_outline.svg', 'J': KBD_PATH + 'keyboard_j_outline.svg', 'K': KBD_PATH + 'keyboard_k_outline.svg', 'L': KBD_PATH + 'keyboard_l_outline.svg',
+            'M': KBD_PATH + 'keyboard_m_outline.svg', 'N': KBD_PATH + 'keyboard_n_outline.svg', 'O': KBD_PATH + 'keyboard_o_outline.svg', 'P': KBD_PATH + 'keyboard_p_outline.svg', 'Q': KBD_PATH + 'keyboard_q_outline.svg', 'R': KBD_PATH + 'keyboard_r_outline.svg',
+            'S': KBD_PATH + 'keyboard_s_outline.svg', 'T': KBD_PATH + 'keyboard_t_outline.svg', 'U': KBD_PATH + 'keyboard_u_outline.svg', 'V': KBD_PATH + 'keyboard_v_outline.svg', 'W': KBD_PATH + 'keyboard_w_outline.svg', 'X': KBD_PATH + 'keyboard_x_outline.svg',
+            'Y': KBD_PATH + 'keyboard_y_outline.svg', 'Z': KBD_PATH + 'keyboard_z_outline.svg', '1': KBD_PATH + 'keyboard_1_outline.svg', '2': KBD_PATH + 'keyboard_2_outline.svg', '3': KBD_PATH + 'keyboard_3_outline.svg', '4': KBD_PATH + 'keyboard_4_outline.svg',
+            '5': KBD_PATH + 'keyboard_5_outline.svg', '6': KBD_PATH + 'keyboard_6_outline.svg', '7': KBD_PATH + 'keyboard_7_outline.svg', '8': KBD_PATH + 'keyboard_8_outline.svg', '9': KBD_PATH + 'keyboard_9_outline.svg', '0': KBD_PATH + 'keyboard_0_outline.svg',
+            'F1': KBD_PATH + 'keyboard_f1_outline.svg', 'F2': KBD_PATH + 'keyboard_f2_outline.svg', 'F3': KBD_PATH + 'keyboard_f3_outline.svg', 'F4': KBD_PATH + 'keyboard_f4_outline.svg', 'F5': KBD_PATH + 'keyboard_f5_outline.svg', 'F6': KBD_PATH + 'keyboard_f6_outline.svg',
+            'F7': KBD_PATH + 'keyboard_f7_outline.svg', 'F8': KBD_PATH + 'keyboard_f8_outline.svg', 'F9': KBD_PATH + 'keyboard_f9_outline.svg', 'F10': KBD_PATH + 'keyboard_f10_outline.svg', 'F11': KBD_PATH + 'keyboard_f11_outline.svg', 'F12': KBD_PATH + 'keyboard_f12_outline.svg',
+            'L0': KBD_PATH + 'keyboard_0_outline.svg', 'L1': KBD_PATH + 'keyboard_1_outline.svg', 'L2': KBD_PATH + 'keyboard_2_outline.svg', 'L3': KBD_PATH + 'keyboard_3_outline.svg',
+            'L4': KBD_PATH + 'keyboard_4_outline.svg', 'L5': KBD_PATH + 'keyboard_5_outline.svg', 'L6': KBD_PATH + 'keyboard_6_outline.svg', 'L7': KBD_PATH + 'keyboard_7_outline.svg'
+        };
+
+        const KC_DICT = {
+            0x00: 'None', 0x04: 'A', 0x05: 'B', 0x06: 'C', 0x07: 'D', 0x08: 'E', 0x09: 'F', 0x0A: 'G', 0x0B: 'H', 0x0C: 'I', 0x0D: 'J', 0x0E: 'K', 0x0F: 'L', 0x10: 'M', 0x11: 'N', 0x12: 'O', 0x13: 'P', 0x14: 'Q', 0x15: 'R', 0x16: 'S', 0x17: 'T', 0x18: 'U', 0x19: 'V', 0x1A: 'W', 0x1B: 'X', 0x1C: 'Y', 0x1D: 'Z',
+            0x1E: '1', 0x1F: '2', 0x20: '3', 0x21: '4', 0x22: '5', 0x23: '6', 0x24: '7', 0x25: '8', 0x26: '9', 0x27: '0',
+            0x28: 'ENT', 0x29: 'ESC', 0x2A: 'BSPC', 0x2B: 'TAB', 0x2C: 'SPC', 0x2D: 'MINS', 0x2E: 'EQL', 0x2F: 'LBRC', 0x30: 'RBRC', 0x31: 'BSLS', 0x33: 'SCLN', 0x34: 'QUOT', 0x35: 'GRV', 0x36: 'COMM', 0x37: 'DOT', 0x38: 'SLSH', 0x39: 'CAPS',
+            0x3A: 'F1', 0x3B: 'F2', 0x3C: 'F3', 0x3D: 'F4', 0x3E: 'F5', 0x3F: 'F6', 0x40: 'F7', 0x41: 'F8', 0x42: 'F9', 0x43: 'F10', 0x44: 'F11', 0x45: 'F12',
+            0x46: 'PSCR', 0x47: 'SLCK', 0x48: 'PAUS', 0x49: 'INS', 0x4A: 'HOME', 0x4B: 'PGUP', 0x4C: 'DEL', 0x4D: 'END', 0x4E: 'PGDN', 0x4F: 'RGHT', 0x50: 'LEFT', 0x51: 'DOWN', 0x52: 'UP',
+            0x53: 'NLCK', 0x54: 'PSLS', 0x55: 'PAST', 0x56: 'PMNS', 0x57: 'PPLS', 0x58: 'PENT', 0x59: 'P1', 0x5A: 'P2', 0x5B: 'P3', 0x5C: 'P4', 0x5D: 'P5', 0x5E: 'P6', 0x5F: 'P7', 0x60: 'P8', 0x61: 'P9', 0x62: 'P0', 0x63: 'PDOT',
+            0xE0: 'CTRL', 0xE1: 'SHIFT', 0xE2: 'ALT', 0xE3: 'GUI', 0xE4: 'CTRL', 0xE5: 'SHIFT', 0xE6: 'ALT', 0xE7: 'GUI',
+            0xFFFF: 'TRNS', 0x5200: 'MO0', 0x5201: 'MO1', 0x5202: 'MO2', 0x5203: 'MO3'
+        };
+
+        const getRawLabel = (v) => {
+            if (!v) return '';
+            if (typeof v === 'string') return v.replace('KC_', '');
+            if (KC_DICT[v]) return KC_DICT[v];
+            if (v >= 0x4000 && v <= 0x4FFF) return `LT${(v >> 8) & 0xF}(L${(v >> 8) & 0xF}, ${getRawLabel(v & 0xFF)})`;
+            if (v >= 0x2000 && v <= 0x3FFF) return `MT(${getRawLabel(v & 0xFF)})`;
+            return `0x${v.toString(16).toUpperCase()}`;
+        };
+
+        // --- Keyboard Component ---
+        function Keyboard({ design, layer, externalMap, iconMapOverride, keyScales, onUpdateScale, displayMode, theme }) {
+            const [codes, setCodes] = useState({});
+            const [scale, setScale] = useState(1);
+            const [popupInfo, setPopupInfo] = useState(null);
+            const containerRef = useRef(null);
+            
+            const isLight = theme === 'Light' || (theme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+            const currentIconMap = iconMapOverride || ICON_MAP;
+
+            useEffect(() => {
+                const handleClickOutside = () => setPopupInfo(null);
+                window.addEventListener('click', handleClickOutside);
+                return () => window.removeEventListener('click', handleClickOutside);
+            }, []);
+            const UNIT = 54;
+
+            const keys = useMemo(() => {
+                if (!design || !design.layouts || !design.layouts.keymap) return [];
+                const list = []; let x = 0, y = 0, w = 1, h = 1;
+                design.layouts.keymap.forEach(row => {
+                    x = 0;
+                    row.forEach(item => {
+                        if (typeof item === 'string') {
+                            const m = item.split('\n')[0].match(/(\d+),(\d+)/);
+                            list.push({ id: item, matrix: m ? [parseInt(m[1]), parseInt(m[2])] : null, x: x * UNIT, y: y * UNIT, w: w * UNIT, h: h * UNIT });
+                            x += w; w = 1; h = 1;
+                        } else {
+                            if (item.x !== undefined) x += item.x; if (item.y !== undefined) y += item.y;
+                            if (item.w !== undefined) w = item.w; if (item.h !== undefined) h = item.h;
+                        }
+                    });
+                    y++;
+                });
+                return list;
+            }, [design]);
+
+            const maxWidth = useMemo(() => keys.length ? Math.max(...keys.map(k => k.x + k.w), 0) + 120 : 0, [keys]);
+            const maxHeight = useMemo(() => keys.length ? Math.max(...keys.map(k => k.y + k.h), 0) + 120 : 0, [keys]);
+
+            useEffect(() => {
+                if (!containerRef.current || maxWidth === 0) return;
+                const observer = new ResizeObserver(entries => {
+                    for (let entry of entries) {
+                        const containerWidth = entry.contentRect.width;
+                        if (containerWidth < maxWidth) setScale(containerWidth / maxWidth);
+                        else setScale(1);
+                    }
+                });
+                observer.observe(containerRef.current);
+                return () => observer.disconnect();
+            }, [maxWidth]);
+
+            useEffect(() => {
+                if (externalMap?.layers?.[layer]) {
+                    const next = {}; const cols = design.matrix?.cols || 16;
+                    externalMap.layers[layer].forEach((v, i) => next[`${Math.floor(i / cols)},${i % cols}`] = v);
+                    setCodes(next);
+                } else {
+                    setCodes({});
+                }
+            }, [design, layer, externalMap]);
+
+            if (keys.length === 0) return null;
+
+            return html`
+                <div ref=${containerRef} class="w-full overflow-visible flex justify-center py-8">
+                    <div style=${{ width: `${maxWidth * scale}px`, height: `${maxHeight * scale}px`, position: 'relative' }}>
+                        <div class="kbd-container relative transition-all duration-200 border-2 ${
+                            isLight
+                            ? 'bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]'
+                            : 'bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]'
+                        }" style=${{ 
+                            width: `${maxWidth}px`, 
+                            height: `${maxHeight}px`,
+                            transform: `scale(${scale})`,
+                            transformOrigin: 'top left'
+                        }}>
+                        ${keys.map((k, i) => {
+                            const mK = k.matrix ? `${k.matrix[0]},${k.matrix[1]}` : null;
+                            const val = mK ? codes[mK] : null;
+                            const fullRaw = getRawLabel(val || (k.id.includes('\n') ? k.id.split('\n').pop() : k.id));
+                            
+                            let complex = null;
+                            let m = fullRaw.match(/^LT(\d+)\((L\d+),\s*(.+)\)$/);
+                            if (m) complex = { type: 'lt', mod: m[2], base: m[3], symbol: '/' };
+                            if (!complex) {
+                                m = fullRaw.match(/^MT\(MOD_(\w+),\s*(.+)\)$/);
+                                const modMap = { 'LCTL': 'CTRL', 'RCTL': 'CTRL', 'LSFT': 'SHIFT', 'RSFT': 'SHIFT', 'LALT': 'ALT', 'RALT': 'ALT', 'LGUI': 'GUI', 'RGUI': 'GUI' };
+                                if (m) complex = { type: 'mt', mod: modMap[m[1]] || m[1], base: m[2], symbol: '/' };
+                            }
+                            if (!complex) {
+                                m = fullRaw.match(/^([ACSG])\((.+)\)$/);
+                                const modMap = { 'A': 'ALT', 'C': 'CTRL', 'S': 'SHIFT', 'G': 'GUI' };
+                                if (m) complex = { type: 'mod', mod: modMap[m[1]], base: m[2], symbol: '+' };
+                            }
+                            if (!complex) {
+                                m = fullRaw.match(/^(LCTL|LSFT|LALT|LGUI|RCTL|RSFT|RALT|RGUI)\((.+)\)$/);
+                                const modMap = { 'LCTL': 'CTRL', 'RCTL': 'CTRL', 'LSFT': 'SHIFT', 'RSFT': 'SHIFT', 'LALT': 'ALT', 'RALT': 'ALT', 'LGUI': 'GUI', 'RGUI': 'GUI' };
+                                if (m) complex = { type: 'mod', mod: modMap[m[1]], base: m[2], symbol: '+' };
+                            }
+                            if (!complex) {
+                                m = fullRaw.match(/^(LCA|LSA|RSA|RCS|LCG|RCG|LSG|RSG|LAG|RAG|MEH|HYPR)\((.+)\)$/);
+                                const multiMap = {
+                                    'LCA': 'CTRL+ALT', 'LSA': 'SHIFT+ALT', 'RSA': 'SHIFT+ALT', 'RCS': 'CTRL+SHIFT',
+                                    'LCG': 'CTRL+GUI', 'RCG': 'CTRL+GUI', 'LSG': 'SHIFT+GUI', 'RSG': 'SHIFT+GUI',
+                                    'LAG': 'ALT+GUI', 'RAG': 'ALT+GUI', 'MEH': 'CTRL+ALT+SHFT', 'HYPR': 'CTRL+ALT+SHFT+GUI'
+                                };
+                                if (m) complex = { type: 'mod', mod: multiMap[m[1]], base: m[2], symbol: '+' };
+                            }
+
+                            const raw = fullRaw.replace(/MACRO\((\d+)\)/g, 'M$1').replace(/CUSTOM\((\d+)\)/g, 'C$1');
+                            const icon = currentIconMap[raw] || currentIconMap[fullRaw];
+                            const combinedIconsExist = complex && (currentIconMap[complex.mod] || complex.mod.includes('+')) && (currentIconMap[complex.base] || currentIconMap[complex.base.replace('KC_','')]);
+                            
+                            const SYMBOL_MAP = {
+                                'MINS': '-', 'EQL': '=', 'LBRC': '[', 'RBRC': ']', 'BSLS': '\\',
+                                'SCLN': ';', 'QUOT': "'", 'GRV': '`', 'COMM': ',', 'DOT': '.', 'SLSH': '/',
+                                'PSLS': '/', 'PAST': '*', 'PMNS': '-', 'PPLS': '+', 'PDOT': '.'
+                            };
+
+                            const FLUENT_MAP = {
+                                'WIN': '\uE782', 'GUI': '\uE782', 'LGUI': '\uE782', 'RGUI': '\uE782',
+                                'BSPC': '\uE750', 'DEL': '\uE74D',
+                                'ENT': '\uE751', 'ENTER': '\uE751', 'RETURN': '\uE751',
+                                'SHIFT': '\uE752', 'LSFT': '\uE752', 'RSFT': '\uE752',
+                                'UP': '\uE70E', 'DOWN': '\uE70D', 'LEFT': '\uE76B', 'RGHT': '\uE76C',
+                                'MUTE': '\uE74F', 'VOLD': '\uE993', 'VOLU': '\uE994',
+                                'PLAY': '\uE768', 'PAUS': '\uE769', 'HOME': '\uE80F', 'TAB': '\uE7A6'
+                            };
+
+                            let displayText = raw;
+                            let isFluentIcon = false;
+
+                            if (complex) {
+                                const hasFluentMod = displayMode === 'Fluent' && !!FLUENT_MAP[complex.mod];
+                                const baseStrRaw = complex.base.replace('KC_', '');
+                                const hasFluentBase = displayMode === 'Fluent' && !!FLUENT_MAP[baseStrRaw];
+
+                                const modStr = hasFluentMod ? FLUENT_MAP[complex.mod] : (SYMBOL_MAP[complex.mod] || complex.mod);
+                                const baseStr = hasFluentBase ? FLUENT_MAP[baseStrRaw] : (SYMBOL_MAP[baseStrRaw] || baseStrRaw);
+                                displayText = `${modStr}${complex.symbol}${baseStr}`;
+                                if (hasFluentMod || hasFluentBase) isFluentIcon = true;
+                            } else {
+                                if (displayMode === 'Fluent' && FLUENT_MAP[raw]) {
+                                    displayText = FLUENT_MAP[raw];
+                                    isFluentIcon = true;
+                                } else {
+                                    displayText = SYMBOL_MAP[raw] || raw;
+                                }
+                            }
+
+                            const charCount = Math.max(1, displayText.length);
+                            const kWidth = (k.w - 6);
+                            let targetSize = 10;
+                            if (charCount * 6 > kWidth) targetSize = (kWidth / charCount) * 1.5;
+                            targetSize = Math.max(5, Math.min(11, targetSize));
+                            const labelScale = (icon || combinedIconsExist) ? 0 : targetSize / 10;
+
+                            const isIconMode = displayMode === 'Icon';
+                            const baseClass = (icon || combinedIconsExist)
+                                ? "key-cap absolute flex items-center justify-center transition-all duration-75 overflow-visible"
+                                : `key-cap absolute border-[3px] rounded-md flex flex-col items-center justify-center transition-all duration-75 overflow-hidden ${
+                                    isIconMode
+                                    ? (isLight ? 'border-black bg-transparent shadow-none' : 'border-white bg-transparent shadow-none')
+                                    : (isLight ? 'border-slate-300 bg-white shadow-md hover:bg-slate-50 hover:border-blue-500' : 'border-slate-700 bg-slate-900/60 shadow-2xl hover:bg-slate-800 hover:border-blue-400')
+                                }`;
+                            
+                            const paddingOffset = 60;
+
+                            const tLabels = ['CTRL', 'LCTL', 'RCTL', 'SHIFT', 'LSFT', 'RSFT', 'ALT', 'LALT', 'RALT', 'TAB', 'CAPS', 'BSPC', 'ENT', 'SPC', 'SPACE', 'ENTER', 'RETURN'];
+                            const isTarget = tLabels.includes(raw) || tLabels.includes(fullRaw) || (complex && (tLabels.includes(complex.mod) || tLabels.includes(complex.base)));
+                            
+                            const defaultScaleObj = { scale: 1.3, scaleX: 1.0, scaleY: 1.0 };
+                            let customScaleObj = keyScales && keyScales[i] !== undefined ? keyScales[i] : defaultScaleObj;
+                            // For backward compatibility during reload if a number was stored
+                            if (typeof customScaleObj === 'number') {
+                                customScaleObj = { scale: customScaleObj, scaleX: 1.0, scaleY: 1.0 };
+                            }
+                            const totalScaleX = customScaleObj.scale * customScaleObj.scaleX;
+                            const totalScaleY = customScaleObj.scale * customScaleObj.scaleY;
+
+                            return html`
+                                <div key=${i} class=${baseClass}
+                                    title=${fullRaw}
+                                    onClick=${(e) => {
+                                        if (isTarget) {
+                                            e.stopPropagation();
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setPopupInfo({
+                                                keyIndex: i,
+                                                x: rect.left + rect.width / 2,
+                                                y: rect.top - 10,
+                                                scaleObj: customScaleObj
+                                            });
+                                        }
+                                    }}
+                                    style=${{ 
+                                        left: `${k.x + paddingOffset}px`, 
+                                        top: `${k.y + paddingOffset}px`, 
+                                        width: `${k.w - 6}px`, 
+                                        height: `${k.h - 6}px`,
+                                        cursor: isTarget ? 'pointer' : ''
+                                    }}>
+                                    ${combinedIconsExist ? html`
+                                        <div class="flex items-center justify-center w-full h-full" style=${{ filter: isLight ? 'invert(1)' : 'none' }}>
+                                            <div class="relative" style=${{ width: '54px', height: '54px', transform: `scale(${totalScaleX}, ${totalScaleY})`, flexShrink: 0 }}>
+                                                ${currentIconMap[complex.mod] ? html`
+                                                    <img src="${currentIconMap[complex.mod].replace('_outline', '')}" class="absolute object-contain" style=${{ top: '4%', left: '4%', width: '62%', height: '62%', zIndex: 1 }} />
+                                                ` : html`
+                                                    <div class="absolute flex items-center justify-center bg-white text-black border-2 border-slate-900 rounded-[5px] overflow-hidden shadow-sm" style=${{ top: '10%', left: '10%', width: '48%', height: '48%', zIndex: 1 }}>
+                                                        <div class="flex flex-col items-center justify-center" style=${{ transform: 'scale(0.5)', width: '200%', height: '200%', transformOrigin: 'center' }}>
+                                                            ${complex.mod.split('+').map((t, _, arr) => html`<span class="font-black tracking-tight" style=${{ fontSize: arr.length > 2 ? '11px' : '15px', lineHeight: '1' }}>${t}</span>`)}
+                                                        </div>
+                                                    </div>
+                                                `}
+                                                <div class="absolute flex items-center justify-center text-[13px] font-black text-white/80" style=${{ top: '8%', right: '16%', zIndex: 2 }}>${complex.symbol}</div>
+                                                <div class="absolute flex items-center justify-center" style=${{ bottom: '12%', right: '12%', width: '52%', height: '52%', zIndex: 3 }}>
+                                                    <div class="absolute bg-[#0a0f1a] rounded-[5px]" style=${{ width: '76%', height: '76%', zIndex: -1 }}></div>
+                                                    <img src="${(complex.base.replace('KC_','') === 'SPC') ? KBD_PATH + 'keyboard_space_icon_outline.svg' : (currentIconMap[complex.base] || currentIconMap[complex.base.replace('KC_','')])}" class="w-full h-full object-contain" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ` : icon ? html`
+                                        <img src="${icon}" class="w-full h-full block object-contain" style=${{ transform: `scale(${totalScaleX}, ${totalScaleY})`, filter: isLight ? 'invert(1)' : 'none' }} />
+                                    ` : html`
+                                        <div style=${{ transform: `scale(${labelScale})`, transformOrigin: 'center', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                            <span class="legend-text uppercase tracking-tight font-bold" style=${{ 
+                                                color: isLight ? '#1e293b' : '#fff',
+                                                fontWeight: isFluentIcon ? '400' : '700',
+                                                fontFamily: isFluentIcon ? '"Segoe Fluent Icons", "Inter", sans-serif' : 'inherit',
+                                                fontSize: isFluentIcon && displayText.length === 1 ? '1.4em' : 'inherit',
+                                                marginTop: !isFluentIcon ? '0.15em' : '0'
+                                            }}>${displayText}</span>
+                                        </div>
+                                    `}
+                                </div>
+                            `;
+                        })}
+                    </div>
+                    </div>
+                    ${popupInfo && html`
+                        <div class="fixed z-50 bg-slate-800 border border-slate-600 rounded-xl p-4 shadow-[0_0_50px_rgba(0,0,0,0.8)] min-w-[200px]"
+                             style=${{ left: popupInfo.x + 'px', top: popupInfo.y + 'px', transform: 'translate(-50%, -100%)' }}
+                             onClick=${e => e.stopPropagation()}>
+                             <div class="text-[10px] font-black text-slate-300 mb-3 uppercase tracking-widest text-center flex justify-between items-center">
+                                 <span>Icon Scale</span>
+                                 <button onClick=${() => setPopupInfo(null)} class="text-slate-500 hover:text-white ml-4">✕</button>
+                             </div>
+                             
+                             <div class="flex flex-col gap-2">
+                                 <div class="flex items-center gap-2">
+                                     <span class="text-[9px] text-slate-400 font-bold w-12 text-right">ALL</span>
+                                     <input type="range" min="0.5" max="4.0" step="0.1" value=${popupInfo.scaleObj.scale}
+                                            onInput=${e => {
+                                                const newObj = { ...popupInfo.scaleObj, scale: parseFloat(e.target.value) };
+                                                setPopupInfo(prev => ({ ...prev, scaleObj: newObj }));
+                                                if (onUpdateScale) onUpdateScale(popupInfo.keyIndex, newObj);
+                                            }}
+                                            class="w-24 accent-blue-500 cursor-pointer" />
+                                     <span class="text-xs text-blue-400 font-bold w-6 text-right">${popupInfo.scaleObj.scale.toFixed(1)}</span>
+                                 </div>
+
+                                 <div class="flex items-center gap-2">
+                                     <span class="text-[9px] text-slate-400 font-bold w-12 text-right">WIDTH</span>
+                                     <input type="range" min="0.5" max="4.0" step="0.1" value=${popupInfo.scaleObj.scaleX}
+                                            onInput=${e => {
+                                                const newObj = { ...popupInfo.scaleObj, scaleX: parseFloat(e.target.value) };
+                                                setPopupInfo(prev => ({ ...prev, scaleObj: newObj }));
+                                                if (onUpdateScale) onUpdateScale(popupInfo.keyIndex, newObj);
+                                            }}
+                                            class="w-24 accent-emerald-500 cursor-pointer" />
+                                     <span class="text-xs text-emerald-400 font-bold w-6 text-right">${popupInfo.scaleObj.scaleX.toFixed(1)}</span>
+                                 </div>
+
+                                 <div class="flex items-center gap-2">
+                                     <span class="text-[9px] text-slate-400 font-bold w-12 text-right">HEIGHT</span>
+                                     <input type="range" min="0.5" max="4.0" step="0.1" value=${popupInfo.scaleObj.scaleY}
+                                            onInput=${e => {
+                                                const newObj = { ...popupInfo.scaleObj, scaleY: parseFloat(e.target.value) };
+                                                setPopupInfo(prev => ({ ...prev, scaleObj: newObj }));
+                                                if (onUpdateScale) onUpdateScale(popupInfo.keyIndex, newObj);
+                                            }}
+                                            class="w-24 accent-rose-500 cursor-pointer" />
+                                     <span class="text-xs text-rose-400 font-bold w-6 text-right">${popupInfo.scaleObj.scaleY.toFixed(1)}</span>
+                                 </div>
+                             </div>
+
+                             <div class="mt-4 text-center">
+                                 <button onClick=${() => {
+                                     const defaultObj = { scale: 1.3, scaleX: 1.0, scaleY: 1.0 };
+                                     setPopupInfo(prev => ({ ...prev, scaleObj: defaultObj }));
+                                     if (onUpdateScale) onUpdateScale(popupInfo.keyIndex, defaultObj);
+                                 }} class="text-[9px] px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold text-slate-300 transition-colors uppercase tracking-widest">
+                                     Reset
+                                 </button>
+                             </div>
+                        </div>
+                    `}
+                </div>
+            `;
+        }
+
+        // --- App Component ---
+        function App() {
+            const [devices, setDevices] = useState([{
+                id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System'
+            }]);
+            const [layoutMode, setLayoutMode] = useState('stack');
+            const [editingDeviceId, setEditingDeviceId] = useState(null);
+            const [editingName, setEditingName] = useState('');
+            const [draggedSlotId, setDraggedSlotId] = useState(null);
+            const [dragOverTarget, setDragOverTarget] = useState(null);
+            const [showHelp, setShowHelp] = useState(false);
+
+
+
+            const addSlot = () => {
+                if (devices.length >= 4) return;
+                setDevices(prev => [...prev, {
+                    id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System'
+                }]);
+            };
+
+            const updateDevice = (id, data) => {
+                setDevices(prev => prev.map(d => d.id === id ? { ...d, ...data } : d));
+            };
+
+            const handleFile = (e, id, type) => {
+                const f = e.target.files[0];
+                if (f) {
+                    const r = new FileReader();
+                    r.onload = (ev) => {
+                        try {
+                            const j = JSON.parse(ev.target.result);
+                            console.log(`Loading ${type} for slot ${id}:`, j);
+                            if (type === 'layout') {
+                                if (j.layouts) {
+                                    updateDevice(id, { design: j, name: j.name || 'Device' });
+                                } else {
+                                    alert('レイアウト情報（layoutsキー）が見つかりません');
+                                }
+                            } else {
+                                if (j.layers) {
+                                    updateDevice(id, { keymapJson: j });
+                                } else {
+                                    alert('マッピング情報（layersキー）が見つかりません');
+                                }
+                            }
+                        } catch (err) {
+                            console.error('File parsing error:', err);
+                            alert('JSONファイルの解析に失敗しました');
+                        }
+                    };
+                    r.readAsText(f);
+                }
+                e.target.value = '';
+            };
+
+            const removeDevice = (id) => {
+                if (devices.length === 1) {
+                    updateDevice(id, { name: null, design: null, keymapJson: null, layer: 0, keyScales: {}, displayMode: 'Fluent' });
+                } else {
+                    setDevices(prev => prev.filter(d => d.id !== id));
+                }
+            };
+
+            const startEditing = (dev) => {
+                setEditingDeviceId(dev.id);
+                setEditingName(dev.name || '');
+            };
+
+            const finishEditing = (id) => {
+                if (editingName.trim()) updateDevice(id, { name: editingName.trim() });
+                setEditingDeviceId(null);
+            };
+
+            const handleSlotDragStart = (e, devId) => {
+                setDraggedSlotId(devId);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('application/slot-id', devId.toString());
+                requestAnimationFrame(() => { e.target.style.opacity = '0.4'; });
+            };
+
+            const handleSlotDragEnd = (e) => {
+                e.target.style.opacity = '1';
+                setDraggedSlotId(null);
+                setDragOverTarget(null);
+            };
+
+            const handleDragOver = (e, targetId) => {
+                e.preventDefault();
+                const isFile = e.dataTransfer.types.includes('Files');
+                const isSlot = e.dataTransfer.types.includes('application/slot-id');
+                if (isFile || isSlot) {
+                    e.dataTransfer.dropEffect = isFile ? 'copy' : 'move';
+                    setDragOverTarget(targetId);
+                }
+            };
+
+            const handleDragLeave = (e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) setDragOverTarget(null);
+            };
+
+            const processDroppedFile = (file, targetDevId) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const j = JSON.parse(ev.target.result);
+                        if (targetDevId) {
+                            if (j.layouts) updateDevice(targetDevId, { design: j, name: j.name || 'Device' });
+                            else if (j.layers) updateDevice(targetDevId, { keymapJson: j });
+                            else alert('レイアウト(layouts)またはマッピング(layers)キーが見つかりません');
+                        } else {
+                            if (devices.length >= 4) return;
+                            const nd = { id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System' };
+                            if (j.layouts) { nd.design = j; nd.name = j.name || 'Device'; }
+                            else if (j.layers) { nd.keymapJson = j; nd.name = j.name || 'Mapping'; }
+                            else { alert('レイアウト(layouts)またはマッピング(layers)キーが見つかりません'); return; }
+                            setDevices(prev => [...prev, nd]);
+                        }
+                    } catch (err) {
+                        console.error('File parsing error:', err);
+                        alert('JSONファイルの解析に失敗しました');
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            const handleDrop = (e, targetDevId) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDragOverTarget(null);
+                if (e.dataTransfer.files.length > 0) {
+                    const file = Array.from(e.dataTransfer.files).find(f => f.name.endsWith('.json'));
+                    if (file) processDroppedFile(file, targetDevId);
+                    return;
+                }
+                if (draggedSlotId && draggedSlotId !== targetDevId) {
+                    setDevices(prev => {
+                        const next = [...prev];
+                        const fromIdx = next.findIndex(d => d.id === draggedSlotId);
+                        const toIdx = next.findIndex(d => d.id === targetDevId);
+                        if (fromIdx === -1 || toIdx === -1) return prev;
+                        const [moved] = next.splice(fromIdx, 1);
+                        next.splice(toIdx, 0, moved);
+                        return next;
+                    });
+                }
+                setDraggedSlotId(null);
+            };
+
+            const getIconMap = (style) => {
+                const map = { ...ICON_MAP };
+                if (style === 'TEXT') map['ENT'] = KBD_PATH + 'keyboard_numpad_enter_outline.svg';
+                else if (style === 'TEXT (ISO)') map['ENT'] = KBD_PATH + 'keyboard_enter_outline.svg';
+                else if (style === 'RETURN') map['ENT'] = KBD_PATH + 'keyboard_return_outline.svg';
+                return map;
+            };
+
+            return html`
+                <div class="min-h-screen p-6 md:p-10 max-w-[1600px] mx-auto flex flex-col">
+                    <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+                        <div class="flex items-center gap-6" onClick=${() => window.location.reload()} style=${{cursor: 'pointer'}}>
+                            <div class="bg-blue-600 w-14 h-14 rounded-3xl flex items-center justify-center shadow-2xl font-black text-white text-2xl tracking-tighter">KM</div>
+                            <div>
+                                <h1 class="text-3xl font-black tracking-tighter text-white uppercase italic leading-none">Keymap <span class="text-blue-500 not-italic">Viewer</span></h1>
+                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em] mt-2">
+                                    Mode: <span class="text-blue-400">${layoutMode.toUpperCase()}</span> | <span class="text-white">${devices.length}</span> Slot${devices.length !== 1 ? 's' : ''}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 bg-slate-900/50 p-2 rounded-2xl border border-slate-800">
+                            <button onClick=${() => setShowHelp(true)} class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest text-white mr-1">HOW TO USE</button>
+                            ${devices.length < 4 && html`
+                                <button onClick=${addSlot} class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest text-white mr-2">ADD SLOT</button>
+                            `}
+                            <div class="flex gap-1">
+                                <button onClick=${() => setLayoutMode('grid')} class="px-4 py-2 rounded-xl text-xs font-bold transition-all ${layoutMode === 'grid' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30' : 'text-slate-500 hover:text-slate-300'}">GRID</button>
+                                <button onClick=${() => setLayoutMode('stack')} class="px-4 py-2 rounded-xl text-xs font-bold transition-all ${layoutMode === 'stack' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30' : 'text-slate-500 hover:text-slate-300'}">STACK</button>
+                            </div>
+                        </div>
+                    </header>
+
+                    ${showHelp && html`
+                        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick=${() => setShowHelp(false)}>
+                            <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-xl w-full mx-4 max-h-[80vh] overflow-y-auto" onClick=${(e) => e.stopPropagation()}>
+                                <div class="sticky top-0 bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center rounded-t-2xl">
+                                    <h3 class="text-lg font-black text-white uppercase tracking-wide">使い方ガイド</h3>
+                                    <button onClick=${() => setShowHelp(false)} class="text-slate-500 hover:text-white transition-colors text-xl font-bold">✕</button>
+                                </div>
+                                <div class="px-6 py-5 space-y-5 text-sm text-slate-300 leading-relaxed">
+                                    <div>
+                                        <h4 class="text-blue-400 font-black text-xs uppercase tracking-widest mb-2">📂 キーマップの読み込み</h4>
+                                        <ul class="space-y-1 list-disc list-inside text-slate-400">
+                                            <li><strong class="text-slate-200">LOAD LAYOUT</strong> — キーボードの物理配列を定義するJSONファイルを読み込みます（layoutsキーを含むもの）</li>
+                                            <li><strong class="text-slate-200">LOAD MAPPING</strong> — キーアサイン（マッピング）を定義するJSONファイルを読み込みます（layersキーを含むもの）</li>
+                                            <li><strong class="text-slate-200">ドラッグ＆ドロップ</strong> — JSONファイルをスロット上に直接ドロップして読み込むこともできます。空きエリアにドロップすると新規スロットが追加されます</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-blue-400 font-black text-xs uppercase tracking-widest mb-2">🎹 キーボード表示</h4>
+                                        <ul class="space-y-1 list-disc list-inside text-slate-400">
+                                            <li><strong class="text-slate-200">Layer 0〜3</strong> — 表示するレイヤーを切り替えられます</li>
+                                            <li><strong class="text-slate-200">特殊キーのクリック</strong> — Ctrl、Shift、Alt、Tab、Space等の特定キーをクリックすると、アイコンのスケールを調整できます</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-blue-400 font-black text-xs uppercase tracking-widest mb-2">⚙️ 表示設定（☰メニュー）</h4>
+                                        <ul class="space-y-1 list-disc list-inside text-slate-400">
+                                            <li><strong class="text-slate-200">DISPLAY MODE</strong> — Icon（SVGアイコン）/ Text（テキスト）/ Fluent（Segoe Fluent Icons）の3種から選択</li>
+                                            <li><strong class="text-slate-200">ENTER KEY STYLE</strong> — Enterキーのアイコンスタイルを変更</li>
+                                            <li><strong class="text-slate-200">THEME</strong> — Dark / Light / System から外観テーマを選択</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-blue-400 font-black text-xs uppercase tracking-widest mb-2">🗂️ スロット管理</h4>
+                                        <ul class="space-y-1 list-disc list-inside text-slate-400">
+                                            <li><strong class="text-slate-200">ADD SLOT</strong> — 最大4つまでスロットを追加して複数キーボードを並べて表示できます</li>
+                                            <li><strong class="text-slate-200">GRID / STACK</strong> — 横並び（Grid）と縦並び（Stack）のレイアウトを切り替えます</li>
+                                            <li><strong class="text-slate-200">ドラッグ＆ドロップ</strong> — スロットをドラッグして順序を入れ替えられます</li>
+                                            <li><strong class="text-slate-200">✏️ えんぴつアイコン</strong> — デバイス名をクリックして任意の名前に変更できます</li>
+                                            <li><strong class="text-slate-200">🗑️ ゴミ箱アイコン</strong> — スロットの内容をクリア、または複数スロット時はスロットを削除します</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `}
+
+                    <main class="flex-1 flex flex-col gap-8">
+                        <div class="grid gap-8 ${layoutMode === 'grid' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}">
+                            ${devices.map((dev, idx) => {
+                                const isSlotLight = dev.theme === 'Light' || (dev.theme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+                                const isDragOver = dragOverTarget === dev.id;
+                                return html`
+                                <div key=${dev.id}
+                                    draggable="true"
+                                    onDragStart=${(e) => handleSlotDragStart(e, dev.id)}
+                                    onDragEnd=${handleSlotDragEnd}
+                                    onDragOver=${(e) => handleDragOver(e, dev.id)}
+                                    onDragLeave=${handleDragLeave}
+                                    onDrop=${(e) => handleDrop(e, dev.id)}
+                                    class="relative flex flex-col bg-slate-900/40 rounded-[2rem] border-2 transition-all p-6 ${
+                                        isDragOver ? 'border-blue-400 bg-blue-500/10 shadow-2xl shadow-blue-900/20 scale-[1.01]'
+                                        : draggedSlotId === dev.id ? 'border-slate-700 opacity-50'
+                                        : 'border-slate-800 hover:border-slate-700'
+                                    }">
+                                    ${isDragOver && html`
+                                        <div class="absolute inset-0 rounded-[2rem] border-2 border-dashed border-blue-400/50 pointer-events-none z-10 flex items-center justify-center">
+                                            <span class="text-blue-400/60 text-xs font-black uppercase tracking-widest">Drop here</span>
+                                        </div>
+                                    `}
+                                    <div class="flex justify-between items-center mb-6">
+                                        <div class="flex flex-col gap-1">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-blue-600 text-white uppercase cursor-grab active:cursor-grabbing">Slot ${idx + 1}</span>
+                                                ${editingDeviceId === dev.id ? html`
+                                                    <input
+                                                        type="text"
+                                                        value=${editingName}
+                                                        onInput=${(e) => setEditingName(e.target.value)}
+                                                        onBlur=${() => finishEditing(dev.id)}
+                                                        onKeyDown=${(e) => { if (e.key === 'Enter') finishEditing(dev.id); if (e.key === 'Escape') setEditingDeviceId(null); }}
+                                                        class="text-lg font-black text-slate-100 tracking-tight uppercase bg-slate-800 border border-blue-500 rounded-lg px-2 py-0.5 outline-none w-48"
+                                                        ref=${(el) => el && el.focus()}
+                                                    />
+                                                ` : html`
+                                                    <h2 class="text-lg font-black text-slate-100 tracking-tight uppercase">${dev.name || 'No Device'}</h2>
+                                                    ${dev.name && html`
+                                                        <button onClick=${(e) => { e.stopPropagation(); startEditing(dev); }} class="p-1 text-slate-600 hover:text-blue-400 transition-colors" title="Rename">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
+                                                        </button>
+                                                    `}
+                                                `}
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-[9px] font-black cursor-pointer transition-all uppercase tracking-widest border border-slate-700">
+                                                LOAD LAYOUT <input type="file" class="hidden" onChange=${(e) => handleFile(e, dev.id, 'layout')} />
+                                            </label>
+                                            <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-[9px] font-black cursor-pointer transition-all uppercase tracking-widest border border-slate-700">
+                                                LOAD MAPPING <input type="file" class="hidden" onChange=${(e) => handleFile(e, dev.id, 'mapping')} />
+                                            </label>
+                                            <button onClick=${(e) => { e.stopPropagation(); removeDevice(dev.id); }} class="p-2 text-slate-500 hover:text-red-400 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                                            </button>
+                                            <button onClick=${(e) => { e.stopPropagation(); updateDevice(dev.id, { showSettings: !dev.showSettings }); }} class="p-2 text-slate-500 hover:text-blue-400 transition-colors ${dev.showSettings ? 'text-blue-400 bg-blue-500/10 rounded-lg' : ''}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex-1 flex flex-col items-center justify-center min-h-[350px]">
+                                        ${dev.design ? html`
+                                            <div class="w-full flex flex-col items-center gap-6">
+                                                <div class="flex flex-col gap-4 w-full px-4">
+                                                    <div class="flex items-center gap-4 bg-slate-950/50 p-1.5 rounded-xl border border-slate-800 self-start">
+                                                        <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest px-2">Layer</span>
+                                                        ${[0, 1, 2, 3].map(l => html`
+                                                            <button onClick=${(e) => { e.stopPropagation(); updateDevice(dev.id, { layer: l }); }} class="w-8 h-8 rounded-lg font-bold text-[10px] transition-all ${dev.layer === l ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-800'}">${l}</button>
+                                                        `)}
+                                                    </div>
+
+                                                    ${dev.showSettings && html`
+                                                        <div class="flex flex-wrap items-center gap-4 bg-slate-900/80 p-4 rounded-xl border border-slate-700 w-full">
+                                                            <div class="flex items-center gap-4 bg-slate-950/30 p-2 px-4 rounded-xl border border-slate-800/50">
+                                                                <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest">DISPLAY MODE:</span>
+                                                                <div class="flex gap-4">
+                                                                    ${['Icon', 'Text', 'Fluent'].map(opt => html`
+                                                                        <label class="flex items-center gap-1.5 cursor-pointer group">
+                                                                            <input type="radio" name=${`displayMode-${dev.id}`} checked=${dev.displayMode === opt} onChange=${() => updateDevice(dev.id, { displayMode: opt })} class="hidden" />
+                                                                            <div class="w-3 h-3 rounded-full border border-slate-600 flex items-center justify-center ${dev.displayMode === opt ? 'border-blue-500' : ''}">
+                                                                                ${dev.displayMode === opt && html`<div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>`}
+                                                                            </div>
+                                                                            <span class="text-[9px] font-bold ${dev.displayMode === opt ? 'text-white' : 'text-slate-500'} uppercase">${opt}</span>
+                                                                        </label>
+                                                                    `)}
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="flex items-center gap-4 bg-slate-950/30 p-2 px-4 rounded-xl border border-slate-800/50">
+                                                                <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest">ENTER KEY STYLE:</span>
+                                                                <div class="flex gap-4">
+                                                                    ${['TEXT', 'TEXT (ISO)', 'RETURN'].map(opt => html`
+                                                                        <label class="flex items-center gap-1.5 cursor-pointer group">
+                                                                            <input type="radio" name=${`enterStyle-${dev.id}`} checked=${dev.enterStyle === opt} onChange=${() => updateDevice(dev.id, { enterStyle: opt })} class="hidden" />
+                                                                            <div class="w-3 h-3 rounded-full border border-slate-600 flex items-center justify-center ${dev.enterStyle === opt ? 'border-blue-500' : ''}">
+                                                                                ${dev.enterStyle === opt && html`<div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>`}
+                                                                            </div>
+                                                                            <span class="text-[9px] font-bold ${dev.enterStyle === opt ? 'text-white' : 'text-slate-500'} uppercase">${opt}</span>
+                                                                        </label>
+                                                                    `)}
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="flex items-center gap-4 bg-slate-950/30 p-2 px-4 rounded-xl border border-slate-800/50">
+                                                                <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest">THEME:</span>
+                                                                <div class="flex gap-4">
+                                                                    ${['Dark', 'Light', 'System'].map(opt => html`
+                                                                        <label class="flex items-center gap-1.5 cursor-pointer group">
+                                                                            <input type="radio" name=${`theme-${dev.id}`} checked=${(dev.theme || 'System') === opt} onChange=${() => updateDevice(dev.id, { theme: opt })} class="hidden" />
+                                                                            <div class="w-3 h-3 rounded-full border border-slate-600 flex items-center justify-center ${(dev.theme || 'System') === opt ? 'border-blue-500' : ''}">
+                                                                                ${(dev.theme || 'System') === opt && html`<div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>`}
+                                                                            </div>
+                                                                            <span class="text-[9px] font-bold ${(dev.theme || 'System') === opt ? 'text-white' : 'text-slate-500'} uppercase">${opt}</span>
+                                                                        </label>
+                                                                    `)}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    `}
+                                                </div>
+                                                <div class="w-full flex justify-center overflow-hidden mt-4">
+                                                    <${Keyboard} 
+                                                        design=${dev.design} 
+                                                        layer=${dev.layer} 
+                                                        externalMap=${dev.keymapJson} 
+                                                        iconMapOverride=${dev.displayMode !== 'Icon' ? {} : getIconMap(dev.enterStyle)} 
+                                                        keyScales=${dev.keyScales} 
+                                                        onUpdateScale=${(kIdx, scale) => updateDevice(dev.id, { keyScales: { ...(dev.keyScales || {}), [kIdx]: scale } })} 
+                                                        displayMode=${dev.displayMode}
+                                                        theme=${dev.theme || 'System'}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ` : html`
+                                            <div class="flex flex-col items-center gap-4 opacity-20 py-20">
+                                                <div class="text-6xl">⌨️</div>
+                                                <p class="text-[10px] font-black uppercase tracking-[0.3em]">Waiting for Layout</p>
+                                            </div>
+                                        `}
+                                    </div>
+                                </div>
+                            `; })}
+                        </div>
+                        
+                        ${devices.length < 4 && html`
+                            <div
+                                onClick=${addSlot}
+                                onDragOver=${(e) => handleDragOver(e, 'add-slot')}
+                                onDragLeave=${handleDragLeave}
+                                onDrop=${(e) => handleDrop(e, null)}
+                                class="w-full py-8 border-2 border-dashed rounded-[2rem] flex flex-col items-center gap-2 transition-all group cursor-pointer ${
+                                    dragOverTarget === 'add-slot'
+                                    ? 'border-blue-400 bg-blue-500/10 text-blue-400'
+                                    : 'border-slate-800 text-slate-700 hover:border-slate-600 hover:text-slate-500'
+                                }">
+                                <div class="text-2xl group-hover:scale-125 transition-transform">+</div>
+                                <div class="text-[10px] font-black uppercase tracking-[0.2em]">${dragOverTarget === 'add-slot' ? 'Drop JSON to add' : 'Add Slot'}</div>
+                            </div>
+                        `}
+                    </main>
+
+                    <footer class="mt-16 text-center text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">
+                        © 2026 Keymapping Viewer | Icons provided by <a href="https://www.kenney.nl" target="_blank" class="text-blue-500 hover:text-blue-400 underline decoration-blue-500/30">Kenney.nl</a>
+                    </footer>
+                </div>
+            `;
+        }
+
+        createRoot(document.getElementById('root')).render(html`<${App} />`);
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Plans and dev docs
+plans/
+
+# Legacy unused module files
+js/
+
+# Raw source JSON (mapped versions are used)
+json/
+
+# OS generated
+Thumbs.db
+.DS_Store
+desktop.ini
