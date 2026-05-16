@@ -1,0 +1,38 @@
+{
+  "name": "Sample Numpad (8 Layers)",
+  "layouts": {
+    "keymap": [
+      ["0,0", "0,1", "0,2", "0,3"],
+      ["1,0", "1,1", "1,2", "1,3"],
+      ["2,0", "2,1", "2,2", "2,3"],
+      ["3,0", "3,1", "3,2", "3,3"]
+    ]
+  },
+  "matrix": {
+    "rows": 4,
+    "cols": 4
+  },
+  "layers": [
+    [
+      "KC_P7", "KC_P8", "KC_P9", "KC_PSLS",
+      "KC_P4", "KC_P5", "KC_P6", "KC_PAST",
+      "KC_P1", "KC_P2", "KC_P3", "KC_PMNS",
+      "KC_P0", "KC_PDOT", "KC_PENT", "KC_PPLS"
+    ],
+    ["MACRO(0)", "MACRO(1)", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"],
+    ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"],
+    ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"],
+    ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"],
+    ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"],
+    ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"],
+    ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"]
+  ],
+  "macros": [
+    "Hello! This is a sample macro.",
+    "LSFT(KC_C)"
+  ],
+  "macroAliases": {
+    "0": "GREET",
+    "1": "COPY"
+  }
+}

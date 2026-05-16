@@ -29,37 +29,7 @@
 
         const html = htm.bind(createElement);
 
-        // --- Constants & Utilities ---
-        const BASE_PATH = 'kenney_input-prompts_1.5/';
-        const KBD_PATH = BASE_PATH + 'Keyboard & Mouse/Vector/';
-        const GEN_PATH = BASE_PATH + 'Generic/Vector/';
 
-        const ICON_MAP = {
-            'ENT': KBD_PATH + 'keyboard_return_outline.svg', 'ESC': KBD_PATH + 'keyboard_escape_outline.svg', 'BSPC': KBD_PATH + 'keyboard_backspace_icon_alternative_outline.svg',
-            'TAB': KBD_PATH + 'keyboard_tab_outline.svg', 'SPC': KBD_PATH + 'keyboard_space_outline.svg', 'LSFT': KBD_PATH + 'keyboard_shift_outline.svg',
-            'RSFT': KBD_PATH + 'keyboard_shift_outline.svg', 'CAPS': KBD_PATH + 'keyboard_capslock_outline.svg', 'HOME': KBD_PATH + 'keyboard_home_outline.svg',
-            'END': KBD_PATH + 'keyboard_end_outline.svg', 'PGUP': KBD_PATH + 'keyboard_page_up_outline.svg', 'PGDN': KBD_PATH + 'keyboard_page_down_outline.svg',
-            'DEL': KBD_PATH + 'keyboard_delete_outline.svg', 'PSCR': KBD_PATH + 'keyboard_printscreen_outline.svg', 'SLCK': KBD_PATH + 'keyboard_scroll_lock_outline.svg',
-            'PAUS': KBD_PATH + 'keyboard_pause_outline.svg', 'INS': KBD_PATH + 'keyboard_insert_outline.svg',
-            'UP': KBD_PATH + 'keyboard_arrow_up_outline.svg', 'DOWN': KBD_PATH + 'keyboard_arrow_down_outline.svg', 'LEFT': KBD_PATH + 'keyboard_arrow_left_outline.svg', 'RGHT': KBD_PATH + 'keyboard_arrow_right_outline.svg',
-            'WIN': KBD_PATH + 'keyboard_win_outline.svg', 'GUI': KBD_PATH + 'keyboard_win_outline.svg', 'LGUI': KBD_PATH + 'keyboard_win_outline.svg', 'RGUI': KBD_PATH + 'keyboard_win_outline.svg',
-            'CTRL': KBD_PATH + 'keyboard_ctrl_outline.svg', 'LCTL': KBD_PATH + 'keyboard_ctrl_outline.svg', 'RCTL': KBD_PATH + 'keyboard_ctrl_outline.svg',
-            'ALT': KBD_PATH + 'keyboard_alt_outline.svg', 'LALT': KBD_PATH + 'keyboard_alt_outline.svg', 'RALT': KBD_PATH + 'keyboard_alt_outline.svg',
-            'MINS': KBD_PATH + 'keyboard_minus_outline.svg', 'EQL': KBD_PATH + 'keyboard_equals_outline.svg', 'LBRC': KBD_PATH + 'keyboard_bracket_open_outline.svg', 'RBRC': KBD_PATH + 'keyboard_bracket_close_outline.svg',
-            'BSLS': KBD_PATH + 'keyboard_slash_back_outline.svg', 'SCLN': KBD_PATH + 'keyboard_semicolon_outline.svg', 'QUOT': KBD_PATH + 'keyboard_quote_outline.svg', 'GRV': KBD_PATH + 'keyboard_tilde_outline.svg',
-            'COMM': KBD_PATH + 'keyboard_comma_outline.svg', 'DOT': KBD_PATH + 'keyboard_period_outline.svg', 'SLSH': KBD_PATH + 'keyboard_slash_forward_outline.svg',
-            'TRNS': GEN_PATH + 'generic_button_square_outline.svg',
-            'A': KBD_PATH + 'keyboard_a_outline.svg', 'B': KBD_PATH + 'keyboard_b_outline.svg', 'C': KBD_PATH + 'keyboard_c_outline.svg', 'D': KBD_PATH + 'keyboard_d_outline.svg', 'E': KBD_PATH + 'keyboard_e_outline.svg', 'F': KBD_PATH + 'keyboard_f_outline.svg',
-            'G': KBD_PATH + 'keyboard_g_outline.svg', 'H': KBD_PATH + 'keyboard_h_outline.svg', 'I': KBD_PATH + 'keyboard_i_outline.svg', 'J': KBD_PATH + 'keyboard_j_outline.svg', 'K': KBD_PATH + 'keyboard_k_outline.svg', 'L': KBD_PATH + 'keyboard_l_outline.svg',
-            'M': KBD_PATH + 'keyboard_m_outline.svg', 'N': KBD_PATH + 'keyboard_n_outline.svg', 'O': KBD_PATH + 'keyboard_o_outline.svg', 'P': KBD_PATH + 'keyboard_p_outline.svg', 'Q': KBD_PATH + 'keyboard_q_outline.svg', 'R': KBD_PATH + 'keyboard_r_outline.svg',
-            'S': KBD_PATH + 'keyboard_s_outline.svg', 'T': KBD_PATH + 'keyboard_t_outline.svg', 'U': KBD_PATH + 'keyboard_u_outline.svg', 'V': KBD_PATH + 'keyboard_v_outline.svg', 'W': KBD_PATH + 'keyboard_w_outline.svg', 'X': KBD_PATH + 'keyboard_x_outline.svg',
-            'Y': KBD_PATH + 'keyboard_y_outline.svg', 'Z': KBD_PATH + 'keyboard_z_outline.svg', '1': KBD_PATH + 'keyboard_1_outline.svg', '2': KBD_PATH + 'keyboard_2_outline.svg', '3': KBD_PATH + 'keyboard_3_outline.svg', '4': KBD_PATH + 'keyboard_4_outline.svg',
-            '5': KBD_PATH + 'keyboard_5_outline.svg', '6': KBD_PATH + 'keyboard_6_outline.svg', '7': KBD_PATH + 'keyboard_7_outline.svg', '8': KBD_PATH + 'keyboard_8_outline.svg', '9': KBD_PATH + 'keyboard_9_outline.svg', '0': KBD_PATH + 'keyboard_0_outline.svg',
-            'F1': KBD_PATH + 'keyboard_f1_outline.svg', 'F2': KBD_PATH + 'keyboard_f2_outline.svg', 'F3': KBD_PATH + 'keyboard_f3_outline.svg', 'F4': KBD_PATH + 'keyboard_f4_outline.svg', 'F5': KBD_PATH + 'keyboard_f5_outline.svg', 'F6': KBD_PATH + 'keyboard_f6_outline.svg',
-            'F7': KBD_PATH + 'keyboard_f7_outline.svg', 'F8': KBD_PATH + 'keyboard_f8_outline.svg', 'F9': KBD_PATH + 'keyboard_f9_outline.svg', 'F10': KBD_PATH + 'keyboard_f10_outline.svg', 'F11': KBD_PATH + 'keyboard_f11_outline.svg', 'F12': KBD_PATH + 'keyboard_f12_outline.svg',
-            'L0': KBD_PATH + 'keyboard_0_outline.svg', 'L1': KBD_PATH + 'keyboard_1_outline.svg', 'L2': KBD_PATH + 'keyboard_2_outline.svg', 'L3': KBD_PATH + 'keyboard_3_outline.svg',
-            'L4': KBD_PATH + 'keyboard_4_outline.svg', 'L5': KBD_PATH + 'keyboard_5_outline.svg', 'L6': KBD_PATH + 'keyboard_6_outline.svg', 'L7': KBD_PATH + 'keyboard_7_outline.svg'
-        };
 
         const SAMPLE_HHKB = {
           "name": "Sample Keyboard",
@@ -80,6 +50,20 @@
               "KC_LCTL", "KC_A", "KC_S", "KC_D", "KC_F", "KC_G", "KC_H", "KC_J", "KC_K", "KC_L", "KC_SCLN", "KC_QUOT", "KC_ENT", null, null,
               "KC_LSFT", "KC_Z", "KC_X", "KC_C", "KC_V", "KC_B", "KC_N", "KC_M", "KC_COMM", "KC_DOT", "KC_SLSH", "KC_RSFT", "MO(1)", null, null,
               null, "KC_LGUI", "KC_LALT", "KC_SPC", "KC_RALT", "KC_RGUI", "MO(1)", null, null, null, null, null, null, null, null
+            ],
+            [
+              "KC_PWR", "KC_F1", "KC_F2", "KC_F3", "KC_F4", "KC_F5", "KC_F6", "KC_F7", "KC_F8", "KC_F9", "KC_F10", "KC_F11", "KC_F12", "KC_INS", "KC_DEL",
+              "TRNS", "KC_VOLD", "KC_VOLU", "KC_MUTE", "TRNS", "TRNS", "TRNS", "TRNS", "KC_PSCR", "KC_SLCK", "KC_PAUS", "KC_UP", "TRNS", "TRNS", null,
+              "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "KC_PAST", "KC_PSLS", "KC_HOME", "KC_PGUP", "KC_LEFT", "KC_RGHT", "TRNS", null, null,
+              "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "KC_PPLS", "KC_PMNS", "KC_END", "KC_PGDN", "KC_DOWN", "TRNS", "TRNS", null, null,
+              null, "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", null, null, null, null, null, null, null, null
+            ],
+            [
+              "KC_ESC", "KC_1", "KC_2", "KC_3", "KC_4", "KC_5", "KC_6", "KC_7", "KC_8", "KC_9", "KC_0", "KC_MINS", "KC_EQL", "KC_BSLS", "KC_GRV",
+              "KC_TAB", "KC_Q", "KC_W", "KC_E", "KC_R", "KC_T", "KC_Y", "KC_U", "KC_I", "KC_O", "KC_P", "KC_LBRC", "KC_RBRC", "KC_BSPC", null,
+              "KC_LCTL", "KC_A", "KC_S", "KC_D", "KC_F", "KC_G", "KC_H", "KC_J", "KC_K", "KC_L", "KC_SCLN", "KC_QUOT", "KC_ENT", null, null,
+              "KC_LSFT", "KC_Z", "KC_X", "KC_C", "KC_V", "KC_B", "KC_N", "KC_M", "KC_COMM", "KC_DOT", "KC_SLSH", "KC_RSFT", "MO(3)", null, null,
+              null, "KC_LALT", "KC_LGUI", "KC_SPC", "KC_RGUI", "KC_RALT", "MO(3)", null, null, null, null, null, null, null, null
             ],
             [
               "KC_PWR", "KC_F1", "KC_F2", "KC_F3", "KC_F4", "KC_F5", "KC_F6", "KC_F7", "KC_F8", "KC_F9", "KC_F10", "KC_F11", "KC_F12", "KC_INS", "KC_DEL",
@@ -146,21 +130,12 @@
         };
 
         // --- Keyboard Component ---
-        function Keyboard({ design, layer = 0, externalMap = null, iconMapOverride = null, keyScales = {}, onUpdateScale, displayMode = 'Fluent', theme = 'System', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, appTheme = 'dark' }) {
+        function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, appTheme = 'dark' }) {
             const [codes, setCodes] = useState({});
             const containerRef = useRef(null);
             const [scale, setScale] = useState(1);
-            const [popupInfo, setPopupInfo] = useState(null);
             
             const isLight = theme === 'Light' || (theme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
-            const currentIconMap = iconMapOverride || ICON_MAP;
-
-            useEffect(() => {
-                const handleClickOutside = () => setPopupInfo(null);
-                window.addEventListener('click', handleClickOutside);
-                return () => window.removeEventListener('click', handleClickOutside);
-            }, []);
-            const UNIT = 54;
 
             const keys = useMemo(() => {
                 if (!design || !design.layouts || !design.layouts.keymap) return [];
@@ -221,9 +196,11 @@
             }, [maxWidth, forcedScale]);
 
             useEffect(() => {
-                if (externalMap?.layers?.[layer]) {
-                    const next = {}; const cols = design.matrix?.cols || 16;
-                    externalMap.layers[layer].forEach((v, i) => next[`${Math.floor(i / cols)},${i % cols}`] = v);
+                const layerSource = externalMap?.layers?.[layer] || design?.layers?.[layer];
+                if (layerSource) {
+                    const next = {}; 
+                    const cols = design.matrix?.cols || 16;
+                    layerSource.forEach((v, i) => next[`${Math.floor(i / cols)},${i % cols}`] = v);
                     setCodes(next);
                 } else {
                     setCodes({});
@@ -285,11 +262,8 @@
                                 if (m) complex = { type: 'mod', mod: multiMap[m[1]], base: m[2], symbol: '+' };
                             }
 
-                            const isAlias = macroAliases && fullRaw.match(/MACRO\((\d+)\)/) && macroAliases[fullRaw.match(/MACRO\((\d+)\)/)[1]];
                             const raw = fullRaw.replace(/MACRO\((\d+)\)/g, (match, p1) => (macroAliases && macroAliases[p1] ? macroAliases[p1] : `M${p1}`)).replace(/CUSTOM\((\d+)\)/g, 'C$1');
-                            const icon = (isAlias || displayMode === 'Text') ? null : (currentIconMap[raw] || currentIconMap[fullRaw]);
-                            const combinedIconsExist = complex && !isAlias && (currentIconMap[complex.mod] || complex.mod.includes('+')) && (currentIconMap[complex.base] || currentIconMap[complex.base.replace('KC_','')]);
-                            
+
                             const SYMBOL_MAP = {
                                 'MINS': '-', 'EQL': '=', 'LBRC': '[', 'RBRC': ']', 'BSLS': '\\',
                                 'SCLN': ';', 'QUOT': "'", 'GRV': '`', 'COMM': ',', 'DOT': '.', 'SLSH': '/',
@@ -331,13 +305,11 @@
                             let finalDisplayText = displayText;
                             let manualWrap = false;
                             
-                            // If symbols exist, prioritize wrapping BEFORE the LAST symbol
                             if (displayText.includes('_') || displayText.includes('-')) {
                                 const lastU = displayText.lastIndexOf('_');
                                 const lastH = displayText.lastIndexOf('-');
                                 const splitIdx = Math.max(lastU, lastH);
                                 if (splitIdx > 0 && splitIdx < displayText.length - 1) {
-                                    // Split BEFORE the symbol so the symbol stays with the next word
                                     finalDisplayText = displayText.substring(0, splitIdx) + '\n' + displayText.substring(splitIdx);
                                     manualWrap = true;
                                 }
@@ -361,37 +333,19 @@
                                 }
                             }
 
-                            // Ensure legibility by setting a minimum scale
                             const minScale = isExportMode ? 0.52 : 0.6;
                             targetScale = Math.max(minScale, targetScale);
                             if (manualWrap) targetScale = Math.min(0.85, targetScale);
 
-                            const labelScale = (icon || combinedIconsExist) ? 0 : targetScale;
                             const wrapStyle = (canWrap || manualWrap) ? 'pre-wrap' : 'nowrap';
                             const lineH = (canWrap || manualWrap) ? '1.05' : '1';
 
-                            const isIconMode = displayMode === 'Icon';
-                            const baseClass = (icon || combinedIconsExist)
-                                ? "key-cap absolute flex items-center justify-center transition-all duration-75 overflow-visible"
-                                : `key-cap absolute border-[3px] rounded-md flex flex-col items-center justify-center transition-all duration-75 overflow-hidden ${
-                                    isIconMode
-                                    ? (isLight ? 'border-black bg-transparent shadow-none' : 'border-white bg-transparent shadow-none')
-                                    : (isLight ? 'border-slate-300 bg-white shadow-md hover:bg-slate-50 hover:border-blue-500' : 'border-slate-700 bg-slate-900/60 shadow-2xl hover:bg-slate-800 hover:border-blue-400')
+                            const baseClass = `key-cap absolute border-[3px] rounded-md flex flex-col items-center justify-center transition-all duration-75 overflow-hidden ${
+                                    isLight ? 'border-slate-300 bg-white shadow-md hover:bg-slate-50 hover:border-blue-500' : 'border-slate-700 bg-slate-900/60 shadow-2xl hover:bg-slate-800 hover:border-blue-400'
                                 }`;
                             
                             const paddingOffset = 20;
 
-                            const tLabels = ['CTRL', 'LCTL', 'RCTL', 'SHIFT', 'LSFT', 'RSFT', 'ALT', 'LALT', 'RALT', 'TAB', 'CAPS', 'BSPC', 'ENT', 'SPC', 'SPACE', 'ENTER', 'RETURN'];
-                            const isTarget = tLabels.includes(raw) || tLabels.includes(fullRaw) || (complex && (tLabels.includes(complex.mod) || tLabels.includes(complex.base)));
-                            
-                            const defaultScaleObj = { scale: 1.3, scaleX: 1.0, scaleY: 1.0 };
-                            let customScaleObj = keyScales && keyScales[i] !== undefined ? keyScales[i] : defaultScaleObj;
-                            // For backward compatibility during reload if a number was stored
-                            if (typeof customScaleObj === 'number') {
-                                customScaleObj = { scale: customScaleObj, scaleX: 1.0, scaleY: 1.0 };
-                            }
-                            const totalScaleX = customScaleObj.scale * customScaleObj.scaleX;
-                            const totalScaleY = customScaleObj.scale * customScaleObj.scaleY;
 
                             return html`
                                 <div key=${i} class=${baseClass}
@@ -401,15 +355,6 @@
                                         if (macroMatch && onMacroClick) {
                                             e.stopPropagation();
                                             onMacroClick(parseInt(macroMatch[1], 10));
-                                        } else if (isTarget) {
-                                            e.stopPropagation();
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            setPopupInfo({
-                                                keyIndex: i,
-                                                x: rect.left + rect.width / 2,
-                                                y: rect.top - 10,
-                                                scaleObj: customScaleObj
-                                            });
                                         }
                                     }}
                                     style=${{ 
@@ -417,120 +362,48 @@
                                         top: `${k.y + paddingOffset}px`, 
                                         width: `${k.w - 6}px`, 
                                         height: `${k.h - 6}px`,
-                                        cursor: isTarget ? 'pointer' : '',
                                         overflow: isExportMode ? 'visible' : 'hidden'
                                     }}>
-                                    ${combinedIconsExist ? html`
-                                        <div class="flex items-center justify-center w-full h-full" style=${{ filter: isLight ? 'invert(1)' : 'none' }}>
-                                            <div class="relative" style=${{ width: '54px', height: '54px', transform: `scale(${totalScaleX}, ${totalScaleY})`, flexShrink: 0 }}>
-                                                ${currentIconMap[complex.mod] ? html`
-                                                    <img src="${currentIconMap[complex.mod].replace('_outline', '')}" class="absolute object-contain" style=${{ top: '4%', left: '4%', width: '62%', height: '62%', zIndex: 1 }} />
-                                                ` : html`
-                                                    <div class="absolute flex items-center justify-center bg-white text-black border-2 border-slate-900 rounded-[5px] overflow-hidden shadow-sm" style=${{ top: '10%', left: '10%', width: '48%', height: '48%', zIndex: 1 }}>
-                                                        <div class="flex flex-col items-center justify-center" style=${{ transform: 'scale(0.5)', width: '200%', height: '200%', transformOrigin: 'center' }}>
-                                                            ${complex.mod.split('+').map((t, _, arr) => html`<span class="font-black tracking-tight" style=${{ fontSize: arr.length > 2 ? '11px' : '15px', lineHeight: '1' }}>${t}</span>`)}
-                                                        </div>
-                                                    </div>
-                                                `}
-                                                <div class="absolute flex items-center justify-center text-[13px] font-black text-white/80" style=${{ top: '8%', right: '16%', zIndex: 2 }}>${complex.symbol}</div>
-                                                <div class="absolute flex items-center justify-center" style=${{ bottom: '12%', right: '12%', width: '52%', height: '52%', zIndex: 3 }}>
-                                                    <div class="absolute bg-[#0a0f1a] rounded-[5px]" style=${{ width: '76%', height: '76%', zIndex: -1 }}></div>
-                                                    <img src="${(complex.base.replace('KC_','') === 'SPC') ? KBD_PATH + 'keyboard_space_icon_outline.svg' : (currentIconMap[complex.base] || currentIconMap[complex.base.replace('KC_','')])}" class="w-full h-full object-contain" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ` : icon ? html`
-                                        <img src="${icon}" class="w-full h-full block object-contain" style=${{ transform: `scale(${totalScaleX}, ${totalScaleY})`, filter: isLight ? 'invert(1)' : 'none' }} />
-                                    ` : html`
-                                        <div style=${{ 
-                                            transform: `scale(${labelScale})`, 
-                                            transformOrigin: 'center', 
-                                            display: 'flex', 
-                                            flexDirection: 'column',
-                                            justifyContent: 'center', 
-                                            alignItems: 'center',
-                                            width: canWrap ? `${availableWidth / labelScale}px` : 'auto'
-                                        }}>
-                                            <span class="legend-text uppercase tracking-tight font-bold" style=${{ 
-                                                color: isLight ? '#1e293b' : '#fff',
-                                                fontWeight: isFluentIcon ? '400' : '700',
-                                                fontFamily: isFluentIcon ? '"Segoe Fluent Icons", "Inter", sans-serif' : 'inherit',
-                                                fontSize: isFluentIcon && displayText.length === 1 ? '1.4em' : 'inherit',
-                                                position: 'relative',
-                                                top: isExportMode ? '-10px' : '0',
-                                                marginTop: (!isExportMode && !isFluentIcon) ? '0.15em' : '0',
-                                                whiteSpace: wrapStyle,
-                                                lineHeight: lineH,
-                                                maxHeight: isExportMode ? 'none' : '2.2em',
-                                                overflow: isExportMode ? 'visible' : 'hidden'
-                                            }}>${finalDisplayText}</span>
-                                        </div>
-                                    `}
+                                    <div style=${{ 
+                                        transform: `scale(${targetScale})`, 
+                                        transformOrigin: 'center', 
+                                        display: 'flex', 
+                                        flexDirection: 'column',
+                                        justifyContent: 'center', 
+                                        alignItems: 'center',
+                                        width: canWrap ? `${availableWidth / targetScale}px` : 'auto'
+                                    }}>
+                                        <span class="legend-text uppercase tracking-tight font-bold" style=${{ 
+                                            color: isLight ? '#1e293b' : '#fff',
+                                            fontWeight: isFluentIcon ? '400' : '700',
+                                            fontFamily: isFluentIcon ? '"Segoe Fluent Icons", "Inter", sans-serif' : 'inherit',
+                                            fontSize: isFluentIcon && displayText.length === 1 ? '1.4em' : 'inherit',
+                                            position: 'relative',
+                                            top: isExportMode ? '-10px' : '0',
+                                            marginTop: (!isExportMode && !isFluentIcon) ? '0.15em' : '0',
+                                            whiteSpace: wrapStyle,
+                                            lineHeight: lineH,
+                                            maxHeight: isExportMode ? 'none' : '2.2em',
+                                            overflow: isExportMode ? 'visible' : 'hidden'
+                                        }}>${finalDisplayText}</span>
+                                    </div>
                                 </div>
                             `;
                         })}
                     </div>
-                    </div>
-                    ${popupInfo && html`
-                        <div class="fixed z-50 ${appTheme === 'light' ? 'bg-white border-slate-200 shadow-[0_0_50px_rgba(0,0,0,0.1)]' : 'bg-slate-800 border-slate-600 shadow-[0_0_50_rgba(0,0,0,0.8)]'} border rounded-xl p-4 min-w-[200px]"
-                             style=${{ left: popupInfo.x + 'px', top: popupInfo.y + 'px', transform: 'translate(-50%, -100%)' }}
-                             draggable="true"
-                             onDragStart=${(e) => { e.preventDefault(); e.stopPropagation(); }}
-                             onClick=${e => e.stopPropagation()}>
-                             <div class="text-[10px] font-black ${appTheme === 'light' ? 'text-slate-500' : 'text-slate-300'} mb-3 uppercase tracking-widest text-center flex justify-between items-center">
-                                 <span>Icon Scale</span>
-                                 <button onClick=${() => setPopupInfo(null)} class="text-slate-500 hover:text-blue-500 ml-4 transition-colors">✕</button>
-                             </div>
-                             
-                             <div class="flex flex-col gap-2">
-                                 <div class="flex items-center gap-2">
-                                     <span class="text-[9px] ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-400'} font-bold w-12 text-right">ALL</span>
-                                     <input type="range" min="0.5" max="4.0" step="0.1" value=${popupInfo.scaleObj.scale}
-                                            onInput=${e => {
-                                                const newObj = { ...popupInfo.scaleObj, scale: parseFloat(e.target.value) };
-                                                setPopupInfo(prev => ({ ...prev, scaleObj: newObj }));
-                                                if (onUpdateScale) onUpdateScale(popupInfo.keyIndex, newObj);
-                                            }}
-                                            class="w-24 h-1.5 ${appTheme === 'light' ? 'bg-slate-100' : 'bg-slate-700'} rounded-lg appearance-none cursor-pointer accent-blue-500" />
-                                     <span class="text-xs text-blue-500 font-bold w-6 text-right">${popupInfo.scaleObj.scale.toFixed(1)}</span>
-                                 </div>
 
-                                 <div class="flex items-center gap-2">
-                                     <span class="text-[9px] ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-400'} font-bold w-12 text-right">WIDTH</span>
-                                     <input type="range" min="0.5" max="4.0" step="0.1" value=${popupInfo.scaleObj.scaleX}
-                                            onInput=${e => {
-                                                const newObj = { ...popupInfo.scaleObj, scaleX: parseFloat(e.target.value) };
-                                                setPopupInfo(prev => ({ ...prev, scaleObj: newObj }));
-                                                if (onUpdateScale) onUpdateScale(popupInfo.keyIndex, newObj);
-                                            }}
-                                            class="w-24 h-1.5 ${appTheme === 'light' ? 'bg-slate-100' : 'bg-slate-700'} rounded-lg appearance-none cursor-pointer accent-emerald-500" />
-                                     <span class="text-xs text-emerald-500 font-bold w-6 text-right">${popupInfo.scaleObj.scaleX.toFixed(1)}</span>
-                                 </div>
 
-                                 <div class="flex items-center gap-2">
-                                     <span class="text-[9px] ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-400'} font-bold w-12 text-right">HEIGHT</span>
-                                     <input type="range" min="0.5" max="4.0" step="0.1" value=${popupInfo.scaleObj.scaleY}
-                                            onInput=${e => {
-                                                const newObj = { ...popupInfo.scaleObj, scaleY: parseFloat(e.target.value) };
-                                                setPopupInfo(prev => ({ ...prev, scaleObj: newObj }));
-                                                if (onUpdateScale) onUpdateScale(popupInfo.keyIndex, newObj);
-                                            }}
-                                            class="w-24 h-1.5 ${appTheme === 'light' ? 'bg-slate-100' : 'bg-slate-700'} rounded-lg appearance-none cursor-pointer accent-rose-500" />
-                                     <span class="text-xs text-rose-500 font-bold w-6 text-right">${popupInfo.scaleObj.scaleY.toFixed(1)}</span>
-                                 </div>
+
+
+
+
+
+
+
                              </div>
 
-                             <div class="mt-4 text-center">
-                                 <button onClick=${() => {
-                                     const defaultObj = { scale: 1.3, scaleX: 1.0, scaleY: 1.0 };
-                                     setPopupInfo(prev => ({ ...prev, scaleObj: defaultObj }));
-                                     if (onUpdateScale) onUpdateScale(popupInfo.keyIndex, defaultObj);
-                                 }} class="text-[9px] px-3 py-1 ${appTheme === 'light' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'} rounded-lg font-bold transition-all uppercase tracking-widest">
-                                     Reset
-                                 </button>
-                             </div>
-                        </div>
-                    `}
+
+
                 </div>
             `;
         }
@@ -550,7 +423,7 @@
             const saved = useMemo(() => loadSavedState(), []);
             const [devices, setDevices] = useState(() => {
                 if (saved?.devices?.length > 0) return saved.devices;
-                return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System' }];
+                return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System' }];
             });
             const [layoutMode, setLayoutMode] = useState(() => saved?.layoutMode || 'stack');
             const [appTheme, setAppTheme] = useState(() => saved?.appTheme || 'dark');
@@ -569,8 +442,8 @@
             useEffect(() => {
                 if (saved) return; 
                 const devs = [
-                    { id: Date.now(), name: SAMPLE_HHKB.name, design: SAMPLE_HHKB, keymapJson: SAMPLE_HHKB, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System', macroAliases: SAMPLE_HHKB.macroAliases || {} },
-                    { id: Date.now() + 1, name: SAMPLE_NUMPAD.name, design: SAMPLE_NUMPAD, keymapJson: SAMPLE_NUMPAD, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System', macroAliases: SAMPLE_NUMPAD.macroAliases || {} }
+                    { id: Date.now(), name: SAMPLE_HHKB.name, design: SAMPLE_HHKB, keymapJson: SAMPLE_HHKB, layer: 0, displayMode: 'Fluent', theme: 'System', macroAliases: SAMPLE_HHKB.macroAliases || {} },
+                    { id: Date.now() + 1, name: SAMPLE_NUMPAD.name, design: SAMPLE_NUMPAD, keymapJson: SAMPLE_NUMPAD, layer: 0, displayMode: 'Fluent', theme: 'System', macroAliases: SAMPLE_NUMPAD.macroAliases || {} }
                 ];
                 setDevices(devs);
             }, []);
@@ -616,7 +489,7 @@
             const addSlot = () => {
                 if (devices.length >= 4) return;
                 setDevices(prev => [...prev, {
-                    id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System'
+                    id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System'
                 }]);
             };
 
@@ -657,7 +530,7 @@
 
             const removeDevice = (id) => {
                 if (devices.length === 1) {
-                    updateDevice(id, { name: null, design: null, keymapJson: null, layer: 0, keyScales: {}, displayMode: 'Fluent' });
+                    updateDevice(id, { name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent' });
                 } else {
                     setDevices(prev => prev.filter(d => d.id !== id));
                 }
@@ -711,7 +584,7 @@
                             else alert('レイアウト(layouts)またはマッピング(layers)キーが見つかりません');
                         } else {
                             if (devices.length >= 4) return;
-                            const nd = { id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, enterStyle: 'TEXT', keyScales: {}, displayMode: 'Fluent', theme: 'System' };
+                            const nd = { id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System' };
                             if (j.layouts) { nd.design = j; nd.name = j.name || 'Device'; }
                             else if (j.layers) { nd.keymapJson = j; nd.name = j.name || 'Mapping'; }
                             else { alert('レイアウト(layouts)またはマッピング(layers)キーが見つかりません'); return; }
@@ -748,13 +621,7 @@
                 setDraggedSlotId(null);
             };
 
-            const getIconMap = (style) => {
-                const map = { ...ICON_MAP };
-                if (style === 'TEXT') map['ENT'] = KBD_PATH + 'keyboard_numpad_enter_outline.svg';
-                else if (style === 'TEXT (ISO)') map['ENT'] = KBD_PATH + 'keyboard_enter_outline.svg';
-                else if (style === 'RETURN') map['ENT'] = KBD_PATH + 'keyboard_return_outline.svg';
-                return map;
-            };
+
 
             return html`
                 <div class="${appTheme === 'light' ? 'app-light' : 'app-dark'} min-h-screen p-6 md:p-8 flex flex-col transition-colors duration-300">
@@ -808,7 +675,6 @@
                                         <h4 class="text-blue-400 font-black text-xs uppercase tracking-widest mb-2">🎹 キーボード表示</h4>
                                         <ul class="space-y-1 list-disc list-inside text-slate-400">
                                             <li><strong class="text-slate-200">Layer 0〜3</strong> — 表示するレイヤーを切り替えられます</li>
-                                            <li><strong class="text-slate-200">特殊キーのクリック</strong> — Ctrl、Shift、Alt、Tab、Space等の特定キーをクリックすると、アイコンのスケールを調整できます</li>
                                         </ul>
                                     </div>
                                     <div>
@@ -822,8 +688,7 @@
                                     <div>
                                         <h4 class="text-blue-400 font-black text-xs uppercase tracking-widest mb-2">⚙️ 表示設定（☰メニュー）</h4>
                                         <ul class="space-y-1 list-disc list-inside text-slate-400">
-                                            <li><strong class="text-slate-200">DISPLAY MODE</strong> — Icon（SVGアイコン）/ Text（テキスト）/ Fluent（Segoe Fluent Icons）の3種から選択</li>
-                                            <li><strong class="text-slate-200">ENTER KEY STYLE</strong> — Enterキーのアイコンスタイルを変更</li>
+                                            <li><strong class="text-slate-200">DISPLAY MODE</strong> — Text（テキスト）/ Fluent（Segoe Fluent Icons）の2種から選択</li>
                                             <li><strong class="text-slate-200">THEME</strong> — Dark / Light / System から外観テーマを選択</li>
                                         </ul>
                                     </div>
@@ -981,8 +846,6 @@
                                                 design=${dev.design} 
                                                 layer=${l} 
                                                 externalMap=${dev.keymapJson} 
-                                                iconMapOverride=${dev.displayMode !== 'Icon' ? {} : getIconMap(dev.enterStyle)} 
-                                                keyScales=${dev.keyScales} 
                                                 displayMode=${dev.displayMode}
                                                 theme=${exportSettings.background === 'Transparent' ? dev.theme : exportSettings.background}
                                                 macroAliases=${dev.macroAliases || {}}
@@ -1140,7 +1003,7 @@
                                                             <div class="flex items-center gap-4 ${appTheme === 'light' ? 'bg-slate-50' : 'bg-slate-950/30'} p-2 px-4 rounded-xl border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-800/50'}">
                                                                 <span class="text-[9px] font-black ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-600'} uppercase tracking-widest">DISPLAY MODE:</span>
                                                                 <div class="flex gap-4">
-                                                                    ${['Icon', 'Text', 'Fluent'].map(opt => html`
+                                                                    ${['Fluent', 'Text'].map(opt => html`
                                                                         <label class="flex items-center gap-1.5 cursor-pointer group">
                                                                             <input type="radio" name=${`displayMode-${dev.id}`} checked=${dev.displayMode === opt} onChange=${() => updateDevice(dev.id, { displayMode: opt })} class="hidden" />
                                                                             <div class="w-3 h-3 rounded-full border ${appTheme === 'light' ? 'border-slate-300' : 'border-slate-600'} flex items-center justify-center ${dev.displayMode === opt ? 'border-blue-500' : ''}">
@@ -1152,20 +1015,7 @@
                                                                 </div>
                                                             </div>
 
-                                                            <div class="flex items-center gap-4 ${appTheme === 'light' ? 'bg-slate-50' : 'bg-slate-950/30'} p-2 px-4 rounded-xl border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-800/50'}">
-                                                                <span class="text-[9px] font-black ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-600'} uppercase tracking-widest">ENTER KEY STYLE:</span>
-                                                                <div class="flex gap-4">
-                                                                    ${['TEXT', 'TEXT (ISO)', 'RETURN'].map(opt => html`
-                                                                        <label class="flex items-center gap-1.5 cursor-pointer group">
-                                                                            <input type="radio" name=${`enterStyle-${dev.id}`} checked=${dev.enterStyle === opt} onChange=${() => updateDevice(dev.id, { enterStyle: opt })} class="hidden" />
-                                                                            <div class="w-3 h-3 rounded-full border ${appTheme === 'light' ? 'border-slate-300' : 'border-slate-600'} flex items-center justify-center ${dev.enterStyle === opt ? 'border-blue-500' : ''}">
-                                                                                ${dev.enterStyle === opt && html`<div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>`}
-                                                                            </div>
-                                                                            <span class="text-[9px] font-bold ${dev.enterStyle === opt ? (appTheme === 'light' ? 'text-slate-900' : 'text-white') : 'text-slate-500'} uppercase">${opt}</span>
-                                                                        </label>
-                                                                    `)}
-                                                                </div>
-                                                            </div>
+                                                            
 
                                                             <div class="flex items-center gap-4 ${appTheme === 'light' ? 'bg-slate-50' : 'bg-slate-950/30'} p-2 px-4 rounded-xl border ${appTheme === 'light' ? 'border-slate-200' : 'border-slate-800/50'}">
                                                                 <span class="text-[9px] font-black ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-600'} uppercase tracking-widest">THEME:</span>
@@ -1189,9 +1039,6 @@
                                                         design=${dev.design} 
                                                         layer=${dev.layer} 
                                                         externalMap=${dev.keymapJson} 
-                                                        iconMapOverride=${dev.displayMode !== 'Icon' ? {} : getIconMap(dev.enterStyle)} 
-                                                        keyScales=${dev.keyScales} 
-                                                        onUpdateScale=${(kIdx, scale) => updateDevice(dev.id, { keyScales: { ...(dev.keyScales || {}), [kIdx]: scale } })} 
                                                         displayMode=${dev.displayMode}
                                                         theme=${dev.theme || 'System'}
                                                         appTheme=${appTheme}
@@ -1229,7 +1076,7 @@
                     </main>
 
                     <footer class="mt-16 text-center text-[10px] font-bold ${appTheme === 'light' ? 'text-slate-400' : 'text-slate-600'} uppercase tracking-[0.2em] pb-10">
-                        © 2026 Keymapping Viewer | Icons provided by <a href="https://www.kenney.nl" target="_blank" class="text-blue-500 hover:text-blue-400 underline decoration-blue-500/30">Kenney.nl</a>
+                        © 2026 Keymapping Viewer
                     </footer>
                 </div>
             `;
@@ -1239,3 +1086,4 @@
     </script>
 </body>
 </html>
+
