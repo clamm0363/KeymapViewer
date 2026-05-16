@@ -57,27 +57,64 @@
             text-transform: uppercase;
             letter-spacing: -0.04em;
             line-height: 1;
+            position: relative; /* 子要素の絶対配置のため */
         }
+        /* デュアル・ロール（LT等）専用スタイル - 領域が狭いため一旦保留
+        .key-layer-main.dual-mode {
+            display: block;
+        }
+        .key-layer-tap {
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            font-size: 14px;
+            font-weight: 800;
+            text-align: left;
+            max-width: 85%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .key-layer-tap.is-fluent {
+            font-family: "FluentSystemIcons-Regular", "Inter", sans-serif !important;
+            font-size: 1.6em;
+            top: -2px;
+            left: 2px;
+        }
+        .key-layer-hold {
+            position: absolute;
+            bottom: 0px;
+            right: 1px;
+            font-size: 8px;
+            font-weight: 800;
+            opacity: 0.6;
+            padding: 0px 2px;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+        */
         .key-layer-footer {
             height: 12px;
             background-color: var(--accent-color);
-            color: #94a3b8; /* 濃いめの銀色（筐体の質感に近い） */
+            color: #f8fafc; /* 高輝度ホワイト */
             display: flex;
             align-items: center;
             justify-content: center;
             width: 100%;
             overflow: hidden;
+            box-sizing: border-box;
         }
         .key-layer-footer span {
             display: inline-block;
-            font-size: 10px;
-            font-weight: 900;
+            font-size: 8px;
+            font-weight: 700;
             letter-spacing: 0.15em;
             text-transform: uppercase;
             font-family: 'Inter', sans-serif;
-            transform: scale(0.6) scaleX(1.4) translateY(3px);
+            transform: scaleY(0.8);
             transform-origin: center;
             line-height: 1;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -223,6 +260,7 @@
             const [scale, setScale] = useState(1);
             
             const isLight = theme === 'Light' || (theme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+            const isAppDark = (appTheme === 'dark' || (appTheme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
 
             const keys = useMemo(() => {
                 if (!design || !design.layouts || !design.layouts.keymap) return [];
@@ -429,12 +467,34 @@
 
                             // Layer Key Detection (MO, TG, TT, OSL, TO, DF, LT, FN_MO)
                             const layerMatch = raw.match(/^(MO|TG|TT|OSL|TO|DF)\((\d+)\)$/);
-                            const ltMatch = raw.match(/^LT\((\d+),.*\)$/);
+                            const ltMatch = raw.match(/^LT\((\d+),\s*(.+)\)$/);
                             const fnMoMatch = raw.match(/^FN_MO(\d+)(\d*)$/);
                             
                             const isLayerKey = !!(layerMatch || ltMatch || fnMoMatch);
+                            const isDualKey = !!ltMatch;
                             const layerType = isLayerKey ? (layerMatch ? layerMatch[1] : (ltMatch ? 'LT' : 'FN')) : null;
                             const layerNum = isLayerKey ? (layerMatch ? layerMatch[2] : (ltMatch ? ltMatch[1] : fnMoMatch[1])) : null;
+                            let tapLabel = '';
+                            let tapIsFluent = false;
+                            if (ltMatch) {
+                                const tKeyRaw = ltMatch[2];
+                                const dictLabel = getDictLabel(tKeyRaw);
+                                tapLabel = dictLabel || SYMBOL_MAP[tKeyRaw] || tKeyRaw.replace('KC_', '');
+                                
+                                // アイコン判定（辞書またはFLUENT_MAPに存在するか、文字コードがPUA領域か）
+                                const cleanTKey = tKeyRaw.replace('KC_', '');
+                                const entry = dict.keys[`KC_${cleanTKey}`] || dict.modifiers[`KC_${cleanTKey}`];
+                                
+                                if (displayMode === 'Fluent') {
+                                    if (FLUENT_MAP[cleanTKey] || (entry && (entry.fluent || entry.isFluent))) {
+                                        tapIsFluent = true;
+                                        if (FLUENT_MAP[cleanTKey]) tapLabel = FLUENT_MAP[cleanTKey];
+                                        else if (entry.fluent) tapLabel = entry.fluent;
+                                    } else if (tapLabel.length === 1 && tapLabel.charCodeAt(0) >= 0xE000) {
+                                        tapIsFluent = true;
+                                    }
+                                }
+                            }
 
                             // Intelligent Wrapping & Scaling Logic
                             let finalDisplayText = displayText;
@@ -478,7 +538,9 @@
                             const baseClass = `key-cap absolute border-[3px] rounded-md transition-all duration-75 overflow-hidden ${
                                     isLayerKey ? 'p-0 flex flex-col' : 'flex flex-col items-center justify-center'
                                 } ${
-                                    isLight ? 'border-slate-300 bg-white shadow-md hover:bg-slate-50 hover:border-blue-500' : 'border-slate-700 bg-slate-900/60 shadow-2xl hover:bg-slate-800 hover:border-blue-400'
+                                    isLight 
+                                    ? `bg-white shadow-md hover:bg-slate-50 hover:border-blue-500 ${isAppDark ? 'border-slate-400' : 'border-slate-300'}` 
+                                    : `bg-slate-900/60 shadow-2xl hover:bg-slate-800 hover:border-blue-400 ${isAppDark ? 'border-slate-500' : 'border-slate-700'}`
                                 }`;
                             
                             const paddingOffset = 20;
@@ -501,23 +563,62 @@
                                         overflow: isExportMode ? 'visible' : 'hidden'
                                     }}>
                                     ${isLayerKey ? html`
-                                        <div class="key-layer-container">
-                                            <div class="key-layer-main" style=${{ color: isLight ? '#1e293b' : '#fff' }}>L${layerNum}</div>
+                                        <div class="key-layer-container" style=${{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+                                            <div class="key-layer-main" style=${{ 
+                                                flex: 1,
+                                                color: isLight ? '#1e293b' : '#fff',
+                                                fontFamily: (layerType === 'LT' && tapIsFluent) ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
+                                                fontSize: (layerType === 'LT' && tapIsFluent) ? '1.4em' : '18px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}>
+                                                ${layerType === 'LT' ? tapLabel : `L${layerNum}`}
+                                            </div>
                                             <div class="key-layer-footer" style=${{ 
-                                                backgroundColor: {
-                                                    'MO': '#2563eb',
-                                                    'TG': '#0891b2',
-                                                    'TT': '#4f46e5',
-                                                    'OSL': '#f59e0b',
-                                                    'TO': '#be123c',
-                                                    'DF': '#4b5563',
-                                                    'LT': '#0284c7',
-                                                    'FN': '#6366f1' // FN用のインディゴ
-                                                }[layerType] || '#2563eb',
-                                                color: {
-                                                    'OSL': '#020617', // 明るい帯には濃い色
-                                                }[layerType] || '#f8fafc' // それ以外はライト系
-                                            }}><span>${layerType}</span></div>
+                                                height: '15px',
+                                                margin: '0 -3px -3px -3px',
+                                                width: 'calc(100% + 6px)',
+                                                paddingBottom: '3px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                borderTop: isLight 
+                                                    ? (isAppDark ? '2.5px solid #94a3b8' : '2.5px solid #cbd5e1') 
+                                                    : (isAppDark ? '2.5px solid #475569' : '2.5px solid #334155'),
+                                                backgroundColor: (isLight ? [
+                                                    '#64748b', // L0: Slate
+                                                    '#2563eb', // L1: Blue
+                                                    '#4f46e5', // L2: Indigo
+                                                    '#0891b2', // L3: Cyan
+                                                    '#10b981', // L4: Emerald
+                                                    '#f59e0b', // L5: Amber
+                                                    '#ea580c', // L6: Orange
+                                                    '#e11d48', // L7: Rose
+                                                    '#9333ea', // L8: Purple
+                                                    '#0284c7'  // L9: Sky
+                                                ] : [
+                                                    '#475569', // L0: Slate Dark
+                                                    '#1e40af', // L1: Blue Dark
+                                                    '#3730a3', // L2: Indigo Dark
+                                                    '#155e75', // L3: Cyan Dark
+                                                    '#065f46', // L4: Emerald Dark
+                                                    '#92400e', // L5: Amber Dark
+                                                    '#9a3412', // L6: Orange Dark
+                                                    '#9f1239', // L7: Rose Dark
+                                                    '#6b21a8', // L8: Purple Dark
+                                                    '#075985'  // L9: Sky Dark
+                                                ])[layerNum % 10],
+                                                color: (isLight && [5].includes(layerNum % 10)) ? '#020617' : '#f8fafc',
+                                                zIndex: 10
+                                            }}>
+                                                <span style=${{ 
+                                                    display: 'inline-flex', 
+                                                    alignItems: 'center'
+                                                }}>
+                                                    ${layerType}${layerType === 'LT' ? html`<b style=${{ color: '#facc15', marginLeft: '1px' }}>${layerNum}</b>` : ''}
+                                                </span>
+                                            </div>
                                         </div>
                                     ` : html`
                                         <div style=${{ 
