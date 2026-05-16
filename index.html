@@ -373,6 +373,8 @@
                                 } else if (displayMode === 'Fluent' && FLUENT_MAP[raw]) {
                                     displayText = FLUENT_MAP[raw];
                                     isFluentIcon = true;
+                                } else if (/^\d+,\d+$/.test(displayText)) {
+                                    displayText = "";
                                 } else {
                                     displayText = SYMBOL_MAP[raw] || raw;
                                 }
