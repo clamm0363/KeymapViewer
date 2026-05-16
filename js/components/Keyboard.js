@@ -90,51 +90,56 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         return `${base} ${isLight ? lightTheme : darkTheme}`;
     };
 
-    const getKeycapClass = (isLayerKey) => {
-        const base = `key-cap absolute border-[3px] rounded-md transition-all duration-75 overflow-hidden`;
-        const lightTheme = `bg-white shadow-md hover:bg-slate-50 hover:border-blue-500 ${isAppDark ? 'border-slate-400' : 'border-slate-300'}`;
-        const darkTheme = `bg-slate-900/60 shadow-2xl hover:bg-slate-800 hover:border-blue-400 ${isAppDark ? 'border-slate-500' : 'border-slate-700'}`;
-        const layoutClass = isLayerKey ? 'p-0 flex flex-col' : 'flex flex-col items-center justify-center';
-        return `${base} ${isLight ? lightTheme : darkTheme} ${layoutClass}`;
+    /**
+     * キートップの外枠（Frame）スタイル
+     */
+    const getKeycapFrameStyle = (k, isLayerKey) => {
+        const paddingOffset = 20;
+        const lightBorder = isAppDark ? '#94a3b8' : '#cbd5e1';
+        const darkBorder = isAppDark ? '#475569' : '#334155';
+        
+        return {
+            left: `${k.x + paddingOffset}px`,
+            top: `${k.y + paddingOffset}px`,
+            width: `${k.w - 6}px`,
+            height: `${k.h - 6}px`,
+            position: 'absolute',
+            borderRadius: '6px',
+            borderWidth: '3px',
+            borderStyle: 'solid',
+            borderColor: isLight ? lightBorder : darkBorder,
+            backgroundColor: isLight ? '#ffffff' : 'rgba(15, 23, 42, 0.6)',
+            boxShadow: isLight ? '0 4px 6px -1px rgb(0 0 0 / 0.1)' : '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            transition: 'all 0.075s ease'
+        };
     };
+
+    /**
+     * 凡例（Legend）の基本スタイル
+     */
+    const getLegendBaseStyle = (isFluentIcon, displayText, canWrap) => ({
+        color: isLight ? '#1e293b' : '#fff',
+        fontWeight: isFluentIcon ? '400' : '800',
+        fontFamily: isFluentIcon ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
+        fontSize: (isFluentIcon || (displayText.length === 1 && /[\u2100-\u23FF]/.test(displayText))) ? '1.4em' : '18px',
+        whiteSpace: canWrap ? 'pre-wrap' : 'nowrap',
+        lineHeight: canWrap ? '1.1' : '1',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        textTransform: 'uppercase',
+        letterSpacing: '-0.02em',
+        width: '100%'
+    });
 
     const getLayerFooterColor = (num) => {
         const lightColors = ['#64748b', '#2563eb', '#4f46e5', '#0891b2', '#10b981', '#f59e0b', '#ea580c', '#e11d48', '#9333ea', '#0284c7'];
         const darkColors = ['#475569', '#1e40af', '#3730a3', '#155e75', '#065f46', '#92400e', '#9a3412', '#9f1239', '#6b21a8', '#075985'];
         return (isLight ? lightColors : darkColors)[num % 10];
-    };
-
-    const getLegendStyle = (isFluentIcon, displayText, canWrap, manualWrap) => {
-        const baseStyle = {
-            color: isLight ? '#1e293b' : '#fff',
-            fontWeight: isFluentIcon ? '400' : '700',
-            fontFamily: isFluentIcon ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
-            fontSize: (isFluentIcon || (displayText.length === 1 && /[\u2100-\u23FF]/.test(displayText))) ? '1.4em' : 'inherit',
-            position: 'relative',
-            whiteSpace: (canWrap || manualWrap) ? 'pre-wrap' : 'nowrap',
-            lineHeight: (canWrap || manualWrap) ? '1.05' : '1',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-        };
-
-        if (isExportMode) {
-            return {
-                ...baseStyle,
-                top: '-10px',
-                paddingTop: '0',
-                maxHeight: 'none',
-                overflow: 'visible'
-            };
-        } else {
-            return {
-                ...baseStyle,
-                top: '0',
-                paddingTop: '0.08em',
-                maxHeight: '2.2em',
-                overflow: 'hidden'
-            };
-        }
     };
 
     // --- Render Component ---
@@ -158,120 +163,210 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                 className: getKbdContainerClass(),
                 style: { width: '100%', height: '100%', transform: 'none' }
             },
-                html`
-                ${keys.map((k, i) => {
+                keys.map((k, i) => {
                     const mK = k.matrix ? `${k.matrix[0]},${k.matrix[1]}` : null;
                     const val = mK ? codes[mK] : null;
                     
+                    const parsed = parseKeyLabel(val, k.id, displayMode, keyStyle, macroAliases);
                     const {
-                        fullRaw,
-                        displayText,
-                        isFluentIcon,
-                        isLayerKey,
-                        layerType,
-                        layerNum,
-                        tapLabel,
-                        tapIsFluent
-                    } = parseKeyLabel(val, k.id, displayMode, keyStyle, macroAliases);
+                        fullRaw, displayText, isFluentIcon, isLayerKey,
+                        layerType, layerNum, layerNum2, tapLabel, tapIsFluent, visualWeight
+                    } = parsed;
 
+                    // 自動スケーリングと折り返しの計算
                     let finalDisplayText = displayText;
                     let manualWrap = false;
-                    if (displayText.includes('_') || displayText.includes('-')) {
+                    
+                    // 特殊記号での自動折り返し試行
+                    if (displayText.length > 5 && (displayText.includes('_') || displayText.includes('-'))) {
                         const splitIdx = Math.max(displayText.lastIndexOf('_'), displayText.lastIndexOf('-'));
-                        if (splitIdx > 0 && splitIdx < displayText.length - 1) {
+                        if (splitIdx > 1 && splitIdx < displayText.length - 2) {
                             finalDisplayText = displayText.substring(0, splitIdx) + '\n' + displayText.substring(splitIdx);
                             manualWrap = true;
                         }
                     }
 
-                    const lines = finalDisplayText.split('\n');
-                    const maxLineChars = Math.max(...lines.map(l => l.length));
-                    const kWidth = (k.w - 6);
-                    const availableWidth = kWidth - (isExportMode ? 4 : 6);
+                    const kWidth = (k.w - 12); // 内寸の目安
+                    const availableWidth = kWidth - (isExportMode ? 4 : 2);
+                    
+                    // スケール計算: visualWeightに基づき、かつ1u(56px)基準で調整
+                    // 18px (base font size) * visualWeight が目安の幅
+                    const estimatedPxWidth = visualWeight * 11.0; 
                     let targetScale = 1.0;
                     let canWrap = manualWrap;
-                    const estimatedWidth = maxLineChars * 16.0;
 
-                    if (estimatedWidth > availableWidth) {
-                        targetScale = availableWidth / estimatedWidth;
-                        if (!manualWrap && targetScale < 0.65) {
-                            targetScale = isExportMode ? 0.62 : 0.7;
+                    if (estimatedPxWidth > availableWidth) {
+                        targetScale = availableWidth / estimatedPxWidth;
+                        // 極端に小さくなる場合は折り返しを検討
+                        if (!manualWrap && targetScale < 0.7 && displayText.length > 6) {
                             canWrap = true;
+                            targetScale = Math.max(0.75, targetScale * 1.2); 
                         }
                     }
-                    targetScale = Math.max(isExportMode ? 0.52 : 0.6, targetScale);
-                    if (manualWrap) targetScale = Math.min(0.85, targetScale);
-                    
-                    const paddingOffset = 20;
 
-                    return html`
-                        <div key=${i} className=${getKeycapClass(isLayerKey)}
-                            title=${fullRaw}
-                            onClick=${(e) => {
-                                const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);
-                                if (macroMatch && onMacroClick) {
-                                    e.stopPropagation();
-                                    onMacroClick(parseInt(macroMatch[1], 10));
+                    // 最小/最大スケールの制限
+                    targetScale = Math.max(isExportMode ? 0.55 : 0.6, Math.min(1.1, targetScale));
+                    if (manualWrap) targetScale = Math.min(0.9, targetScale);
+
+                    return createElement('div', {
+                        key: i,
+                        className: `key-cap group`,
+                        title: fullRaw,
+                        onClick: (e) => {
+                            const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);
+                            if (macroMatch && onMacroClick) {
+                                e.stopPropagation();
+                                onMacroClick(parseInt(macroMatch[1], 10));
+                            }
+                        },
+                        style: getKeycapFrameStyle(k, isLayerKey)
+                    }, 
+                        isLayerKey ? (
+                            createElement('div', { className: "key-layer-container", style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column' } },
+                                layerNum2 ? (
+                                    // 特別な FN_MO13 等の2段構えデザイン
+                                    createElement('div', { 
+                                        className: "key-layer-main relative",
+                                        style: { flex: 1, position: 'relative', width: '100%' }
+                                    }, 
+                                        createElement('div', {
+                                            className: "layer-primary",
+                                            style: {
+                                                position: 'absolute',
+                                                left: '6px', // 4pxから少し中央寄りへ
+                                                bottom: '2px', // 0pxから少し上げ
+                                                fontSize: '24px',
+                                                fontWeight: '900',
+                                                color: isLight ? '#1e293b' : '#fff',
+                                                transform: 'scale(0.75)',
+                                                transformOrigin: 'left bottom'
+                                            }
+                                        }, `L${layerNum}`),
+                                        createElement('div', {
+                                            className: "layer-secondary",
+                                            style: {
+                                                position: 'absolute',
+                                                right: '6px', // 4pxから少し中央寄りへ
+                                                top: '3px', // 1pxから少し下げ
+                                                fontSize: '16px',
+                                                fontWeight: '700',
+                                                color: isLight ? '#64748b' : '#94a3b8',
+                                                opacity: 0.8,
+                                                transform: 'scale(0.75)',
+                                                transformOrigin: 'right top'
+                                            }
+                                        }, `L${layerNum2}`)
+                                    )
+                                ) : (
+                                    // 通常の1段レイヤーデザイン
+                                    createElement('div', { 
+                                        className: "key-layer-main",
+                                        style: {
+                                            color: isLight ? '#1e293b' : '#fff',
+                                            fontFamily: (layerType === 'LT' && tapIsFluent) ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
+                                            fontSize: (layerType === 'LT' && tapIsFluent) ? '1.4em' : '22px',
+                                            flex: 1,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            transform: (layerType === 'LT' && tapIsFluent) ? 'none' : 'scale(0.85)',
+                                            transformOrigin: 'center center'
+                                        }
+                                    }, layerType === 'LT' ? tapLabel : `L${layerNum}`)
+                                ),
+                                createElement('div', {
+                                    className: "key-layer-footer",
+                                    style: {
+                                        marginTop: 'auto',
+                                        width: 'calc(100% + 8px)',
+                                        marginLeft: '-4px',
+                                        marginRight: '-4px',
+                                        marginBottom: '-4px',
+                                        height: '18px',
+                                        display: 'flex',
+                                        zIndex: 10,
+                                        overflow: 'hidden',
+                                        borderBottomLeftRadius: '4px',
+                                        borderBottomRightRadius: '4px',
+                                        borderTop: `2px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#475569' : '#334155')}`
+                                    }
+                                }, 
+                                    layerNum2 ? (
+                                        // 帯の塗り分け案：背景を2:1のグラデーションで塗り分け、文字は一塊で中央配置
+                                        createElement('div', {
+                                            style: {
+                                                flex: 1,
+                                                background: `linear-gradient(to right, ${getLayerFooterColor(layerNum)} 66.6%, ${getLayerFooterColor(layerNum2)} 66.6%)`,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#f8fafc',
+                                                overflow: 'hidden'
+                                            }
+                                        }, 
+                                            createElement('span', {
+                                                style: {
+                                                    fontSize: '18px',
+                                                    fontWeight: '900',
+                                                    letterSpacing: '0.05em',
+                                                    transform: 'scale(0.55) translateY(-1px)',
+                                                    transformOrigin: 'center center',
+                                                    whiteSpace: 'nowrap'
+                                                }
+                                            }, `FN${layerNum}+${layerNum2}`)
+                                        )
+                                    ) : (
+                                        // 単色帯
+                                        createElement('div', {
+                                            style: {
+                                                flex: 1,
+                                                backgroundColor: getLayerFooterColor(layerNum),
+                                                color: (isLight && [5].includes(layerNum % 10)) ? '#020617' : '#f8fafc',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }
+                                        }, 
+                                            createElement('span', { 
+                                                style: { 
+                                                    fontSize: '14px',
+                                                    fontWeight: '900',
+                                                    letterSpacing: '0.05em',
+                                                    transform: 'scale(0.72) translateY(-1px)',
+                                                    transformOrigin: 'center center',
+                                                    whiteSpace: 'nowrap'
+                                                } 
+                                            }, 
+                                                layerType,
+                                                layerType === 'LT' && createElement('b', { style: { color: '#facc15', marginLeft: '2px', fontWeight: '900' } }, layerNum)
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        ) : (
+                            createElement('div', {
+                                className: "key-content flex-1 flex items-center justify-center w-full h-full",
+                                style: {
+                                    transform: `scale(${targetScale * 0.9})`, // 全体的に少し余裕を持たせる
+                                    transformOrigin: 'center center',
+                                    padding: '2px',
+                                    marginTop: isExportMode ? '-2px' : '0'
                                 }
-                            }}
-                            style=${{ 
-                                left: `${k.x + paddingOffset}px`, 
-                                top: `${k.y + paddingOffset}px`, 
-                                width: `${k.w - 6}px`, 
-                                height: `${k.h - 6}px`,
-                                overflow: isExportMode ? 'visible' : 'hidden'
-                            }}>
-                            ${isLayerKey ? html`
-                                <div className="key-layer-container" style=${{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
-                                    <div className="key-layer-main" style=${{ 
-                                        flex: 1,
-                                        color: isLight ? '#1e293b' : '#fff',
-                                        fontFamily: (layerType === 'LT' && tapIsFluent) ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
-                                        fontSize: (layerType === 'LT' && tapIsFluent) ? '1.4em' : '18px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}>
-                                        ${layerType === 'LT' ? tapLabel : `L${layerNum}`}
-                                    </div>
-                                    <div className="key-layer-footer" style=${{ 
-                                        height: '15px',
-                                        margin: '0 -3px -3px -3px',
-                                        width: 'calc(100% + 6px)',
-                                        paddingBottom: '3px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        borderTop: isLight 
-                                            ? (isAppDark ? '2.5px solid #94a3b8' : '2.5px solid #cbd5e1') 
-                                            : (isAppDark ? '2.5px solid #475569' : '2.5px solid #334155'),
-                                        backgroundColor: getLayerFooterColor(layerNum),
-                                        color: (isLight && [5].includes(layerNum % 10)) ? '#020617' : '#f8fafc',
-                                        zIndex: 10
-                                    }}>
-                                        <span style=${{ display: 'inline-flex', alignItems: 'center' }}>
-                                            ${layerType}${layerType === 'LT' ? html`<b style=${{ color: '#facc15', marginLeft: '1px' }}>${layerNum}</b>` : ''}
-                                        </span>
-                                    </div>
-                                </div>
-                            ` : html`
-                                <div style=${{ 
-                                    transform: `scale(${targetScale})`, 
-                                    transformOrigin: 'center', 
-                                    display: 'flex', 
-                                    flexDirection: 'column',
-                                    justifyContent: 'center', 
-                                    alignItems: 'center',
-                                    width: canWrap ? `${availableWidth / targetScale}px` : 'auto',
-                                    height: '100%'
-                                }}>
-                                    <span className="legend-text uppercase tracking-tight font-bold" style=${getLegendStyle(isFluentIcon, finalDisplayText, canWrap, manualWrap)}>${finalDisplayText}</span>
-                                </div>
-                            `}
-                        </div>
-                    `;
-                })}
-                `
+                            },
+                                createElement('span', {
+                                    className: "legend-text",
+                                    style: {
+                                        ...getLegendBaseStyle(isFluentIcon, finalDisplayText, canWrap),
+                                        fontSize: isFluentIcon ? '1.4em' : '22px', // 大きめのベースサイズ
+                                        transform: isFluentIcon ? 'none' : 'scale(0.85)', // 文字のみスケール調整
+                                        transformOrigin: 'center center'
+                                    }
+                                }, finalDisplayText)
+                            )
+                        )
+                    );
+                })
             )
         )
     );

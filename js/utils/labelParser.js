@@ -87,10 +87,11 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases) {
 
     const layerMatch = raw.match(/^(MO|TG|TT|OSL|TO|DF)\((\d+)\)$/);
     const ltMatch = raw.match(/^LT\((\d+),\s*(.+)\)$/);
-    const fnMoMatch = raw.match(/^FN_MO(\d+)(\d*)$/);
+    const fnMoMatch = raw.match(/^FN_MO(\d)(\d)$/); // FN_MO13 などに対応
     const isLayerKey = !!(layerMatch || ltMatch || fnMoMatch);
     const layerType = isLayerKey ? (layerMatch ? layerMatch[1] : (ltMatch ? 'LT' : 'FN')) : null;
-    const layerNum = isLayerKey ? (layerMatch ? layerMatch[2] : (ltMatch ? ltMatch[1] : fnMoMatch[1])) : null;
+    const layerNum = isLayerKey ? (layerMatch ? layerMatch[2] : (ltMatch ? ltMatch[1] : (fnMoMatch ? fnMoMatch[1] : null))) : null;
+    const layerNum2 = (fnMoMatch && fnMoMatch[2]) ? fnMoMatch[2] : null;
     
     let tapLabel = '';
     let tapIsFluent = false;
@@ -111,6 +112,11 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases) {
         }
     }
 
+    // 文字数・視覚的重みの計算
+    let visualWeight = displayText.length;
+    if (isFluentIcon) visualWeight = 1.2; // アイコンは少し大きめにカウント
+    if (complex) visualWeight += 0.5; // 複合キーは密度が高い
+
     return {
         fullRaw,
         displayText,
@@ -119,6 +125,8 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases) {
         layerType,
         layerNum,
         tapLabel,
-        tapIsFluent
+        tapIsFluent,
+        visualWeight,
+        layerNum2
     };
 }
