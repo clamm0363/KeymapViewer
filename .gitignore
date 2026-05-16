@@ -1,8 +1,7 @@
 # Plans and dev docs
 plans/
 
-# Legacy unused module files
-js/
+# Legacy unused module files (Removed js/ ignore to track modernized components)
 
 # Raw source JSON (mapped versions are used)
 json/
