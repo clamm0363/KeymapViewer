@@ -19,6 +19,9 @@
             font-display: swap;
         }
 
+        :root {
+            --accent-color: #3b82f6;
+        }
         body { 
             margin: 0; 
             font-family: 'Inter', system-ui, -apple-system, sans-serif; 
@@ -32,6 +35,50 @@
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         .legend-text { white-space: normal; overflow: hidden; word-break: normal; overflow-wrap: anywhere; width: 100%; text-align: center; display: block; font-weight: 800; line-height: 1; max-height: 2.2em; }
+
+        /* レイヤー操作キー専用スタイル */
+        .key-layer-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            border-radius: inherit;
+        }
+        .key-layer-main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 800;
+            color: inherit;
+            font-family: 'Inter', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: -0.04em;
+            line-height: 1;
+        }
+        .key-layer-footer {
+            height: 12px;
+            background-color: var(--accent-color);
+            color: #94a3b8; /* 濃いめの銀色（筐体の質感に近い） */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            overflow: hidden;
+        }
+        .key-layer-footer span {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-family: 'Inter', sans-serif;
+            transform: scale(0.6) scaleX(1.4) translateY(3px);
+            transform-origin: center;
+            line-height: 1;
+        }
     </style>
 </head>
 <body>
@@ -380,6 +427,15 @@
                                 }
                             }
 
+                            // Layer Key Detection (MO, TG, TT, OSL, TO, DF, LT, FN_MO)
+                            const layerMatch = raw.match(/^(MO|TG|TT|OSL|TO|DF)\((\d+)\)$/);
+                            const ltMatch = raw.match(/^LT\((\d+),.*\)$/);
+                            const fnMoMatch = raw.match(/^FN_MO(\d+)(\d*)$/);
+                            
+                            const isLayerKey = !!(layerMatch || ltMatch || fnMoMatch);
+                            const layerType = isLayerKey ? (layerMatch ? layerMatch[1] : (ltMatch ? 'LT' : 'FN')) : null;
+                            const layerNum = isLayerKey ? (layerMatch ? layerMatch[2] : (ltMatch ? ltMatch[1] : fnMoMatch[1])) : null;
+
                             // Intelligent Wrapping & Scaling Logic
                             let finalDisplayText = displayText;
                             let manualWrap = false;
@@ -419,12 +475,13 @@
                             const wrapStyle = (canWrap || manualWrap) ? 'pre-wrap' : 'nowrap';
                             const lineH = (canWrap || manualWrap) ? '1.05' : '1';
 
-                            const baseClass = `key-cap absolute border-[3px] rounded-md flex flex-col items-center justify-center transition-all duration-75 overflow-hidden ${
+                            const baseClass = `key-cap absolute border-[3px] rounded-md transition-all duration-75 overflow-hidden ${
+                                    isLayerKey ? 'p-0 flex flex-col' : 'flex flex-col items-center justify-center'
+                                } ${
                                     isLight ? 'border-slate-300 bg-white shadow-md hover:bg-slate-50 hover:border-blue-500' : 'border-slate-700 bg-slate-900/60 shadow-2xl hover:bg-slate-800 hover:border-blue-400'
                                 }`;
                             
                             const paddingOffset = 20;
-
 
                             return html`
                                 <div key=${i} class=${baseClass}
@@ -443,34 +500,54 @@
                                         height: `${k.h - 6}px`,
                                         overflow: isExportMode ? 'visible' : 'hidden'
                                     }}>
-                                    <div style=${{ 
-                                        transform: `scale(${targetScale})`, 
-                                        transformOrigin: 'center', 
-                                        display: 'flex', 
-                                        flexDirection: 'column',
-                                        justifyContent: 'center', 
-                                        alignItems: 'center',
-                                        width: canWrap ? `${availableWidth / targetScale}px` : 'auto',
-                                        height: '100%'
-                                    }}>
-                                        <span class="legend-text uppercase tracking-tight font-bold" style=${{ 
-                                            color: isLight ? '#1e293b' : '#fff',
-                                            fontWeight: isFluentIcon ? '400' : '700',
-                                            fontFamily: isFluentIcon ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
-                                            fontSize: (isFluentIcon || (displayText.length === 1 && /[\u2100-\u23FF]/.test(displayText))) ? '1.4em' : 'inherit',
-                                            position: 'relative',
-                                            top: isExportMode ? '-10px' : '0',
-                                            // Unified alignment: Icons need a slight downward push, Text needs slightly less
-                                            paddingTop: !isExportMode ? (isFluentIcon ? '0.08em' : '0.08em') : '0',
-                                            whiteSpace: wrapStyle,
-                                            lineHeight: lineH,
-                                            maxHeight: isExportMode ? 'none' : '2.2em',
-                                            overflow: isExportMode ? 'visible' : 'hidden',
-                                            display: 'flex',
+                                    ${isLayerKey ? html`
+                                        <div class="key-layer-container">
+                                            <div class="key-layer-main" style=${{ color: isLight ? '#1e293b' : '#fff' }}>L${layerNum}</div>
+                                            <div class="key-layer-footer" style=${{ 
+                                                backgroundColor: {
+                                                    'MO': '#2563eb',
+                                                    'TG': '#0891b2',
+                                                    'TT': '#4f46e5',
+                                                    'OSL': '#f59e0b',
+                                                    'TO': '#be123c',
+                                                    'DF': '#4b5563',
+                                                    'LT': '#0284c7',
+                                                    'FN': '#6366f1' // FN用のインディゴ
+                                                }[layerType] || '#2563eb',
+                                                color: {
+                                                    'OSL': '#020617', // 明るい帯には濃い色
+                                                }[layerType] || '#f8fafc' // それ以外はライト系
+                                            }}><span>${layerType}</span></div>
+                                        </div>
+                                    ` : html`
+                                        <div style=${{ 
+                                            transform: `scale(${targetScale})`, 
+                                            transformOrigin: 'center', 
+                                            display: 'flex', 
+                                            flexDirection: 'column',
+                                            justifyContent: 'center', 
                                             alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}>${finalDisplayText}</span>
-                                    </div>
+                                            width: canWrap ? `${availableWidth / targetScale}px` : 'auto',
+                                            height: '100%'
+                                        }}>
+                                            <span class="legend-text uppercase tracking-tight font-bold" style=${{ 
+                                                color: isLight ? '#1e293b' : '#fff',
+                                                fontWeight: isFluentIcon ? '400' : '700',
+                                                fontFamily: isFluentIcon ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
+                                                fontSize: (isFluentIcon || (displayText.length === 1 && /[\u2100-\u23FF]/.test(displayText))) ? '1.4em' : 'inherit',
+                                                position: 'relative',
+                                                top: isExportMode ? '-10px' : '0',
+                                                paddingTop: !isExportMode ? (isFluentIcon ? '0.08em' : '0.08em') : '0',
+                                                whiteSpace: wrapStyle,
+                                                lineHeight: lineH,
+                                                maxHeight: isExportMode ? 'none' : '2.2em',
+                                                overflow: isExportMode ? 'visible' : 'hidden',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}>${finalDisplayText}</span>
+                                        </div>
+                                    `}
                                 </div>
                             `;
                         })}
