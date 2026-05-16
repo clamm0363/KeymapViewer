@@ -1,8 +1,7 @@
 // js/keymap-dictionary.js
 
-// グローバル定数として辞書を定義
 // Microsoft Fluent System Icons (Open Source WebFont) に基づくマッピング
-window.KeymapDictionary = {
+export const KeymapDictionary = {
   modifiers: {
     // 修飾キー
     "KC_LSFT": { win: "\uF4BF", mac: "\uF4BF", isFluent: true,  text: "Shift" },
