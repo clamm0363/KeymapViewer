@@ -57,6 +57,41 @@ const getOffsetSecondaryStyle = (isLight) => ({
     transformOrigin: 'right top'
 });
 
+// Shared main legend styling utility for standard/modifier/layer text keycaps to enforce strict size harmony
+const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, customOverrides = {}) => {
+    // 1uキーキャップ基準で、文字数（長さ）に応じて完全に均一な縮小率を適用し、表示崩れを防ぐ
+    let textScale = 1.0;
+    if (!isFluentIcon && displayText) {
+        const len = displayText.length;
+        if (len === 3) textScale = 0.85;       // INS, DEL, END, NUM等が一律で同じサイズに揃う
+        else if (len === 4) textScale = 0.70;  // PSCR, SLCK, PAUS, HOME, PGUP, PGDN等が一律で同じサイズに揃う
+        else if (len >= 5) textScale = 0.55;   // 長文ラベル用
+    }
+
+    const baseStyle = {
+        color: isLight ? '#1e293b' : '#fff',
+        fontWeight: isFluentIcon ? '400' : '800',
+        fontFamily: isFluentIcon ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
+        fontSize: isFluentIcon ? '1.4em' : '22px',
+        transform: isFluentIcon ? 'none' : `scale(${textScale})`,
+        transformOrigin: 'center center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        textTransform: 'uppercase',
+        letterSpacing: '-0.02em',
+        width: '100%',
+        overflow: 'visible',
+        whiteSpace: 'nowrap'
+    };
+
+    return {
+        ...baseStyle,
+        ...customOverrides
+    };
+};
+
 import { parseKeyLabel } from '../utils/labelParser.js';
 
 export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, keyStyle = 'Windows' }) {
@@ -286,22 +321,12 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     let visualWeightForScale = centerText.length;
                     if (isFluentCenter) {
                         visualWeightForScale = 1.2;
-                    } else {
-                        // 文字自体の形状（グリフ幅）を考慮した高精度なビジュアルウェイトの計算
-                        let totalWeight = 0;
-                        for (let j = 0; j < centerText.length; j++) {
-                            const uc = centerText[j].toUpperCase();
-                            if (uc === 'M' || uc === 'W') totalWeight += 1.4;
-                            else if ('OQGDCNU'.includes(uc)) totalWeight += 1.15;
-                            else if ('ILFTJ'.includes(uc)) totalWeight += 0.7;
-                            else totalWeight += 1.0;
-                        }
-                        visualWeightForScale = totalWeight;
-                        if (isModKey && modType !== 'base') visualWeightForScale += 0.5;
+                    } else if (isModKey && modType !== 'base') {
+                        visualWeightForScale += 0.5;
                     }
 
-                    // 3文字以上の英字ラベル（NUMやPSCR等）は太字大文字の幅を正確に捉えるため、倍率を13.5pxに設定して検知力を向上
-                    const charWidthMultiplier = (!isFluentCenter && centerText.length >= 3) ? 13.5 : 11.0;
+                    // 同一の文字数のキーが一律で同じ縮小率となるよう、1文字あたりの幅を均一に11.0pxとして計算
+                    const charWidthMultiplier = 11.0;
                     const estimatedPxWidth = visualWeightForScale * charWidthMultiplier; 
                     let targetScale = 1.0;
                     let canWrap = manualWrap;
@@ -381,17 +406,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     // 通常の1段レイヤーデザイン (MO(1) や TG(2) など)
                                     createElement('div', { 
                                         className: "key-layer-main",
-                                        style: {
-                                            color: isLight ? '#1e293b' : '#fff',
-                                            fontFamily: 'inherit',
-                                            fontSize: '22px',
-                                            flex: 1,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            transform: 'scale(0.85)',
-                                            transformOrigin: 'center center'
-                                        }
+                                        style: getMainLegendStyle(isLight, `L${layerNum}`, false)
                                     }, `L${layerNum}`)
                                 ),
                                 createElement('div', {
@@ -454,13 +469,10 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     },
                                         createElement('span', {
                                             className: "legend-text",
-                                            style: {
-                                                ...getLegendBaseStyle(isFluentIcon, finalDisplayText, canWrap),
-                                                color: getModColor(modKeys[0], isLight), // Dynamic premium color matched legend!
-                                                fontSize: isFluentIcon ? '1.4em' : '22px',
-                                                transform: isFluentIcon ? 'none' : 'scale(0.85)',
-                                                transformOrigin: 'center center'
-                                            }
+                                            style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, {
+                                                color: getModColor(modKeys[0], isLight),
+                                                ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
+                                            })
                                         }, finalDisplayText)
                                     )
                                 ) : (
@@ -474,17 +486,10 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                         },
                                             createElement('div', {
                                                 className: "key-mod-main",
-                                                style: {
-                                                    ...getLegendBaseStyle(baseIsFluent, baseLabel, false),
+                                                style: getMainLegendStyle(isLight, baseLabel, baseIsFluent, {
                                                     fontSize: baseIsFluent ? '1.4em' : '18px',
-                                                    flex: 1,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    transform: baseIsFluent ? 'none' : 'scale(0.85)',
-                                                    transformOrigin: 'center center',
                                                     marginTop: '2px'
-                                                }
+                                                })
                                             }, baseLabel),
                                             createElement('div', {
                                                 className: "key-mod-footer",
@@ -521,12 +526,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                             },
                                 createElement('span', {
                                     className: "legend-text",
-                                    style: {
-                                        ...getLegendBaseStyle(isFluentIcon, finalDisplayText, canWrap),
-                                        fontSize: isFluentIcon ? '1.4em' : '22px', // 大きめのベースサイズ
-                                        transform: isFluentIcon ? 'none' : 'scale(0.85)', // 文字のみスケール調整
-                                        transformOrigin: 'center center'
-                                    }
+                                    style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
                                 }, finalDisplayText)
                             )
                         )
