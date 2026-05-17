@@ -62,10 +62,15 @@ const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, customOv
     // 1uキーキャップ基準で、文字数（長さ）に応じて完全に均一な縮小率を適用し、表示崩れを防ぐ
     let textScale = 1.0;
     if (!isFluentIcon && displayText) {
-        const len = displayText.length;
-        if (len === 3) textScale = 0.85;       // INS, DEL, END, NUM等が一律で同じサイズに揃う
-        else if (len === 4) textScale = 0.70;  // PSCR, SLCK, PAUS, HOME, PGUP, PGDN等が一律で同じサイズに揃う
-        else if (len >= 5) textScale = 0.55;   // 長文ラベル用
+        const isFunctionKey = /^F\d+$/.test(displayText);
+        if (isFunctionKey) {
+            textScale = 1.0;                   // F1-F12はすべて2文字サイズ（等倍）に統一
+        } else {
+            const len = displayText.length;
+            if (len === 3) textScale = 0.85;       // INS, DEL, END, NUM等が一律で同じサイズに揃う
+            else if (len === 4) textScale = 0.70;  // PSCR, SLCK, PAUS, HOME, PGUP, PGDN等が一律で同じサイズに揃う
+            else if (len >= 5) textScale = 0.55;   // 長文ラベル用
+        }
     }
 
     const baseStyle = {
@@ -406,7 +411,9 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     // 通常の1段レイヤーデザイン (MO(1) や TG(2) など)
                                     createElement('div', { 
                                         className: "key-layer-main",
-                                        style: getMainLegendStyle(isLight, `L${layerNum}`, false)
+                                        style: getMainLegendStyle(isLight, `L${layerNum}`, false, {
+                                            transform: 'scale(0.9)'
+                                        })
                                     }, `L${layerNum}`)
                                 ),
                                 createElement('div', {
@@ -471,6 +478,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                             className: "legend-text",
                                             style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, {
                                                 color: getModColor(modKeys[0], isLight),
+                                                ...(finalDisplayText.length === 4 && k.w && k.w >= 1.25 ? { transform: 'scale(0.85)' } : {}),
                                                 ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
                                             })
                                         }, finalDisplayText)
@@ -526,7 +534,10 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                             },
                                 createElement('span', {
                                     className: "legend-text",
-                                    style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
+                                    style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, {
+                                        ...(finalDisplayText.length === 4 && k.w && k.w >= 1.25 ? { transform: 'scale(0.85)' } : {}),
+                                        ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
+                                    })
                                 }, finalDisplayText)
                             )
                         )
