@@ -219,26 +219,6 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         };
     };
 
-    /**
-     * 凡例（Legend）の基本スタイル
-     */
-    const getLegendBaseStyle = (isFluentIcon, displayText, canWrap) => ({
-        color: isLight ? '#1e293b' : '#fff',
-        fontWeight: isFluentIcon ? '400' : '800',
-        fontFamily: isFluentIcon ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
-        fontSize: (isFluentIcon || (displayText.length === 1 && /[\u2100-\u23FF]/.test(displayText))) ? '1.4em' : '18px',
-        whiteSpace: canWrap ? 'pre-wrap' : 'nowrap',
-        lineHeight: canWrap ? '1.1' : '1',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        textTransform: 'uppercase',
-        letterSpacing: '-0.02em',
-        width: '100%',
-        overflow: 'visible'
-    });
-
     const getLayerFooterColor = (num) => {
         const lightColors = ['#64748b', '#2563eb', '#4f46e5', '#0891b2', '#10b981', '#f59e0b', '#ea580c', '#e11d48', '#9333ea', '#0284c7'];
         const darkColors = ['#475569', '#1e40af', '#3730a3', '#155e75', '#065f46', '#92400e', '#9a3412', '#9f1239', '#6b21a8', '#075985'];
