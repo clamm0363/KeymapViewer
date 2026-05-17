@@ -1,6 +1,31 @@
 const { createElement, useState, useEffect, useMemo, useRef } = React;
 const html = htm.bind(createElement);
 
+// Shared footer skeleton and text styling utilities for visual consistency across all keytypes
+const getFooterContainerStyle = (isLight, isAppDark) => ({
+    marginTop: 'auto',
+    width: 'calc(100% + 8px)',
+    marginLeft: '-4px',
+    marginRight: '-4px',
+    marginBottom: '-4px',
+    height: '18px',
+    display: 'flex',
+    zIndex: 10,
+    overflow: 'hidden',
+    borderBottomLeftRadius: '4px',
+    borderBottomRightRadius: '4px',
+    borderTop: `2px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#475569' : '#334155')}`
+});
+
+const getFooterTextStyle = (scale = 0.72, translateY = -2.6, fontSize = '14px') => ({
+    fontSize,
+    fontWeight: '900',
+    letterSpacing: '0.05em',
+    transform: `scale(${scale}) translateY(${translateY}px)`,
+    transformOrigin: 'center center',
+    whiteSpace: 'nowrap'
+});
+
 import { parseKeyLabel } from '../utils/labelParser.js';
 
 export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, keyStyle = 'Windows' }) {
@@ -362,20 +387,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                 ),
                                 createElement('div', {
                                     className: "key-layer-footer",
-                                    style: {
-                                        marginTop: 'auto',
-                                        width: 'calc(100% + 8px)',
-                                        marginLeft: '-4px',
-                                        marginRight: '-4px',
-                                        marginBottom: '-4px',
-                                        height: '18px',
-                                        display: 'flex',
-                                        zIndex: 10,
-                                        overflow: 'hidden',
-                                        borderBottomLeftRadius: '4px',
-                                        borderBottomRightRadius: '4px',
-                                        borderTop: `2px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#475569' : '#334155')}`
-                                    }
+                                    style: getFooterContainerStyle(isLight, isAppDark)
                                 }, 
                                     layerNum2 ? (
                                         // 帯の塗り分け案：背景を2:1のグラデーションで塗り分け、文字は一塊で中央配置
@@ -391,14 +403,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                             }
                                         }, 
                                             createElement('span', {
-                                                style: {
-                                                    fontSize: '18px',
-                                                    fontWeight: '900',
-                                                    letterSpacing: '0.05em',
-                                                    transform: 'scale(0.55) translateY(-1px)',
-                                                    transformOrigin: 'center center',
-                                                    whiteSpace: 'nowrap'
-                                                }
+                                                style: getFooterTextStyle(0.55, -1, '18px')
                                             }, `FN${layerNum}+${layerNum2}`)
                                         )
                                     ) : (
@@ -414,14 +419,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                             }
                                         }, 
                                             createElement('span', { 
-                                                style: { 
-                                                    fontSize: '14px',
-                                                    fontWeight: '900',
-                                                    letterSpacing: '0.05em',
-                                                    transform: 'scale(0.72) translateY(-1px)',
-                                                    transformOrigin: 'center center',
-                                                    whiteSpace: 'nowrap'
-                                                } 
+                                                style: getFooterTextStyle(0.72, -1, '14px')
                                             }, 
                                                 layerType
                                             )
@@ -481,20 +479,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                             }, baseLabel),
                                             createElement('div', {
                                                 className: "key-mod-footer",
-                                                style: {
-                                                    marginTop: 'auto',
-                                                    width: 'calc(100% + 8px)',
-                                                    marginLeft: '-4px',
-                                                    marginRight: '-4px',
-                                                    marginBottom: '-4px',
-                                                    height: '18px',
-                                                    display: 'flex',
-                                                    zIndex: 10,
-                                                    overflow: 'hidden',
-                                                    borderBottomLeftRadius: '4px',
-                                                    borderBottomRightRadius: '4px',
-                                                    borderTop: `2px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#475569' : '#334155')}`
-                                                }
+                                                style: getFooterContainerStyle(isLight, isAppDark)
                                             },
                                                 createElement('div', {
                                                     style: {
@@ -507,14 +492,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                     }
                                                 },
                                                     createElement('span', {
-                                                        style: {
-                                                            fontSize: '14px',
-                                                            fontWeight: '900',
-                                                            letterSpacing: '0.05em',
-                                                            transform: `scale(${footerScale}) translateY(-2.6px)`,
-                                                            transformOrigin: 'center center',
-                                                            whiteSpace: 'nowrap'
-                                                        }
+                                                        style: getFooterTextStyle(footerScale, -2.6, '14px')
                                                     }, modLabel)
                                                 )
                                             )
