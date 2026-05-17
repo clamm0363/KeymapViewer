@@ -2,9 +2,46 @@ import { SYMBOL_MAP, FLUENT_MAP } from '../constants.js';
 import { getRawLabel } from './helpers.js';
 import { KeymapDictionary } from '../keymap-dictionary.js';
 
-export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases) {
+export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, isJIS = false) {
     const fullRaw = getRawLabel(val || (keyId.includes('\n') ? keyId.split('\n').pop() : keyId));
     
+    // 1. Smart parsing for single-key Shift modifications: S(KC_X) or LSFT(KC_X)
+    const shiftMatch = fullRaw.match(/^(S|LSFT)\((KC_)?([A-Z0-9_]+)\)$/);
+    if (shiftMatch) {
+        const rawKey = shiftMatch[3]; // 'MINS', '1', etc.
+        const jisShiftMap = {
+            '1': '!', '2': '"', '3': '#', '4': '$', '5': '%', '6': '&', '7': '\'', '8': '(', '9': ')', '0': '',
+            'MINS': '=', 'EQL': '~', 'LBRC': '`', 'RBRC': '{', 'SCLN': '+', 'QUOT': '*', 'NUHS': '}', 'RO': '_', 'JYEN': '|'
+        };
+        const usShiftMap = {
+            '1': '!', '2': '@', '3': '#', '4': '$', '5': '%', '6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
+            'MINS': '_', 'EQL': '+', 'LBRC': '{', 'RBRC': '}', 'SCLN': ':', 'QUOT': '"', 'COMM': '<', 'DOT': '>', 'SLSH': '?', 'BSLS': '|', 'GRV': '~'
+        };
+        const shiftMap = isJIS ? jisShiftMap : usShiftMap;
+        
+        if (shiftMap[rawKey]) {
+            const sym = shiftMap[rawKey];
+            return {
+                fullRaw,
+                displayText: sym,
+                isFluentIcon: false,
+                isLayerKey: false,
+                layerType: null,
+                layerNum: null,
+                tapLabel: '',
+                tapIsFluent: false,
+                visualWeight: sym.length,
+                layerNum2: null,
+                isModKey: false,
+                modType: null,
+                modLabel: '',
+                modKeys: [],
+                baseLabel: '',
+                baseIsFluent: false
+            };
+        }
+    }
+
     let complex = null;
     let m = fullRaw.match(/^LT(\d+)\((L\d+),\s*(.+)\)$/);
     if (m) complex = { type: 'lt', mod: m[2], base: m[3], symbol: '/' };
@@ -67,15 +104,20 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases) {
     let isFluentIcon = false;
 
     const dict = KeymapDictionary || { modifiers: {}, keys: {} };
+    
+    // Pure dictionary lookup (no locale overrides)
     const getDictLabel = (kCode) => {
         const cleanCode = kCode.startsWith('KC_') ? kCode : `KC_${kCode}`;
-        if (dict.modifiers[cleanCode]) {
-            const entry = dict.modifiers[cleanCode];
-            return displayMode === 'Fluent' ? (keyStyle === 'Mac' ? entry.mac : entry.win) : (entry.text || kCode.replace('KC_', ''));
+        const rawCode = kCode.startsWith('KC_') ? kCode.replace('KC_', '') : kCode;
+
+        const modEntry = dict.modifiers[cleanCode] || dict.modifiers[rawCode];
+        if (modEntry) {
+            return displayMode === 'Fluent' ? (keyStyle === 'Mac' ? modEntry.mac : modEntry.win) : (modEntry.text || kCode.replace('KC_', ''));
         }
-        if (dict.keys[cleanCode]) {
-            const entry = dict.keys[cleanCode];
-            return displayMode === 'Fluent' && entry.fluent ? entry.fluent : (entry.text || kCode.replace('KC_', ''));
+
+        const keyEntry = dict.keys[cleanCode] || dict.keys[rawCode];
+        if (keyEntry) {
+            return displayMode === 'Fluent' && keyEntry.fluent ? keyEntry.fluent : (keyEntry.text || kCode.replace('KC_', ''));
         }
         return null;
     };
@@ -95,7 +137,8 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases) {
         if (dictLabel) {
             displayText = dictLabel;
             const cleanCode = raw.startsWith('KC_') ? raw : `KC_${raw}`;
-            const entry = dict.modifiers[cleanCode] || dict.keys[cleanCode];
+            const rawCode = raw.startsWith('KC_') ? raw.replace('KC_', '') : raw;
+            const entry = dict.modifiers[cleanCode] || dict.modifiers[rawCode] || dict.keys[cleanCode] || dict.keys[rawCode];
             if (displayMode === 'Fluent' && entry) {
                 if (entry.isFluent === true || (entry.fluent)) {
                     isFluentIcon = true;

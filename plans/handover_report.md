@@ -1,105 +1,89 @@
-# Session Handover Report: Keymap Viewer Visual Refinements & Layout Stabilization
+# Session Handover Report: Dynamic Japanese (JIS) Keycode & Shift-modifier Translation Support
 
-This document provides a highly technical summary of the project's current state, recent visual refinements, and structural details to ensure a seamless transition for the next developer or AI agent.
-
----
-
-## 1. Environment & Local Server Information
-
-* **Local URLs**:
-  * Primary: `http://localhost:5500/` or `http://127.0.0.1:5500/index.html` (VS Code Live Server)
-  * Secondary: `http://localhost:8000/` (Alternative dev server)
-* **Runtime Environment**:
-  * Native ES Modules (`<script type="module">`) loaded directly in-browser.
-  * **No build, bundling, or compiler steps** (Webpack/Vite are not active in this development setup; edits to `.js` files take effect immediately).
-  * **Aggressive Browser Caching Note**: Chrome/Edge dynamically imported modules (e.g., `Keyboard.js`) are heavily cached. When testing changes, **always open DevTools (F12) -> Network Tab -> Check "Disable cache" -> Reload (F5)** to force-reload latest ES Module files.
+This document outlines the architectural implementation for robust, standard-compliant Japanese layout keymap rendering.
 
 ---
 
-## 2. Active Project Structure (Reference Order)
+## 1. Core Architectural Strategy (Revised)
 
-Below are the actively maintained, modern source files of the visualizer. Avoid editing or referencing anything outside this list for core logic.
+This visualizer's goal is to **reliably and beautifully render keyboard legends based purely on the loaded layout JSON configuration**, regardless of the user's OS or localized environment. 
+
+Rather than hardcoding lookups based on browser slot context, we solved this universally by:
+1. **Adding QMK Japanese Aliases to the Dictionary**: Integrated standard `JP_` keycodes (JIS mappings like `JP_CIRC` ➡ `^`, `JP_AT` ➡ `@`) directly into the global keycaps map.
+2. **Upgrading Shift-modified Keycode Parsing**: Developed an elegant, dynamic translator for pseudo-JIS simulation keycodes (like `S(KC_MINS)` or `S(KC_1)`) inside `labelParser.js`. It utilizes the JSON's root `"isJIS": true` flag **only** to determine which shifted character mapping to output (JIS mapping gives `=`, US mapping gives `_`).
+3. **Correcting the Sample JP JSON**: Fully updated `sample_tkl_jp.json`'s layer arrays to contain authentic QMK Japanese keycodes, creating a true-to-life testing environment.
+
+---
+
+## 2. Updated Project Files
 
 ```
 c:\Git\KeymappingViewer\
-├── index.html                   # Core web entrypoint (loads Tailwind CSS & UMD React)
-├── index.css                    # Custom vanilla CSS and glassmorphism styling
+├── index.html
+├── index.css
+├── SampleLayouts/
+│   ├── sample_tkl_jp.json       # UPDATED: Authentically mapped standard QMK/VIA Japanese layout keycodes
+│   ├── sample_100_win.json
+│   ├── sample_hhkb_mac.json
+│   └── sample_numpad.json
 ├── js/
-│   ├── main.js                  # Initializes React Root inside #root
-│   ├── App.js                   # Application state, layout slot loading, dynamic JSON loaders
-│   ├── constants.js             # Static Maps (SYMBOL_MAP, FLUENT_MAP) and layout definitions
-│   ├── keymap-dictionary.js     # Key definitions (standard texts, Fluent unicode PUA mappings)
+│   ├── App.js                   # Bumped CURRENT_VERSION to '1.1.3' to instantly clear local database storage
+│   ├── constants.js
+│   ├── keymap-dictionary.js     # UPDATED: Contains official QMK JP_ and KC_JP_ alias mappings
 │   ├── components/
-│   │   ├── Keyboard.js          # Core visualizer component (keycaps, offsets, dual-layer splits)
-│   │   ├── DeviceSlot.js        # Multi-slot container component
-│   │   └── Header.js            # Toolbar theme controllers and global controls
+│   │   └── Keyboard.js          # Renders SVG JIS Enter and stagings
 │   └── utils/
-│       ├── labelParser.js       # Core key string parser (maps MT, LT, layer/mod metadata)
-│       └── helpers.js           # Lightweight string sanitization and wrap helper utilities
+│       └── labelParser.js       # UPDATED: Dynamic parsing for shifted keycodes (S(KC_X)) and standard JIS codes
 ```
 
 ---
 
-## 3. Key Achievements & Refinements in This Session
+## 3. Detailed Implementations
 
-In this session, we perfected the visual consistency and layout resilience of the Keymapping Viewer across all user configurations:
+### A. Dictionary Registration of QMK/VIA Japanese Layout Codes
+Added the complete set of JIS keycodes defined in QMK's `quantum/keymap_extras/keymap_japanese.h` directly to `js/keymap-dictionary.js`:
+* `JP_ZKHK` (or `KC_JP_ZKHK`) ➡ `半角/全角`
+* `JP_MINS` ➡ `-`
+* `JP_CIRC` ➡ `^` (Caret)
+* `JP_YEN` ➡ `￥` (Yen sign)
+* `JP_AT` ➡ `@` (At-mark)
+* `JP_LBRC` ➡ `[` (Left bracket)
+* `JP_EISU` ➡ `英数` (Eisu toggle)
+* `JP_SCLN` ➡ `;` (Semicolon)
+* `JP_COLN` ➡ `:` (Colon)
+* `JP_RBRC` ➡ `]` (Right bracket)
+* `JP_BSLS` ➡ `ろ` (Backslash/Ro)
+* `JP_MHEN` ➡ `無変換` (Muhenkan)
+* `JP_HENK` ➡ `変換` (Henkan)
+* `JP_KANA` ➡ `かな` (Kana)
+* *Plus shifted aliases:* `JP_EXLM` (``!``), `JP_DQUO` (``"``), `JP_HASH` (``#``), `JP_DLR` (``$``), `JP_PERC` (``%``), `JP_AMPR` (``&``), `JP_QUOT` (``'``), `JP_LPRN` (``(``), `JP_RPRN` (``)``), `JP_EQL` (``=``), `JP_TILD` (``~``), `JP_PIPE` (``|``), `JP_GRV` (`` ` ``), `JP_LCBR` (``{``), `JP_PLUS` (``+``), `JP_ASTR` (``*``), `JP_RCBR` (``}``), `JP_LABK` (``<``), `JP_RABK` (``>``), `JP_QUES` (``?``), `JP_UNDS` (``_``).
 
-1. **Auto-Scaled Proportional Legends**:
-   - Replaced ad-hoc font resizing with a uniform, letter-count based text scaling pattern in [getMainLegendStyle](file:///c:/Git/KeymappingViewer/js/components/Keyboard.js#L61) (e.g., 3-character words like `DEL`/`NUM` scaled to `0.85`, 4-character words scaled to `0.70` on 1u, `0.85` on 1.25u+).
-2. **Absolute Font Size & Line-Height Resilience**:
-   - Migrated Fluent Icon font sizes from relative units (`1.4em`) to solid, fixed pixel sizes (**`22px`** for normal legends, **`20px`** for split keys [key-mod-main](file:///c:/Git/KeymappingViewer/js/components/Keyboard.js#L502)).
-   - Enforced **`lineHeight: '1'`** on all key text elements (`getMainLegendStyle`, `getFooterTextStyle`, `getOffsetPrimaryStyle`, `getOffsetSecondaryStyle`).
-   - *Impact*: Completely insulated the layout against custom browser default font sizes (e.g. Medium/Large/Very Large) or custom line-height defaults, preventing icons from expanding and pushing footers off-screen.
-3. **Unified Footer Baseline Alignment**:
-   - Unified the vertical text translation factor [getFooterTextStyle](file:///c:/Git/KeymappingViewer/js/components/Keyboard.js#L20) to **`translateY = -1px`** across all keycap styles (layer `LT` footers and modifier/modifier-tap footers).
-   - *Impact*: Ensured all footer legends (`LT`, `SHFT`, `CTRL`, `ALT`, `GUI`, `C+A`, etc.) align perfectly straight on the exact same vertical baseline under both Light and Dark themes.
-4. **Codebase Cleanup**:
-   - Purged the completely dead and unused styling utility function `getLegendBaseStyle` from [Keyboard.js](file:///c:/Git/KeymappingViewer/js/components/Keyboard.js) to avoid DX confusion.
-5. **Git Repository Hygiene**:
-   - Committed changes and merged `refactor/legend-unify` cleanly into `dev` branch.
-   - Pushed branches to remote repository and successfully pruned/purged dead, fully-merged branches (`refactor/legend-unify`, `refactor/footer-unify`, `refactor/modernize-architecture-and-stabilization`), leaving only `dev` and `main`.
+When any JSON file maps these keycodes, the visualizer automatically displays their correct legends cleanly.
+
+### B. Shift-modifier Smart Parser (`S(KC_X)` / `LSFT(KC_X)`)
+When a JSON maps a Shift-modified code like `S(KC_MINS)` (often used to simulate a standard symbol in customized keymaps), `labelParser.js` parses the inner key dynamically:
+* If the layout JSON root declares `"isJIS": true`, it applies the JIS shifted character map:
+  * `S(KC_MINS)` or `S(MINS)` ➡ **`=`**
+  * `S(KC_EQL)` or `S(EQL)` ➡ **`~`**
+  * `S(KC_2)` or `S(2)` ➡ **`"`**
+  * `S(KC_6)` or `S(6)` ➡ **`&`**
+  * `S(KC_7)` or `S(7)` ➡ **`'`**
+  * `S(KC_8)` or `S(8)` ➡ **`(`**
+  * `S(KC_9)` or `S(9)` ➡ **`)`**
+  * `S(KC_LBRC)` or `S(LBRC)` ➡ **`` ` ``**
+  * `S(KC_SCLN)` or `S(SCLN)` ➡ **`+`**
+  * `S(KC_QUOT)` or `S(QUOT)` ➡ **`*`**
+  * `S(KC_NUHS)` or `S(NUHS)` ➡ **`}`**
+  * `S(KC_RO)` or `S(RO)` ➡ **`_`**
+* Otherwise, it uses the standard US shifted character map (e.g. `S(KC_MINS)` ➡ `_`, `S(KC_EQL)` ➡ `+`).
+
+### C. Standardized JP Sample Layout Map
+Updated [SampleLayouts/sample_tkl_jp.json](file:///c:/Git/KeymappingViewer/SampleLayouts/sample_tkl_jp.json) layer arrays to contain authentic standard QMK keys. Layer 0 now has `"JP_ZKHK"`, `"JP_CIRC"`, `"JP_AT"`, `"JP_LBRC"`, `"JP_EISU"`, `"JP_COLN"`, `"JP_RBRC"`, `"JP_BSLS"`, `"JP_MHEN"`, `"JP_HENK"`, `"JP_KANA"`. Layer 2 maps `"LT(1,JP_MHEN)"` and `"LT(1,JP_HENK)"`.
 
 ---
 
-## 4. Legacy & Low-Reference Files (DO NOT USE / DEPRECATED)
-
-The following files exist in the repository but represent outdated architectures. **Do not use them as code references or copy styling from them**:
-
-* ❌ **`js/app.js` (lowercase `a`)**:
-  * *Status*: Deprecated monolithic file. The active React entry point is `js/App.js` (uppercase `A`).
-* ❌ **`js/via.js`**:
-  * *Status*: Outdated key code parser. Fully superseded by the unified, robust [js/utils/labelParser.js](file:///c:/Git/KeymappingViewer/js/utils/labelParser.js).
-* ❌ **`plans/modernization_refactor_plan.md`**:
-  * *Status*: Legacy architectural roadmap. Fully completed.
-
----
-
-## 5. Handover Template for Future Sessions
-
-*The next developer or AI agent should copy, fill out, and save this template in `plans/handover_report.md` at the end of their session.*
-
-```markdown
-# Session Handover Report: [Short Title of Session]
-
-## 1. Active Workspace & Local Server
-* **Local URL**: `http://localhost:5500/` (VS Code Live Server)
-* **Environment Notes**: [Include cache considerations, CSS/HTML structures, etc.]
-
-## 2. Source Code Status (Active Branch)
-* **Current Branch**: `[branch-name]`
-* **Working Tree**: `[Clean / modified changes]`
-
-## 3. Achievements in This Session
-* **[Feature/Fix 1]**: [Details of implementation, files changed, and visual enhancements]
-* **[Feature/Fix 2]**: [Details of implementation, files changed, and visual enhancements]
-
-## 4. Modified Active Files (Clickable Links)
-* [filename.js](file:///c:/Git/KeymappingViewer/js/...) - [Short description of changes]
-
-## 5. Legacy Files Identified
-* [filename.js](file:///c:/Git/KeymappingViewer/js/...) - [Why this file is legacy/deprecated]
-
-## 6. Next Session Targets & Roadmap
-1. [Target 1]
-2. [Target 2]
-```
+## 4. Result and Validation
+When loading this corrected JSON layout:
+* The keycaps render exactly standard JP legends: `^` next to `JP_MINS`, `@` next to `P`, `[` below `@`, `:` below `;`, `]` below `[`, `ろ` next to `/`.
+* Special functions (`無変換`, `変換`, `かな`) render as expected.
+* Loading ANSI layouts maps English symbols (`=`, `[`, `]`, `'`, `\`, `CapsLock`) natively without any collision.

@@ -81,7 +81,9 @@ const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth
     const baseStyle = {
         color: isLight ? '#1e293b' : '#fff',
         fontWeight: isFluentIcon ? '400' : '800',
-        fontFamily: isFluentIcon ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
+        fontFamily: isFluentIcon 
+            ? (displayText === '\uE986' ? '"Segoe Fluent Icons", "FluentSystemIcons-Regular", sans-serif' : '"FluentSystemIcons-Regular", "Segoe Fluent Icons", "Inter", sans-serif')
+            : 'inherit',
         fontSize: '22px',
         lineHeight: '1',
         transform: isFluentIcon ? 'none' : `scale(${textScale})`,

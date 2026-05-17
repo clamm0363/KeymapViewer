@@ -9,7 +9,7 @@ import { MacroModal } from './components/Modals/MacroModal.js';
 import { ExportModal } from './components/Modals/ExportModal.js';
 import { Keyboard } from './components/Keyboard.js';
 
-const CURRENT_VERSION = '1.0.8';
+const CURRENT_VERSION = '1.2.5';
 
 export function App() {
     const saved = useMemo(() => {
@@ -41,6 +41,7 @@ export function App() {
 
         const loadSamples = async () => {
             const sampleFiles = [
+                { file: 'SampleLayouts/sample_tkl_jp.json', keyStyle: 'Windows' },
                 { file: 'SampleLayouts/sample_100_win.json', keyStyle: 'Windows' },
                 { file: 'SampleLayouts/sample_hhkb_mac.json', keyStyle: 'Mac' },
                 { file: 'SampleLayouts/sample_numpad.json', keyStyle: 'Windows' }
