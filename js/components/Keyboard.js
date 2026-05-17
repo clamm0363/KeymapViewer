@@ -189,7 +189,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         textAlign: 'center',
         textTransform: 'uppercase',
         letterSpacing: '-0.02em',
-        width: '100%'
+        width: '100%',
+        overflow: 'visible'
     });
 
     const getLayerFooterColor = (num) => {
@@ -286,7 +287,9 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     if (isFluentCenter) visualWeightForScale = 1.2;
                     else if (isModKey && modType !== 'base') visualWeightForScale += 0.5;
 
-                    const estimatedPxWidth = visualWeightForScale * 11.0; 
+                    // 4文字以上の英字ラベル（PSCR等）は太字大文字で幅が広いため、倍率を13pxに設定して検知力を向上
+                    const charWidthMultiplier = (!isFluentCenter && centerText.length >= 4) ? 13.0 : 11.0;
+                    const estimatedPxWidth = visualWeightForScale * charWidthMultiplier; 
                     let targetScale = 1.0;
                     let canWrap = manualWrap;
 
@@ -299,8 +302,9 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         }
                     }
 
-                    // 最小/最大スケールの制限
-                    targetScale = Math.max(isExportMode ? 0.55 : 0.6, Math.min(1.1, targetScale));
+                    // 最小/最大スケールの制限（長文のNUMLOCK等は十分に縮小できるように閾値を引き下げる）
+                    const minScaleLimit = centerText.length >= 7 ? 0.4 : (centerText.length >= 5 ? 0.5 : 0.6);
+                    targetScale = Math.max(isExportMode ? Math.min(minScaleLimit, 0.55) : minScaleLimit, Math.min(1.1, targetScale));
                     if (manualWrap) targetScale = Math.min(0.9, targetScale);
 
                     return createElement('div', {
