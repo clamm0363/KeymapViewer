@@ -58,7 +58,7 @@ const getOffsetSecondaryStyle = (isLight) => ({
 });
 
 // Shared main legend styling utility for standard/modifier/layer text keycaps to enforce strict size harmony
-const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, customOverrides = {}) => {
+const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth = 1, customOverrides = {}) => {
     // 1uキーキャップ基準で、文字数（長さ）に応じて完全に均一な縮小率を適用し、表示崩れを防ぐ
     let textScale = 1.0;
     if (!isFluentIcon && displayText) {
@@ -68,7 +68,9 @@ const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, customOv
         } else {
             const len = displayText.length;
             if (len === 3) textScale = 0.85;       // INS, DEL, END, NUM等が一律で同じサイズに揃う
-            else if (len === 4) textScale = 0.70;  // PSCR, SLCK, PAUS, HOME, PGUP, PGDN等が一律で同じサイズに揃う
+            else if (len === 4) {
+                textScale = keyWidth >= 1.25 ? 0.85 : 0.70;  // 1.25u以上の4文字キーは0.85(3文字サイズ)、1uキーは0.70
+            }
             else if (len >= 5) textScale = 0.55;   // 長文ラベル用
         }
     }
@@ -411,7 +413,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     // 通常の1段レイヤーデザイン (MO(1) や TG(2) など)
                                     createElement('div', { 
                                         className: "key-layer-main",
-                                        style: getMainLegendStyle(isLight, `L${layerNum}`, false, {
+                                        style: getMainLegendStyle(isLight, `L${layerNum}`, false, (k.w || 56) / 56, {
+                                            flex: 1,
                                             transform: 'scale(0.9)'
                                         })
                                     }, `L${layerNum}`)
@@ -476,9 +479,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     },
                                         createElement('span', {
                                             className: "legend-text",
-                                            style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, {
+                                            style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
                                                 color: getModColor(modKeys[0], isLight),
-                                                ...(finalDisplayText.length === 4 && k.w && k.w >= 1.25 ? { transform: 'scale(0.85)' } : {}),
                                                 ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
                                             })
                                         }, finalDisplayText)
@@ -494,7 +496,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                         },
                                             createElement('div', {
                                                 className: "key-mod-main",
-                                                style: getMainLegendStyle(isLight, baseLabel, baseIsFluent, {
+                                                style: getMainLegendStyle(isLight, baseLabel, baseIsFluent, (k.w || 56) / 56, {
+                                                    flex: 1,
                                                     fontSize: baseIsFluent ? '1.4em' : '18px',
                                                     marginTop: '2px'
                                                 })
@@ -534,8 +537,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                             },
                                 createElement('span', {
                                     className: "legend-text",
-                                    style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, {
-                                        ...(finalDisplayText.length === 4 && k.w && k.w >= 1.25 ? { transform: 'scale(0.85)' } : {}),
+                                    style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
                                         ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
                                     })
                                 }, finalDisplayText)
