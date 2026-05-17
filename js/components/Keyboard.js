@@ -21,6 +21,7 @@ const getFooterTextStyle = (scale = 0.72, translateY = -2.6, fontSize = '14px') 
     fontSize,
     fontWeight: '900',
     letterSpacing: '0.05em',
+    lineHeight: '1',
     transform: `scale(${scale}) translateY(${translateY}px)`,
     transformOrigin: 'center center',
     whiteSpace: 'nowrap'
@@ -42,7 +43,8 @@ const getOffsetPrimaryStyle = (isLight, isFluent = false, customFontSize = null)
     fontFamily: isFluent ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
     color: isLight ? '#1e293b' : '#fff',
     transform: 'scale(0.75)',
-    transformOrigin: 'left bottom'
+    transformOrigin: 'left bottom',
+    lineHeight: '1'
 });
 
 const getOffsetSecondaryStyle = (isLight) => ({
@@ -54,7 +56,8 @@ const getOffsetSecondaryStyle = (isLight) => ({
     color: isLight ? '#64748b' : '#94a3b8',
     opacity: 0.8,
     transform: 'scale(0.75)',
-    transformOrigin: 'right top'
+    transformOrigin: 'right top',
+    lineHeight: '1'
 });
 
 // Shared main legend styling utility for standard/modifier/layer text keycaps to enforce strict size harmony
@@ -79,7 +82,8 @@ const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth
         color: isLight ? '#1e293b' : '#fff',
         fontWeight: isFluentIcon ? '400' : '800',
         fontFamily: isFluentIcon ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
-        fontSize: isFluentIcon ? '1.4em' : '22px',
+        fontSize: '22px',
+        lineHeight: '1',
         transform: isFluentIcon ? 'none' : `scale(${textScale})`,
         transformOrigin: 'center center',
         display: 'flex',
@@ -498,7 +502,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                 className: "key-mod-main",
                                                 style: getMainLegendStyle(isLight, baseLabel, baseIsFluent, (k.w || 56) / 56, {
                                                     flex: 1,
-                                                    fontSize: baseIsFluent ? '1.4em' : '18px',
+                                                    fontSize: baseIsFluent ? '20px' : '18px',
                                                     marginTop: '2px'
                                                 })
                                             }, baseLabel),
