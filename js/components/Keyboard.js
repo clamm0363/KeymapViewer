@@ -284,11 +284,24 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     
                     // スケール計算: visualWeightに基づき、かつ1u(56px)基準で調整
                     let visualWeightForScale = centerText.length;
-                    if (isFluentCenter) visualWeightForScale = 1.2;
-                    else if (isModKey && modType !== 'base') visualWeightForScale += 0.5;
+                    if (isFluentCenter) {
+                        visualWeightForScale = 1.2;
+                    } else {
+                        // 文字自体の形状（グリフ幅）を考慮した高精度なビジュアルウェイトの計算
+                        let totalWeight = 0;
+                        for (let j = 0; j < centerText.length; j++) {
+                            const uc = centerText[j].toUpperCase();
+                            if (uc === 'M' || uc === 'W') totalWeight += 1.4;
+                            else if ('OQGDCNU'.includes(uc)) totalWeight += 1.15;
+                            else if ('ILFTJ'.includes(uc)) totalWeight += 0.7;
+                            else totalWeight += 1.0;
+                        }
+                        visualWeightForScale = totalWeight;
+                        if (isModKey && modType !== 'base') visualWeightForScale += 0.5;
+                    }
 
-                    // 4文字以上の英字ラベル（PSCR等）は太字大文字で幅が広いため、倍率を13pxに設定して検知力を向上
-                    const charWidthMultiplier = (!isFluentCenter && centerText.length >= 4) ? 13.0 : 11.0;
+                    // 3文字以上の英字ラベル（NUMやPSCR等）は太字大文字の幅を正確に捉えるため、倍率を13.5pxに設定して検知力を向上
+                    const charWidthMultiplier = (!isFluentCenter && centerText.length >= 3) ? 13.5 : 11.0;
                     const estimatedPxWidth = visualWeightForScale * charWidthMultiplier; 
                     let targetScale = 1.0;
                     let canWrap = manualWrap;
