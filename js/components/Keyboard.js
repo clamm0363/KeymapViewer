@@ -142,6 +142,38 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         return (isLight ? lightColors : darkColors)[num % 10];
     };
 
+    const getModColor = (mod, isLight) => {
+        if (!mod) return isLight ? '#475569' : '#334155';
+        const cleanMod = mod.toUpperCase();
+        const palettes = {
+            // High-contrast hardware-grade palettes:
+            // Light theme uses deeper ocean/forest shades, Dark theme uses rich vibrant solid shades.
+            SHIFT: { light: '#c2410c', dark: '#ea580c' }, // Terracotta / Energy Sunset Orange
+            SHFT:  { light: '#c2410c', dark: '#ea580c' },
+            CTRL:  { light: '#0369a1', dark: '#0284c7' }, // Deep Tech Blue / Cobalt Blue
+            ALT:   { light: '#6d28d9', dark: '#7c3aed' }, // Royal Purple / Mystic Violet
+            GUI:   { light: '#065f46', dark: '#059669' }, // Deep Forest / Rich Emerald Green
+            WIN:   { light: '#065f46', dark: '#059669' },
+            CMD:   { light: '#065f46', dark: '#059669' }
+        };
+        const entry = palettes[cleanMod] || { light: '#475569', dark: '#334155' };
+        return isLight ? entry.light : entry.dark;
+    };
+
+    const getModGradient = (mKeys, isLight) => {
+        if (!mKeys || mKeys.length === 0) return isLight ? '#64748b' : '#475569';
+        if (mKeys.length === 1) return getModColor(mKeys[0], isLight);
+        
+        // Build dynamic gradient for multiple modifiers
+        const colorStops = mKeys.map((m, idx) => {
+            const color = getModColor(m, isLight);
+            const startPerc = (idx / mKeys.length) * 100;
+            const endPerc = ((idx + 1) / mKeys.length) * 100;
+            return `${color} ${startPerc}%, ${color} ${endPerc}%`;
+        });
+        return `linear-gradient(to right, ${colorStops.join(', ')})`;
+    };
+
     // --- Render Component ---
 
     return createElement('div', {
@@ -170,18 +202,22 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     const parsed = parseKeyLabel(val, k.id, displayMode, keyStyle, macroAliases);
                     const {
                         fullRaw, displayText, isFluentIcon, isLayerKey,
-                        layerType, layerNum, layerNum2, tapLabel, tapIsFluent, visualWeight
+                        layerType, layerNum, layerNum2, tapLabel, tapIsFluent, visualWeight,
+                        isModKey, modType, modLabel, modKeys, baseLabel, baseIsFluent
                     } = parsed;
 
+                    const isFluentCenter = isFluentIcon || (isModKey && baseIsFluent);
+                    const centerText = (isModKey && modType !== 'base') ? baseLabel : displayText;
+
                     // 自動スケーリングと折り返しの計算
-                    let finalDisplayText = displayText;
+                    let finalDisplayText = centerText;
                     let manualWrap = false;
                     
                     // 特殊記号での自動折り返し試行
-                    if (displayText.length > 5 && (displayText.includes('_') || displayText.includes('-'))) {
-                        const splitIdx = Math.max(displayText.lastIndexOf('_'), displayText.lastIndexOf('-'));
-                        if (splitIdx > 1 && splitIdx < displayText.length - 2) {
-                            finalDisplayText = displayText.substring(0, splitIdx) + '\n' + displayText.substring(splitIdx);
+                    if (centerText.length > 5 && (centerText.includes('_') || centerText.includes('-'))) {
+                        const splitIdx = Math.max(centerText.lastIndexOf('_'), centerText.lastIndexOf('-'));
+                        if (splitIdx > 1 && splitIdx < centerText.length - 2) {
+                            finalDisplayText = centerText.substring(0, splitIdx) + '\n' + centerText.substring(splitIdx);
                             manualWrap = true;
                         }
                     }
@@ -190,15 +226,18 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     const availableWidth = kWidth - (isExportMode ? 4 : 2);
                     
                     // スケール計算: visualWeightに基づき、かつ1u(56px)基準で調整
-                    // 18px (base font size) * visualWeight が目安の幅
-                    const estimatedPxWidth = visualWeight * 11.0; 
+                    let visualWeightForScale = centerText.length;
+                    if (isFluentCenter) visualWeightForScale = 1.2;
+                    else if (isModKey && modType !== 'base') visualWeightForScale += 0.5;
+
+                    const estimatedPxWidth = visualWeightForScale * 11.0; 
                     let targetScale = 1.0;
                     let canWrap = manualWrap;
 
                     if (estimatedPxWidth > availableWidth) {
                         targetScale = availableWidth / estimatedPxWidth;
                         // 極端に小さくなる場合は折り返しを検討
-                        if (!manualWrap && targetScale < 0.7 && displayText.length > 6) {
+                        if (!manualWrap && targetScale < 0.7 && centerText.length > 6) {
                             canWrap = true;
                             targetScale = Math.max(0.75, targetScale * 1.2); 
                         }
@@ -219,8 +258,20 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                 onMacroClick(parseInt(macroMatch[1], 10));
                             }
                         },
-                        style: getKeycapFrameStyle(k, isLayerKey)
+                        style: getKeycapFrameStyle(k, isLayerKey || isModKey)
                     }, 
+                        isModKey && modType === 'base' && createElement('div', {
+                            className: "mod-accent-bar",
+                            style: {
+                                position: 'absolute',
+                                left: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: '3.5px',
+                                backgroundColor: getModColor(modKeys[0], isLight),
+                                zIndex: 20
+                            }
+                        }),
                         isLayerKey ? (
                             createElement('div', { className: "key-layer-container", style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column' } },
                                 layerNum2 ? (
@@ -257,22 +308,57 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                             }
                                         }, `L${layerNum2}`)
                                     )
+                                ) : layerType === 'LT' ? (
+                                    // LTキー用の新しい2段構えデザイン
+                                    createElement('div', { 
+                                        className: "key-layer-main relative",
+                                        style: { flex: 1, position: 'relative', width: '100%' }
+                                    }, 
+                                        createElement('div', {
+                                            className: "layer-primary",
+                                            style: {
+                                                position: 'absolute',
+                                                left: '6px',
+                                                bottom: '2px',
+                                                fontSize: tapIsFluent ? '26px' : '22px', // Fluentアイコンなら少し大きめに
+                                                fontWeight: '900',
+                                                fontFamily: tapIsFluent ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
+                                                color: isLight ? '#1e293b' : '#fff',
+                                                transform: 'scale(0.75)',
+                                                transformOrigin: 'left bottom'
+                                            }
+                                        }, tapLabel),
+                                        createElement('div', {
+                                            className: "layer-secondary",
+                                            style: {
+                                                position: 'absolute',
+                                                right: '6px',
+                                                top: '3px',
+                                                fontSize: '16px',
+                                                fontWeight: '700',
+                                                color: isLight ? '#64748b' : '#94a3b8',
+                                                opacity: 0.8,
+                                                transform: 'scale(0.75)',
+                                                transformOrigin: 'right top'
+                                            }
+                                        }, `L${layerNum}`)
+                                    )
                                 ) : (
-                                    // 通常の1段レイヤーデザイン
+                                    // 通常の1段レイヤーデザイン (MO(1) や TG(2) など)
                                     createElement('div', { 
                                         className: "key-layer-main",
                                         style: {
                                             color: isLight ? '#1e293b' : '#fff',
-                                            fontFamily: (layerType === 'LT' && tapIsFluent) ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
-                                            fontSize: (layerType === 'LT' && tapIsFluent) ? '1.4em' : '22px',
+                                            fontFamily: 'inherit',
+                                            fontSize: '22px',
                                             flex: 1,
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            transform: (layerType === 'LT' && tapIsFluent) ? 'none' : 'scale(0.85)',
+                                            transform: 'scale(0.85)',
                                             transformOrigin: 'center center'
                                         }
-                                    }, layerType === 'LT' ? tapLabel : `L${layerNum}`)
+                                    }, `L${layerNum}`)
                                 ),
                                 createElement('div', {
                                     className: "key-layer-footer",
@@ -337,11 +423,103 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                     whiteSpace: 'nowrap'
                                                 } 
                                             }, 
-                                                layerType,
-                                                layerType === 'LT' && createElement('b', { style: { color: '#facc15', marginLeft: '2px', fontWeight: '900' } }, layerNum)
+                                                layerType
                                             )
                                         )
                                     )
+                                )
+                            )
+                        ) : isModKey ? (
+                            createElement('div', {
+                                className: "key-mod-container",
+                                style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }
+                            },
+                                modType === 'base' ? (
+                                    // ① Base Modifier: color-matched icon/text
+                                    createElement('div', {
+                                        className: "key-content flex-1 flex items-center justify-center w-full h-full",
+                                        style: {
+                                            transform: `scale(${targetScale * 0.9})`,
+                                            transformOrigin: 'center center',
+                                            padding: '2px',
+                                            paddingLeft: '6px' // offset from left accent bar
+                                        }
+                                    },
+                                        createElement('span', {
+                                            className: "legend-text",
+                                            style: {
+                                                ...getLegendBaseStyle(isFluentIcon, finalDisplayText, canWrap),
+                                                color: getModColor(modKeys[0], isLight), // Dynamic premium color matched legend!
+                                                fontSize: isFluentIcon ? '1.4em' : '22px',
+                                                transform: isFluentIcon ? 'none' : 'scale(0.85)',
+                                                transformOrigin: 'center center'
+                                            }
+                                        }, finalDisplayText)
+                                    )
+                                ) : (
+                                    // ② Mod-Tap or Direct Mod: split layout with premium colored footer band
+                                    (() => {
+                                        const footerScale = 0.72;
+
+                                        return createElement('div', {
+                                            className: "key-mod-split-container",
+                                            style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }
+                                        },
+                                            createElement('div', {
+                                                className: "key-mod-main",
+                                                style: {
+                                                    ...getLegendBaseStyle(baseIsFluent, baseLabel, false),
+                                                    fontSize: baseIsFluent ? '1.4em' : '18px',
+                                                    flex: 1,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    transform: baseIsFluent ? 'none' : 'scale(0.85)',
+                                                    transformOrigin: 'center center',
+                                                    marginTop: '2px'
+                                                }
+                                            }, baseLabel),
+                                            createElement('div', {
+                                                className: "key-mod-footer",
+                                                style: {
+                                                    marginTop: 'auto',
+                                                    width: 'calc(100% + 8px)',
+                                                    marginLeft: '-4px',
+                                                    marginRight: '-4px',
+                                                    marginBottom: '-4px',
+                                                    height: '18px',
+                                                    display: 'flex',
+                                                    zIndex: 10,
+                                                    overflow: 'hidden',
+                                                    borderBottomLeftRadius: '4px',
+                                                    borderBottomRightRadius: '4px',
+                                                    borderTop: `2px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#475569' : '#334155')}`
+                                                }
+                                            },
+                                                createElement('div', {
+                                                    style: {
+                                                        flex: 1,
+                                                        background: getModGradient(modKeys, isLight),
+                                                        color: '#f8fafc',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }
+                                                },
+                                                    createElement('span', {
+                                                        style: {
+                                                            fontSize: '14px',
+                                                            fontWeight: '900',
+                                                            letterSpacing: '0.05em',
+                                                            transform: `scale(${footerScale}) translateY(-2.6px)`,
+                                                            transformOrigin: 'center center',
+                                                            whiteSpace: 'nowrap'
+                                                        }
+                                                    }, modLabel)
+                                                )
+                                            )
+                                        );
+                                    })()
                                 )
                             )
                         ) : (

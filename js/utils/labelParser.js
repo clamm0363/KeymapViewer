@@ -10,27 +10,55 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases) {
     if (m) complex = { type: 'lt', mod: m[2], base: m[3], symbol: '/' };
     if (!complex) {
         m = fullRaw.match(/^MT\(MOD_(\w+),\s*(.+)\)$/);
-        const modMap = { 'LCTL': 'CTRL', 'RCTL': 'CTRL', 'LSFT': 'SHIFT', 'RSFT': 'SHIFT', 'LALT': 'ALT', 'RALT': 'ALT', 'LGUI': 'GUI', 'RGUI': 'GUI' };
+        const modMap = { 'LCTL': 'CTRL', 'RCTL': 'CTRL', 'LSFT': 'SHFT', 'RSFT': 'SHFT', 'LALT': 'ALT', 'RALT': 'ALT', 'LGUI': 'GUI', 'RGUI': 'GUI' };
         if (m) complex = { type: 'mt', mod: modMap[m[1]] || m[1], base: m[2], symbol: '/' };
     }
     if (!complex) {
-        m = fullRaw.match(/^([ACSG])\((.+)\)$/);
-        const modMap = { 'A': 'ALT', 'C': 'CTRL', 'S': 'SHIFT', 'G': 'GUI' };
-        if (m) complex = { type: 'mod', mod: modMap[m[1]], base: m[2], symbol: '+' };
+        m = fullRaw.match(/^(LCTL_T|LSFT_T|LALT_T|LGUI_T|RCTL_T|RSFT_T|RALT_T|RGUI_T)\((.+)\)$/);
+        const modMap = {
+            'LCTL_T': 'CTRL', 'RCTL_T': 'CTRL',
+            'LSFT_T': 'SHFT', 'RSFT_T': 'SHFT',
+            'LALT_T': 'ALT', 'RALT_T': 'ALT',
+            'LGUI_T': 'GUI', 'RGUI_T': 'GUI'
+        };
+        if (m) complex = { type: 'mt', mod: modMap[m[1]], base: m[2], symbol: '/' };
     }
     if (!complex) {
-        m = fullRaw.match(/^(LCTL|LSFT|LALT|LGUI|RCTL|RSFT|RALT|RGUI)\((.+)\)$/);
-        const modMap = { 'LCTL': 'CTRL', 'RCTL': 'CTRL', 'LSFT': 'SHIFT', 'RSFT': 'SHIFT', 'LALT': 'ALT', 'RALT': 'ALT', 'LGUI': 'GUI', 'RGUI': 'GUI' };
-        if (m) complex = { type: 'mod', mod: modMap[m[1]], base: m[2], symbol: '+' };
-    }
-    if (!complex) {
-        m = fullRaw.match(/^(LCA|LSA|RSA|RCS|LCG|RCG|LSG|RSG|LAG|RAG|MEH|HYPR)\((.+)\)$/);
-        const multiMap = {
-            'LCA': 'CTRL+ALT', 'LSA': 'SHIFT+ALT', 'RSA': 'SHIFT+ALT', 'RCS': 'CTRL+SHIFT',
-            'LCG': 'CTRL+GUI', 'RCG': 'CTRL+GUI', 'LSG': 'SHIFT+GUI', 'RSG': 'SHIFT+GUI',
+        let activeMods = [];
+        let currentRaw = fullRaw;
+        let matched = true;
+        const modWrapperMap = {
+            'LCTL': 'CTRL', 'RCTL': 'CTRL', 'LSFT': 'SHFT', 'RSFT': 'SHFT',
+            'LALT': 'ALT', 'RALT': 'ALT', 'LGUI': 'GUI', 'RGUI': 'GUI',
+            'A': 'ALT', 'C': 'CTRL', 'S': 'SHFT', 'G': 'GUI',
+            'LCA': 'CTRL+ALT', 'LSA': 'SHFT+ALT', 'RSA': 'SHFT+ALT', 'RCS': 'CTRL+SHFT',
+            'LCG': 'CTRL+GUI', 'RCG': 'CTRL+GUI', 'LSG': 'SHFT+GUI', 'RSG': 'SHFT+GUI',
             'LAG': 'ALT+GUI', 'RAG': 'ALT+GUI', 'MEH': 'CTRL+ALT+SHFT', 'HYPR': 'CTRL+ALT+SHFT+GUI'
         };
-        if (m) complex = { type: 'mod', mod: multiMap[m[1]], base: m[2], symbol: '+' };
+        
+        while (matched) {
+            matched = false;
+            let mw = currentRaw.match(/^(LCTL|LSFT|LALT|LGUI|RCTL|RSFT|RALT|RGUI|A|C|S|G|LCA|LSA|RSA|RCS|LCG|RCG|LSG|RSG|LAG|RAG|MEH|HYPR)\((.+)\)$/);
+            if (mw) {
+                const modName = modWrapperMap[mw[1]];
+                if (modName) {
+                    const parts = modName.split('+');
+                    activeMods.push(...parts);
+                    currentRaw = mw[2];
+                    matched = true;
+                }
+            }
+        }
+        
+        if (activeMods.length > 0) {
+            const uniqueMods = [...new Set(activeMods)];
+            complex = {
+                type: 'mod',
+                mod: uniqueMods.join('+'),
+                base: currentRaw,
+                symbol: '+'
+            };
+        }
     }
 
     const raw = fullRaw.replace(/MACRO\((\d+)\)/g, (match, p1) => (macroAliases && macroAliases[p1] ? macroAliases[p1] : `M${p1}`)).replace(/CUSTOM\((\d+)\)/g, 'C$1');
@@ -102,12 +130,80 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases) {
         const cleanTKey = tKeyRaw.replace('KC_', '');
         const entry = dict.keys[`KC_${cleanTKey}`] || dict.modifiers[`KC_${cleanTKey}`];
         if (displayMode === 'Fluent') {
-            if (FLUENT_MAP[cleanTKey] || (entry && (entry.fluent || entry.isFluent))) {
+            if (entry && entry.fluent) {
                 tapIsFluent = true;
-                if (FLUENT_MAP[cleanTKey]) tapLabel = FLUENT_MAP[cleanTKey];
-                else if (entry.fluent) tapLabel = entry.fluent;
+                tapLabel = entry.fluent;
+            } else if (FLUENT_MAP[cleanTKey]) {
+                tapIsFluent = true;
+                tapLabel = FLUENT_MAP[cleanTKey];
             } else if (tapLabel.length === 1 && tapLabel.charCodeAt(0) >= 0xE000) {
                 tapIsFluent = true;
+            }
+        }
+    }
+
+    // Modifier metadata extraction
+    let isModKey = false;
+    let modType = null; // 'base', 'tap', 'direct'
+    let modLabel = '';
+    let modKeys = [];
+    let baseLabel = '';
+    let baseIsFluent = false;
+
+    const cleanRaw = raw.startsWith('KC_') ? raw : `KC_${raw}`;
+    const baseMods = ['KC_LSFT', 'KC_RSFT', 'KC_LCTL', 'KC_RCTL', 'KC_LALT', 'KC_RALT', 'KC_LGUI', 'KC_RGUI'];
+    const isBaseMod = baseMods.includes(cleanRaw);
+
+    if (isBaseMod) {
+        isModKey = true;
+        modType = 'base';
+        const baseModMap = {
+            'KC_LSFT': 'SHFT', 'KC_RSFT': 'SHFT',
+            'KC_LCTL': 'CTRL', 'KC_RCTL': 'CTRL',
+            'KC_LALT': 'ALT', 'KC_RALT': 'ALT',
+            'KC_LGUI': 'GUI', 'KC_RGUI': 'GUI'
+        };
+        modLabel = baseModMap[cleanRaw] || cleanRaw.replace('KC_', '');
+        modKeys = [modLabel];
+    } else if (complex && (complex.type === 'mt' || complex.type === 'mod')) {
+        isModKey = true;
+        modType = complex.type === 'mt' ? 'tap' : 'direct';
+        
+        if (complex.mod === 'CTRL+ALT+SHFT') {
+            modKeys = ['CTRL', 'ALT', 'SHFT'];
+        } else if (complex.mod === 'CTRL+ALT+SHFT+GUI') {
+            modKeys = ['CTRL', 'ALT', 'SHFT', 'GUI'];
+        } else {
+            modKeys = complex.mod.split('+').map(k => k.trim());
+        }
+
+        const cleanModStr = complex.mod.toUpperCase().replace(/\s+/g, '');
+        if (cleanModStr === 'CTRL+ALT+SHFT') {
+            modLabel = 'MEH';
+        } else if (cleanModStr === 'CTRL+ALT+SHFT+GUI' || cleanModStr === 'CTRL+ALT+SHIFT+GUI') {
+            modLabel = 'HYPR';
+        } else if (modKeys.length > 1) {
+            const shortMap = { 'CTRL': 'C', 'SHIFT': 'S', 'SHFT': 'S', 'ALT': 'A', 'GUI': 'G', 'WIN': 'G', 'CMD': 'G' };
+            modLabel = modKeys.map(k => shortMap[k.toUpperCase()] || k).join('+');
+        } else {
+            modLabel = complex.mod;
+        }
+
+        const baseRaw = complex.base;
+        const dictBase = getDictLabel(baseRaw);
+        const baseClean = baseRaw.replace('KC_', '');
+        baseLabel = dictBase || SYMBOL_MAP[baseClean] || baseClean;
+        
+        if (displayMode === 'Fluent') {
+            const entry = dict.keys[`KC_${baseClean}`] || dict.modifiers[`KC_${baseClean}`];
+            if (entry && entry.fluent) {
+                baseIsFluent = true;
+                baseLabel = entry.fluent;
+            } else if (FLUENT_MAP[baseClean]) {
+                baseIsFluent = true;
+                baseLabel = FLUENT_MAP[baseClean];
+            } else if (baseLabel.length === 1 && baseLabel.charCodeAt(0) >= 0xE000) {
+                baseIsFluent = true;
             }
         }
     }
@@ -127,6 +223,12 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases) {
         tapLabel,
         tapIsFluent,
         visualWeight,
-        layerNum2
+        layerNum2,
+        isModKey,
+        modType,
+        modLabel,
+        modKeys,
+        baseLabel,
+        baseIsFluent
     };
 }

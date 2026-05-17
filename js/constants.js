@@ -23,7 +23,7 @@ export const SYMBOL_MAP = {
 
 export const FLUENT_MAP = {
     'WIN': '\uE782', 'GUI': '\uE782', 'LGUI': '\uE782', 'RGUI': '\uE782',
-    'BSPC': '\uE750', 'DEL': '\uE74D',
+    'BSPC': '\uE750',
     'ENT': '\uE751', 'ENTER': '\uE751', 'RETURN': '\uE751',
     'SHIFT': '\uE752', 'LSFT': '\uE752', 'RSFT': '\uE752',
     'UP': '\uE70E', 'DOWN': '\uE70D', 'LEFT': '\uE76B', 'RGHT': '\uE76C',

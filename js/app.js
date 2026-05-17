@@ -9,8 +9,14 @@ import { MacroModal } from './components/Modals/MacroModal.js';
 import { ExportModal } from './components/Modals/ExportModal.js';
 import { Keyboard } from './components/Keyboard.js';
 
+const CURRENT_VERSION = '1.0.8';
+
 export function App() {
-    const saved = useMemo(() => loadSavedState(), []);
+    const saved = useMemo(() => {
+        const s = loadSavedState();
+        if (s && s.version === CURRENT_VERSION) return s;
+        return null;
+    }, []);
     const [devices, setDevices] = useState(() => {
         if (saved && saved.devices && saved.devices.length > 0) return saved.devices;
         return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', showSettings: false }];
@@ -85,7 +91,7 @@ export function App() {
     useEffect(() => {
         if (isInitialMount.current) { isInitialMount.current = false; return; }
         try {
-            const state = { devices, layoutMode, appTheme };
+            const state = { devices, layoutMode, appTheme, version: CURRENT_VERSION };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         } catch (e) { console.warn('Failed to save state:', e); }
     }, [devices, layoutMode, appTheme]);
