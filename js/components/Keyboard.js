@@ -26,6 +26,37 @@ const getFooterTextStyle = (scale = 0.72, translateY = -2.6, fontSize = '14px') 
     whiteSpace: 'nowrap'
 });
 
+// Shared layout and offset styling utilities for offset-legend keycaps (e.g., LT, FN_MO13)
+const getOffsetContainerStyle = () => ({
+    flex: 1,
+    position: 'relative',
+    width: '100%'
+});
+
+const getOffsetPrimaryStyle = (isLight, isFluent = false, customFontSize = null) => ({
+    position: 'absolute',
+    left: '6px',
+    bottom: '2px',
+    fontSize: customFontSize || (isFluent ? '26px' : '22px'),
+    fontWeight: '900',
+    fontFamily: isFluent ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
+    color: isLight ? '#1e293b' : '#fff',
+    transform: 'scale(0.75)',
+    transformOrigin: 'left bottom'
+});
+
+const getOffsetSecondaryStyle = (isLight) => ({
+    position: 'absolute',
+    right: '6px',
+    top: '3px',
+    fontSize: '16px',
+    fontWeight: '700',
+    color: isLight ? '#64748b' : '#94a3b8',
+    opacity: 0.8,
+    transform: 'scale(0.75)',
+    transformOrigin: 'right top'
+});
+
 import { parseKeyLabel } from '../utils/labelParser.js';
 
 export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, keyStyle = 'Windows' }) {
@@ -303,69 +334,30 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     // 特別な FN_MO13 等の2段構えデザイン
                                     createElement('div', { 
                                         className: "key-layer-main relative",
-                                        style: { flex: 1, position: 'relative', width: '100%' }
+                                        style: getOffsetContainerStyle()
                                     }, 
                                         createElement('div', {
                                             className: "layer-primary",
-                                            style: {
-                                                position: 'absolute',
-                                                left: '6px', // 4pxから少し中央寄りへ
-                                                bottom: '2px', // 0pxから少し上げ
-                                                fontSize: '24px',
-                                                fontWeight: '900',
-                                                color: isLight ? '#1e293b' : '#fff',
-                                                transform: 'scale(0.75)',
-                                                transformOrigin: 'left bottom'
-                                            }
+                                            style: getOffsetPrimaryStyle(isLight, false, '24px')
                                         }, `L${layerNum}`),
                                         createElement('div', {
                                             className: "layer-secondary",
-                                            style: {
-                                                position: 'absolute',
-                                                right: '6px', // 4pxから少し中央寄りへ
-                                                top: '3px', // 1pxから少し下げ
-                                                fontSize: '16px',
-                                                fontWeight: '700',
-                                                color: isLight ? '#64748b' : '#94a3b8',
-                                                opacity: 0.8,
-                                                transform: 'scale(0.75)',
-                                                transformOrigin: 'right top'
-                                            }
+                                            style: getOffsetSecondaryStyle(isLight)
                                         }, `L${layerNum2}`)
                                     )
                                 ) : layerType === 'LT' ? (
                                     // LTキー用の新しい2段構えデザイン
                                     createElement('div', { 
                                         className: "key-layer-main relative",
-                                        style: { flex: 1, position: 'relative', width: '100%' }
+                                        style: getOffsetContainerStyle()
                                     }, 
                                         createElement('div', {
                                             className: "layer-primary",
-                                            style: {
-                                                position: 'absolute',
-                                                left: '6px',
-                                                bottom: '2px',
-                                                fontSize: tapIsFluent ? '26px' : '22px', // Fluentアイコンなら少し大きめに
-                                                fontWeight: '900',
-                                                fontFamily: tapIsFluent ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
-                                                color: isLight ? '#1e293b' : '#fff',
-                                                transform: 'scale(0.75)',
-                                                transformOrigin: 'left bottom'
-                                            }
+                                            style: getOffsetPrimaryStyle(isLight, tapIsFluent)
                                         }, tapLabel),
                                         createElement('div', {
                                             className: "layer-secondary",
-                                            style: {
-                                                position: 'absolute',
-                                                right: '6px',
-                                                top: '3px',
-                                                fontSize: '16px',
-                                                fontWeight: '700',
-                                                color: isLight ? '#64748b' : '#94a3b8',
-                                                opacity: 0.8,
-                                                transform: 'scale(0.75)',
-                                                transformOrigin: 'right top'
-                                            }
+                                            style: getOffsetSecondaryStyle(isLight)
                                         }, `L${layerNum}`)
                                     )
                                 ) : (
