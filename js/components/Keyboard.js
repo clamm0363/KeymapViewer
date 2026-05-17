@@ -17,7 +17,7 @@ const getFooterContainerStyle = (isLight, isAppDark) => ({
     borderTop: `2px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#475569' : '#334155')}`
 });
 
-const getFooterTextStyle = (scale = 0.72, translateY = -2.6, fontSize = '14px') => ({
+const getFooterTextStyle = (scale = 0.72, translateY = -1, fontSize = '14px') => ({
     fontSize,
     fontWeight: '900',
     letterSpacing: '0.05em',
@@ -521,7 +521,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                     }
                                                 },
                                                     createElement('span', {
-                                                        style: getFooterTextStyle(footerScale, -2.6, '14px')
+                                                        style: getFooterTextStyle(footerScale, -1, '14px')
                                                     }, modLabel)
                                                 )
                                             )
