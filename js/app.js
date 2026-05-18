@@ -143,6 +143,8 @@ export function App() {
         setIsExporting(true);
     };
 
+
+
     const addSlot = () => {
         if (devices.length >= 4) return;
         setDevices(prev => [...prev, {

@@ -1,71 +1,67 @@
-# Session Handover Report: Perfecting the Japanese (JIS) Layout Legends & Font Stack Architecture
+# Session Handover Report: Perfecting OS-Aware Legends & Advanced QMK Keycode Ecosystem
 
-This document documents the core achievements of this session and serves as a permanent architectural reference guide for rendering Fluent icons in this visualizer.
+This document chronicles the core achievements of this session, including OS-specific legend parsing, chassis styling optimizations, and the native integration of high-frequency QMK keycodes with correct Fluent UI System Icons.
 
 ---
 
-## 1. Accomplishments in this Session
+## 1. Current Git Branch Status
+We are currently working on the **`dev`** branch:
+* **Active Branch**: `dev`
+* **Historical Branches**: `main`, `feature/fluent-svg-migration` (archived)
 
-We resolved three critical issues hindering the visual excellence and standard compliance of the Japanese (JIS) visualizer:
+---
 
-### A. Unified Muhenkan & Henkan Layout Alignment
-* **Goal**: Solve size and baseline alignment discrepancies between the **Muhenkan (無変換)** and **Henkan (変換)** keycaps.
-* **Fix**: 
-  * Removed all nested CSS hacks, scaling wrappers, and manual positioning offsets inside [js/components/Keyboard.js](file:///c:/Git/KeymappingViewer/js/components/Keyboard.js).
-  * Mapped **Muhenkan (JP_MHEN)** natively to **`\uE114`** (`ic_fluent_arrow_sync_dismiss`)—an official Fluent glyph that packs both the circular sync arrows and the center dismiss "X" mark natively in a single character.
-  * Mapped **Henkan (JP_HENK)** natively to **`\uF191`** (`ic_fluent_arrow_sync`).
-  * Both keys now render with **100% identical line-weights, baseline alignments, and bounding ratios** automatically under standard React rendering paths.
+## 2. Accomplishments in this Session
 
-### B. Segoe FullHiragana Priority & Font Stack Conflict Resolution
-* **Goal**: Render the authentic Windows 11 system Hiragana "あ" icon (`FullHiragana`) on the **Kana (かな)** key (`JP_KANA` / `KC_JP_KANA`) without code point conflicts.
+We successfully addressed several key feature requests and refined the visualizer to an industry-grade, feature-complete state:
+
+### A. Advanced QMK Keycode Ecosystem Integration
+* **Goal**: Support high-frequency custom mechanical keyboard keycodes (RGB backlighting, Bluetooth profile switching, Mouse emulation keys, bootloader reset, dynamic macro actions) with proper graphical representation.
 * **Fix**:
-  * Identified that the open-source WebFont `FluentSystemIcons-Regular.woff2` maps `\uE986` to a push-pin release icon (`pin_off`), overriding the local Windows `Segoe Fluent Icons` system font.
-  * Updated [js/components/Keyboard.js](file:///c:/Git/KeymappingViewer/js/components/Keyboard.js)'s `getMainLegendStyle` to perform a targeted font-family prioritization bypass:
-    ```javascript
-    fontFamily: isFluentIcon 
-        ? (displayText === '\uE986' ? '"Segoe Fluent Icons", "FluentSystemIcons-Regular", sans-serif' : '"FluentSystemIcons-Regular", "Segoe Fluent Icons", "Inter", sans-serif')
-        : 'inherit'
-    ```
-  * When `\uE986` is requested on Windows, it bypasses the WebFont and draws the authentic, extremely sharp **FullHiragana (あ)** icon. On other OS platforms (Mac, etc.), it falls back gracefully to the WebFont or plain text.
+  * Added **LAYER 3** to the 100% Windows Sample Keyboard layout (`sample_100_win.json`), mapping `MO(3)` to Backspace in Layer 2 to provide an authentic, hardware-aligned access route.
+  * Resolved the Unicode offset discrepancy where Segoe Fluent Icons and the open-source WebFont `FluentSystemIcons-Regular.woff2` (Fluent UI System Icons) use different PUA regions.
+  * Scanned `js/fluent-icons-map.json` and registered 36 advanced QMK keycodes in [js/keymap-dictionary.js](file:///c:/Git/KeymappingViewer/js/keymap-dictionary.js) using the exact Fluent UI System Icons code points:
+    * **RGB Control**: Lightbulb (`\uF4D7`), Sparkle (`\uEB34`), Cycle (`\uF191`), Palettes (`\uF2F6`), Paint Buckets (`\uF596`), Suns (`\uE1F8`/`\uE1FE`), Timers (`\uF827`).
+    * **Bluetooth / Output**: Settings gear (`\uF6AA`), USB trident (`\uF0BA1`), Bluetooth (`\uF1DF`), Bluetooth Disabled (`\uF1E1`).
+    * **Mouse Keys**: Directional arrows (`\uF19C`/`\uF149`/`\uF15C`/`\uF182`), Clicks (`\uE446`/`\uE449`/`\uE444`), Vertical scrolls (`\uF5F9`).
+    * **Reset & Utilities**: Wrench (`\uF8C1`), Trash can (`\uF34D`), Bug (`\uE207`).
+    * **Dynamic Macros**: Shift uppercase (`\uF4C0`), Record dots (`\uF662`), Play triangles (`\uF606`), Record stop (`\uF75B`).
 
-### C. Parser Dictionary Lookup Prefix Bug Fix
-* **Goal**: Resolve why custom Japanese QMK layout keycodes (which lack the standard `KC_` prefix) were failing dictionary lookups and rendering as text legends (e.g. "KANA").
+### B. Dynamic OS-Aware Modifier Translations & Abbreviation Shortcuts
+* **Goal**: Translate modifier text in Mod-Tap and combined shortcut footers to match the active keyboard layout style (`WIN` for Windows, `CMD`/`OPT` for Mac).
 * **Fix**:
-  * Upgraded `getDictLabel` inside [js/utils/labelParser.js](file:///c:/Git/KeymappingViewer/js/utils/labelParser.js) to perform a **dual-lookup check** (with and without the `KC_` prefix).
-  * This guarantees that raw keys like `JP_KANA` and `JP_MHEN` are immediately resolved to their dictionary entries, applying the correct Fluent icons natively.
+  * Refined `parseKeyLabel` in [js/utils/labelParser.js](file:///c:/Git/KeymappingViewer/js/utils/labelParser.js) to dynamically substitute modifiers based on the layout's `keyStyle`.
+  * Translated single modifiers: `GUI` $\rightarrow$ **`WIN`** (Windows) / **`CMD`** (Mac), `ALT` $\rightarrow$ **`ALT`** (Windows) / **`OPT`** (Mac).
+  * Upgraded multi-modifier combined footer abbreviation maps:
+    * Windows Style: `C` (Ctrl), `S` (Shift), `A` (Alt), `G` (GUI). E.g., `CTRL + ALT` $\rightarrow$ **`C+A`**.
+    * Mac Style: `C` (Control), `S` (Shift), `O` (Option), `⌘` (Command). E.g., `CTRL + ALT` $\rightarrow$ **`C+O`**, `CTRL + GUI` $\rightarrow$ **`C+⌘`**.
 
-### D. Clean Git Branch Integration
-* **Action**: Committed all visual and logic updates, pushed to origin, checked out `dev`, successfully merged `feature/jis-layout-support` into `dev` using a fast-forward merge, pushed the updated `dev` branch to remote origin, and successfully deleted the temporary feature branch both locally and remotely.
+### C. OS-Aware Menu Key (`KC_APP`) & Clean Numpad Digital Legends
+* **Goal**: Display `KC_APP` as a modern, unified Fluent icon on Mac layout rows, and clean up numpad numeric pad text legends.
+* **Fix**:
+  * Mapped `KC_APP` to Fluent menu icon **`☰`** (`\uF4EE`) in Mac mode, while retaining the clean text `"MENU"` in Windows mode for a highly integrated OS feel.
+  * Added a prefix-stripping regex block inside `parseKeyLabel` to automatically strip `P` or `KP_` prefixes from numeric pad keys (e.g., `P0`-`P9` / `KP_0`-`KP_9` $\rightarrow$ **`0`-`9`**), eliminating typographic noise.
 
----
-
-## 2. Invaluable Developer Guide: Fluent Icons & Code Point Architectures
-
-> [!IMPORTANT]
-> The Segoe Fluent Icons font (Windows 11 native) and the Fluent UI System Icons (WebFont) **do not share the same Unicode Private Use Area (PUA) space**, despite having identical parent design assets. Always refer to this section when adding language/keyboard layout legends.
-
-### A. The Structural Offset Conflict
-* **Segoe Fluent Icons (OS Native)**: Includes regional IME status icons used by Windows (like Hiragana "あ", Katakana "カ", etc.) mapping to specific Microsoft legacy PUA spaces (e.g. `\uE986`).
-* **Fluent UI System Icons (WebFont)**: A compiled open-source WebFont generated by indexing SVG files. Code points are assigned sequentially. It does **not** include Japanese-specific IME symbols, and legacy addresses like `\uE986` are occupied by general utility icons (like `pin_off`).
-* **Workaround**: When you want to force an OS-native glyph (like `FullHiragana`), you **must** prioritize `"Segoe Fluent Icons"` in the `font-family` stack to block the WebFont from capturing and misrendering the character.
-
-### B. Standard Japanese (JIS) Keycap Mapping Dictionary
-
-Use these exact Unicode mappings in [js/keymap-dictionary.js](file:///c:/Git/KeymappingViewer/js/keymap-dictionary.js) to represent Japanese legends in `Fluent` display mode:
-
-| Keycode (QMK Alias) | Display Legend | Unicode | Source / Font | Glyph Name / Description |
-| :--- | :--- | :--- | :--- | :--- |
-| **`JP_ZKHK`** / `KC_JP_ZKHK` | **E/J** (半角/全角) | `\uF45B` | WebFont | Globe overlaid with "E/J" indicator |
-| **`JP_MHEN`** / `KC_JP_MHEN` | **無変換** | `\uE114` | WebFont | `ic_fluent_arrow_sync_dismiss` (Circular arrows with center "X") |
-| **`JP_HENK`** / `KC_JP_HENK` | **変換** | `\uF191` | WebFont | `ic_fluent_arrow_sync` (Circular arrows) |
-| **`JP_KANA`** / `KC_JP_KANA` | **かな** | `\uE986` | Segoe OS | `FullHiragana` (Japanese Hiragana "あ" symbol) |
-| **`KC_JP_EISU`** / `JP_EISU` | **英数** | N/A | Text | Styled alpha text fallback |
+### D. Premium Space-Gray Chassis Bezel & Baselines Perfected
+* **Goal**: Deliver a high-end, visual contrast transition between white backgrounds and dark keycaps under the Light Global + Dark Layout combination.
+* **Fix**:
+  * Redesigned `getKbdContainerClass` in [js/components/Keyboard.js](file:///c:/Git/KeymappingViewer/js/components/Keyboard.js) to apply a rich, CNC-machined diagonal Space Gray / Gunmetal aluminum gradient (`bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500`) with softened chamfer highlights.
+  * Unified all multi-layer layer keys (`FN_MO13`, `FN_MO23`) under the clean **Outfit** font family stack and adjusted margins to perfect the horizontal text baseline.
 
 ---
 
-## 3. Keyboard Component Styling Standard
+## 3. Developer Reference: Correct Fluent UI Icon Code Points
 
-All visual keys are structured under a strict metallic design system inside [js/components/Keyboard.js](file:///c:/Git/KeymappingViewer/js/components/Keyboard.js):
+Refer to this dictionary segment for the correct Fluent UI System Icons code points under WebFont regular rendering paths:
 
-* **Font Size**: Native icons are rendered at a standard scale of `22px` with a `line-height` of `1` to prevent visual cropping.
-* **Transform Scales**: Text-based legends use a dynamic CSS `transform: scale(...)` ratio based on character length rather than raw `fontSize` modifications to ensure absolute stability at all browser zoom scales.
+| Keycode | Display Label | Unicode Point | Icon Description |
+| :--- | :--- | :--- | :--- |
+| **`KC_RGB_TOG`** | `RGB_TG` | `\uF4D7` | `ic_fluent_lightbulb_24_regular` |
+| **`KC_RGB_MOD`** | `RGB_MOD`| `\uEB34` | `ic_fluent_sparkle_24_regular` |
+| **`KC_OUT_USB`** | `OUT_USB`| `\uF0BA1` | `ic_fluent_usb_24_regular` |
+| **`KC_OUT_BT`**  | `OUT_BT` | `\uF1DF` | `ic_fluent_bluetooth_24_regular` |
+| **`KC_BT_CLR`**  | `BT_CLR` | `\uF1E1` | `ic_fluent_bluetooth_disabled_24_regular` |
+| **`KC_RESET`**   | `BOOT`   | `\uF8C1` | `ic_fluent_wrench_24_regular` |
+| **`KC_DEBUG`**   | `DEBUG`  | `\uE207` | `ic_fluent_bug_24_regular` |
+| **`KC_BTN1`**    | `LCLK`   | `\uE446` | `ic_fluent_cursor_click_24_regular` |
+| **`KC_WH_U`**    | `WHL_UP` | `\uF5F9` | `ic_fluent_phone_vertical_scroll_24_regular` |

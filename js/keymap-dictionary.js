@@ -12,7 +12,7 @@ export const KeymapDictionary = {
     "KC_RALT": { win: "Alt",    mac: "\u2325", isFluent: false, text: "Alt" },
     "KC_LGUI": { win: "WIN",    mac: "\uE744", isFluent: "auto", text: "Win" },
     "KC_RGUI": { win: "WIN",    mac: "\uE744", isFluent: "auto", text: "Win" }, 
-    "KC_APP":  { win: "\uF124", mac: "Menu",   isFluent: true,  text: "Menu" }, 
+    "KC_APP":  { win: "MENU", mac: "\uF4EE", isFluent: "auto", text: "MENU" }, 
     "KC_FN":   { win: "Fn",     mac: "\uF3F6", isFluent: "auto", text: "Fn" },
     "JP_EISU": { win: "\uF4C0", mac: "英数",   isFluent: "auto", text: "Caps" },
     "KC_JP_EISU": { win: "\uF4C0", mac: "英数",   isFluent: "auto", text: "Caps" }
@@ -204,6 +204,53 @@ export const KeymapDictionary = {
     "KC_HENK": { text: "変換", fluent: "\uF191" },
     "KC_INT4": { text: "変換", fluent: "\uF191" },
     "KC_KANA": { text: "KANA", fluent: "\uE986" },
-    "KC_INT2": { text: "KANA", fluent: "\uE986" }
+    "KC_INT2": { text: "KANA", fluent: "\uE986" },
+
+    // RGB Backlight Controls
+    "KC_RGB_TOG": { text: "RGB_TG", fluent: "\uF4D7" },
+    "KC_RGB_MOD": { text: "RGB_MOD", fluent: "\uEB34" },
+    "KC_RGB_RMOD": { text: "RGB_RMD", fluent: "\uF191" },
+    "KC_RGB_HUI": { text: "HUE+", fluent: "\uF2F6" },
+    "KC_RGB_HUD": { text: "HUE-", fluent: "\uF2F6" },
+    "KC_RGB_SAI": { text: "SAT+", fluent: "\uF596" },
+    "KC_RGB_SAD": { text: "SAT-", fluent: "\uF596" },
+    "KC_RGB_VAI": { text: "BRT+", fluent: "\uE1F8" },
+    "KC_RGB_VAD": { text: "BRT-", fluent: "\uE1FE" },
+    "KC_RGB_SPI": { text: "SPD+", fluent: "\uF827" },
+    "KC_RGB_SPD": { text: "SPD-", fluent: "\uF827" },
+
+    // Bluetooth & Wireless
+    "KC_OUT_AUTO": { text: "OUT_AUTO", fluent: "\uF6AA" },
+    "KC_OUT_USB": { text: "OUT_USB", fluent: "\uF0BA1" },
+    "KC_OUT_BT": { text: "OUT_BT", fluent: "\uF1DF" },
+    "KC_BT_SEL_0": { text: "BT 1", fluent: "\uF1DF" },
+    "KC_BT_SEL_1": { text: "BT 2", fluent: "\uF1DF" },
+    "KC_BT_SEL_2": { text: "BT 3", fluent: "\uF1DF" },
+    "KC_BT_CLR": { text: "BT_CLR", fluent: "\uF1E1" },
+
+    // Mouse Keys
+    "KC_MS_U": { text: "MS_UP", fluent: "\uF19C" },
+    "KC_MS_D": { text: "MS_DN", fluent: "\uF149" },
+    "KC_MS_L": { text: "MS_LT", fluent: "\uF15C" },
+    "KC_MS_R": { text: "MS_RT", fluent: "\uF182" },
+    "KC_BTN1": { text: "LCLK", fluent: "\uE446" },
+    "KC_BTN2": { text: "RCLK", fluent: "\uE449" },
+    "KC_BTN3": { text: "MCLK", fluent: "\uE444" },
+    "KC_WH_U": { text: "WHL_UP", fluent: "\uF5F9" },
+    "KC_WH_D": { text: "WHL_DN", fluent: "\uF5F9" },
+
+    // Bootloader & Utility
+    "KC_RESET": { text: "BOOT", fluent: "\uF8C1" },
+    "KC_QK_BOOT": { text: "BOOT", fluent: "\uF8C1" },
+    "KC_EE_CLR": { text: "EE_CLR", fluent: "\uF34D" },
+    "KC_DEBUG": { text: "DEBUG", fluent: "\uE207" },
+
+    // Advanced Logic & Macros
+    "KC_AST_TOG": { text: "A-SFT", fluent: "\uF4C0" },
+    "KC_DM_REC1": { text: "REC 1", fluent: "\uF662" },
+    "KC_DM_REC2": { text: "REC 2", fluent: "\uF662" },
+    "KC_DM_PLY1": { text: "PLAY 1", fluent: "\uF606" },
+    "KC_DM_PLY2": { text: "PLAY 2", fluent: "\uF606" },
+    "KC_DM_RSTP": { text: "STOP", fluent: "\uF75B" }
   }
 };
