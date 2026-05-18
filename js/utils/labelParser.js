@@ -112,7 +112,9 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
 
         const modEntry = dict.modifiers[cleanCode] || dict.modifiers[rawCode];
         if (modEntry) {
-            return displayMode === 'Fluent' ? (keyStyle === 'Mac' ? modEntry.mac : modEntry.win) : (modEntry.text || kCode.replace('KC_', ''));
+            return displayMode === 'Fluent' 
+                ? (keyStyle === 'Mac' ? modEntry.mac : modEntry.win) 
+                : ((keyStyle === 'Mac' ? (modEntry.macText || modEntry.text) : modEntry.text) || kCode.replace('KC_', ''));
         }
 
         const keyEntry = dict.keys[cleanCode] || dict.keys[rawCode];
@@ -154,6 +156,11 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
         } else {
             displayText = SYMBOL_MAP[raw] || raw;
         }
+    }
+
+    const kpMatch = displayText.match(/^(P|KP_)([0-9])$/);
+    if (kpMatch) {
+        displayText = kpMatch[2];
     }
 
     const layerMatch = raw.match(/^(MO|TG|TT|OSL|TO|DF)\((\d+)\)$/);
@@ -226,10 +233,33 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
         } else if (cleanModStr === 'CTRL+ALT+SHFT+GUI' || cleanModStr === 'CTRL+ALT+SHIFT+GUI') {
             modLabel = 'HYPR';
         } else if (modKeys.length > 1) {
-            const shortMap = { 'CTRL': 'C', 'SHIFT': 'S', 'SHFT': 'S', 'ALT': 'A', 'GUI': 'G', 'WIN': 'G', 'CMD': 'G' };
+            const shortMap = keyStyle === 'Mac' ? {
+                'CTRL': 'C',
+                'SHIFT': 'S',
+                'SHFT': 'S',
+                'ALT': 'O',
+                'GUI': '⌘',
+                'WIN': '⌘',
+                'CMD': '⌘'
+            } : {
+                'CTRL': 'C',
+                'SHIFT': 'S',
+                'SHFT': 'S',
+                'ALT': 'A',
+                'GUI': 'G',
+                'WIN': 'G',
+                'CMD': 'G'
+            };
             modLabel = modKeys.map(k => shortMap[k.toUpperCase()] || k).join('+');
         } else {
-            modLabel = complex.mod;
+            const u = complex.mod.toUpperCase();
+            if (u === 'GUI') {
+                modLabel = keyStyle === 'Mac' ? 'CMD' : 'WIN';
+            } else if (u === 'ALT') {
+                modLabel = keyStyle === 'Mac' ? 'OPT' : 'ALT';
+            } else {
+                modLabel = complex.mod;
+            }
         }
 
         const baseRaw = complex.base;

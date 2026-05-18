@@ -88,7 +88,7 @@ Always refer to the active [plans/handover_report.md](file:///c:/Git/KeymappingV
 The following files represent outdated architectures and have been retired or contain crucial filesystem behavior notes:
 
 * ⚠️ **`js/app.js` (lowercase `a`) - ACTIVE KEY FILE (DO NOT MOVE OR DELETE)**:
-  * *Status*: **ACTIVE**. In `main.js`, this file is imported as `App.js` (uppercase `A`). Because Windows filesystem is case-insensitive, this lowercase `app.js` successfully loads and serves as the core React entry point. Moving or renaming it will break the application.
+  * *Status*: **ACTIVE**. Historically, this was imported in `main.js` with an uppercase `A` (`./App.js`), which worked on Windows but caused cross-platform case-sensitivity issues. It has now been standardized to a lowercase import (`./app.js`) across the codebase to ensure robust cross-platform compatibility.
 * ❌ **`legacy/via.js`**:
   * *Status*: **DEPRECATED & RETIRED**. Moved to the `legacy/` directory (untracked and gitignored). Outdated key code parser, fully superseded by the unified, robust [js/utils/labelParser.js](file:///c:/Git/KeymappingViewer/js/utils/labelParser.js).
 * ❌ **`legacy/defaultData.js`**:

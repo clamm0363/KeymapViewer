@@ -17,9 +17,10 @@ const getFooterContainerStyle = (isLight, isAppDark) => ({
     borderTop: `2px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#475569' : '#334155')}`
 });
 
-const getFooterTextStyle = (scale = 0.72, translateY = -1, fontSize = '14px') => ({
+const getFooterTextStyle = (scale = 0.72, translateY = 0, fontSize = '14px') => ({
     fontSize,
-    fontWeight: '900',
+    fontWeight: '500',
+    fontFamily: '"Outfit", sans-serif',
     letterSpacing: '0.05em',
     lineHeight: '1',
     transform: `scale(${scale}) translateY(${translateY}px)`,
@@ -37,10 +38,12 @@ const getOffsetContainerStyle = () => ({
 const getOffsetPrimaryStyle = (isLight, isFluent = false, customFontSize = null) => ({
     position: 'absolute',
     left: '6px',
-    bottom: '2px',
+    bottom: '3.5px',
     fontSize: customFontSize || (isFluent ? '26px' : '22px'),
-    fontWeight: '900',
-    fontFamily: isFluent ? '"FluentSystemIcons-Regular", "Inter", sans-serif' : 'inherit',
+    fontWeight: '400',
+    fontFamily: isFluent 
+        ? '"FluentSystemIcons-Regular", "Segoe Fluent Icons", "Outfit", sans-serif' 
+        : '"Outfit", sans-serif',
     color: isLight ? '#1e293b' : '#fff',
     transform: 'scale(0.75)',
     transformOrigin: 'left bottom',
@@ -52,7 +55,8 @@ const getOffsetSecondaryStyle = (isLight) => ({
     right: '6px',
     top: '3px',
     fontSize: '16px',
-    fontWeight: '700',
+    fontWeight: '400',
+    fontFamily: '"Outfit", sans-serif',
     color: isLight ? '#64748b' : '#94a3b8',
     opacity: 0.8,
     transform: 'scale(0.75)',
@@ -70,23 +74,34 @@ const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth
             textScale = 1.0;                   // F1-F12はすべて2文字サイズ（等倍）に統一
         } else {
             const len = displayText.length;
-            if (len === 3) textScale = 0.85;       // INS, DEL, END, NUM等が一律で同じサイズに揃う
-            else if (len === 4) {
-                textScale = keyWidth >= 1.25 ? 0.85 : 0.70;  // 1.25u以上の4文字キーは0.85(3文字サイズ)、1uキーは0.70
+            if (len === 3) {
+                textScale = keyWidth >= 1.25 ? 0.85 : 0.70; // 1.25u以上の3文字キーは0.85、1uキーは0.70(PSCR等とサイズを統一)
             }
-            else if (len >= 5) textScale = 0.55;   // 長文ラベル用
+            else if (len === 4) {
+                textScale = keyWidth >= 1.25 ? 0.85 : 0.70;  // 1.25u以上の4文字キーは0.85、1uキーは0.70
+            }
+            else if (len >= 5) {
+                // SHIFTやENTER、SPACE、BACKSPACEなど、大きなキーにある5文字以上の文字サイズを調和させる
+                if (keyWidth >= 2.0) {
+                    textScale = 0.85;  // 2u以上の大きなキーは0.85 (SHIFT, ENTER, BACKSPACE等)
+                } else if (keyWidth >= 1.25) {
+                    textScale = 0.70;  // 1.25u〜2u未満のキーは0.70
+                } else {
+                    textScale = 0.55;  // 1uなどの狭いキーは0.55
+                }
+            }
         }
     }
 
     const baseStyle = {
         color: isLight ? '#1e293b' : '#fff',
-        fontWeight: isFluentIcon ? '400' : '800',
+        fontWeight: isFluentIcon ? '400' : '400',
         fontFamily: isFluentIcon 
-            ? (displayText === '\uE986' ? '"Segoe Fluent Icons", "FluentSystemIcons-Regular", sans-serif' : '"FluentSystemIcons-Regular", "Segoe Fluent Icons", "Inter", sans-serif')
-            : 'inherit',
+            ? (displayText === '\uE986' ? '"Segoe Fluent Icons", "FluentSystemIcons-Regular", sans-serif' : '"FluentSystemIcons-Regular", "Segoe Fluent Icons", "Outfit", sans-serif')
+            : '"Outfit", sans-serif',
         fontSize: '22px',
         lineHeight: '1',
-        transform: isFluentIcon ? 'none' : `scale(${textScale})`,
+        transform: isFluentIcon ? 'translateY(1.5px)' : `scale(${textScale})`,
         transformOrigin: 'center center',
         display: 'flex',
         alignItems: 'center',
@@ -120,6 +135,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         const list = [];
         const UNIT = 56;
         let x = 0, y = 0, w = 1, h = 1;
+        let isJISKey = false;
         design.layouts.keymap.forEach(row => {
             x = 0;
             row.forEach(item => {
@@ -131,14 +147,17 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         x: x * UNIT, 
                         y: y * UNIT, 
                         w: w * UNIT, 
-                        h: h * UNIT 
+                        h: h * UNIT,
+                        isJIS: isJISKey
                     });
                     x += w; w = 1; h = 1;
+                    isJISKey = false;
                 } else {
                     if (item.x !== undefined) x += item.x; 
                     if (item.y !== undefined) y += item.y;
                     if (item.w !== undefined) w = item.w; 
                     if (item.h !== undefined) h = item.h;
+                    if (item.isJIS !== undefined) isJISKey = item.isJIS;
                 }
             });
             y++;
@@ -190,7 +209,9 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
     const getKbdContainerClass = () => {
         const base = "kbd-container relative transition-all duration-200 border-2";
         const lightTheme = "bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]";
-        const darkTheme = "bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]";
+        const darkTheme = isAppDark
+            ? "bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
+            : "bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]";
         return `${base} ${isLight ? lightTheme : darkTheme}`;
     };
 
@@ -202,6 +223,23 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         const lightBorder = isAppDark ? '#94a3b8' : '#cbd5e1';
         const darkBorder = isAppDark ? '#475569' : '#334155';
         
+        if (k.isJIS) {
+            return {
+                left: `${k.x + paddingOffset}px`,
+                top: `${k.y + paddingOffset}px`,
+                width: `${k.w - 6}px`,
+                height: `${k.h - 6}px`,
+                position: 'absolute',
+                border: 'none',
+                background: 'transparent',
+                boxShadow: 'none',
+                overflow: 'visible',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'all 0.075s ease'
+            };
+        }
+        
         return {
             left: `${k.x + paddingOffset}px`,
             top: `${k.y + paddingOffset}px`,
@@ -212,10 +250,10 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             borderWidth: '3px',
             borderStyle: 'solid',
             borderColor: isLight ? lightBorder : darkBorder,
-            backgroundColor: isLight ? '#ffffff' : 'rgba(15, 23, 42, 0.6)',
+            backgroundColor: isLight ? '#ffffff' : (isAppDark ? 'rgba(15, 23, 42, 0.6)' : '#1e293b'),
             boxShadow: isLight ? '0 4px 6px -1px rgb(0 0 0 / 0.1)' : '0 20px 25px -5px rgb(0 0 0 / 0.1)',
             overflow: 'hidden',
-            display: 'flex',
+             display: 'flex',
             flexDirection: 'column',
             transition: 'all 0.075s ease'
         };
@@ -285,14 +323,33 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     const val = mK ? codes[mK] : null;
                     
                     const parsed = parseKeyLabel(val, k.id, displayMode, keyStyle, macroAliases);
-                    const {
+                    let {
                         fullRaw, displayText, isFluentIcon, isLayerKey,
                         layerType, layerNum, layerNum2, tapLabel, tapIsFluent, visualWeight,
                         isModKey, modType, modLabel, modKeys, baseLabel, baseIsFluent
                     } = parsed;
 
+                    // 1uなどの小さなキー（w < 1.25）において、長いテキストを動的に短縮する
+                    const is1u = (k.w || 56) / 56 < 1.25;
+                    const shortenLabel = (label) => {
+                        if (!label) return label;
+                        const upper = label.toUpperCase();
+                        if (upper === 'SPACE') return 'SPC';
+                        if (upper === 'ENTER') return 'ENT';
+                        if (upper === 'ESCAPE') return 'ESC';
+                        return label;
+                    };
+
+                    if (is1u) {
+                        displayText = shortenLabel(displayText);
+                        tapLabel = shortenLabel(tapLabel);
+                        baseLabel = shortenLabel(baseLabel);
+                    }
+
                     const isFluentCenter = isFluentIcon || (isModKey && baseIsFluent);
                     const centerText = (isModKey && modType !== 'base') ? baseLabel : displayText;
+
+
 
                     // 自動スケーリングと折り返しの計算
                     let finalDisplayText = centerText;
@@ -338,10 +395,53 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     targetScale = Math.max(isExportMode ? Math.min(minScaleLimit, 0.55) : minScaleLimit, Math.min(1.1, targetScale));
                     if (manualWrap) targetScale = Math.min(0.9, targetScale);
 
+                    const cleanRaw = fullRaw ? fullRaw.toUpperCase() : '';
+                    const displayRaw = (val && typeof val === 'string' && val.toUpperCase().startsWith('KC_'))
+                        ? val.toUpperCase()
+                        : (cleanRaw.startsWith('KC_') ? cleanRaw : 'KC_' + cleanRaw);
+
+                    const jisSvg = k.isJIS && (() => {
+                        const W = k.w - 6;
+                        const H = k.h - 6;
+                        const N = 14;
+                        const H2 = 50; // Align perfectly with bottom of Row 2 (50px)
+                        const R = 6;
+                        const O = 1.2; // 50% of strokeWidth (2.4) to align stroke edge with border-box
+                        const pathD = `M ${R},${O} L ${W - R},${O} A ${R},${R} 0 0 1 ${W - O},${R} L ${W - O},${H - R} A ${R},${R} 0 0 1 ${W - R},${H - O} L ${N + R},${H - O} A ${R},${R} 0 0 1 ${N + O},${H - R} L ${N + O},${H2 + R} A ${R},${R} 0 0 0 ${N - R + O},${H2} L ${R},${H2} A ${R},${R} 0 0 1 ${O},${H2 - R} L ${O},${R} A ${R},${R} 0 0 1 ${R},${O} Z`;
+                        const strokeColor = isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#475569' : '#334155');
+                        const fillColor = isLight ? '#ffffff' : (isAppDark ? 'rgba(15, 23, 42, 0.6)' : '#1e293b');
+                        const dropShadow = isLight ? 'drop-shadow(0 4px 6px rgb(0 0 0 / 0.08))' : 'drop-shadow(0 20px 25px rgb(0 0 0 / 0.15))';
+                        return createElement('svg', {
+                            key: 'jis-enter-svg',
+                            style: {
+                                position: 'absolute',
+                                left: 0,
+                                top: 0,
+                                width: '100%',
+                                height: '100%',
+                                pointerEvents: 'none',
+                                filter: dropShadow,
+                                overflow: 'visible',
+                                zIndex: 1
+                            },
+                            shapeRendering: 'geometricPrecision'
+                        },
+                            createElement('path', {
+                                d: pathD,
+                                className: "jis-enter-path",
+                                fill: fillColor,
+                                stroke: strokeColor,
+                                strokeWidth: 2.4, // Keep visual thickness identical to 3px CSS border
+                                style: { transition: 'all 0.075s ease' }
+                            })
+                        );
+                    })();
+
                     return createElement('div', {
                         key: i,
                         className: `key-cap group`,
-                        title: fullRaw,
+                        title: val || fullRaw,
+                        'data-key-raw': displayRaw,
                         onClick: (e) => {
                             const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);
                             if (macroMatch && onMacroClick) {
@@ -351,6 +451,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         },
                         style: getKeycapFrameStyle(k, isLayerKey || isModKey)
                     }, 
+                        jisSvg,
                         isModKey && modType === 'base' && createElement('div', {
                             className: "mod-accent-bar",
                             style: {
@@ -401,7 +502,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                         className: "key-layer-main",
                                         style: getMainLegendStyle(isLight, `L${layerNum}`, false, (k.w || 56) / 56, {
                                             flex: 1,
-                                            transform: 'scale(0.9)'
+                                            transform: 'scale(0.9)',
+                                            marginTop: '6px'
                                         })
                                     }, `L${layerNum}`)
                                 ),
@@ -423,7 +525,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                             }
                                         }, 
                                             createElement('span', {
-                                                style: getFooterTextStyle(0.55, -1, '18px')
+                                                style: getFooterTextStyle(0.55, 0, '18px')
                                             }, `FN${layerNum}+${layerNum2}`)
                                         )
                                     ) : (
@@ -439,7 +541,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                             }
                                         }, 
                                             createElement('span', { 
-                                                style: getFooterTextStyle(0.72, -1, '14px')
+                                                style: getFooterTextStyle(0.72, 0, '14px')
                                             }, 
                                                 layerType
                                             )
@@ -484,8 +586,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                 className: "key-mod-main",
                                                 style: getMainLegendStyle(isLight, baseLabel, baseIsFluent, (k.w || 56) / 56, {
                                                     flex: 1,
-                                                    fontSize: baseIsFluent ? '20px' : '18px',
-                                                    marginTop: '2px'
+                                                    ...(baseIsFluent ? { fontSize: '20px' } : {}),
+                                                    marginTop: '6px'
                                                 })
                                             }, baseLabel),
                                             createElement('div', {
@@ -503,7 +605,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                     }
                                                 },
                                                     createElement('span', {
-                                                        style: getFooterTextStyle(footerScale, -1, '14px')
+                                                        style: getFooterTextStyle(footerScale, 0, '14px')
                                                     }, modLabel)
                                                 )
                                             )
@@ -514,11 +616,25 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         ) : (
                             createElement('div', {
                                 className: "key-content flex-1 flex items-center justify-center w-full h-full",
-                                style: {
-                                    transform: `scale(${targetScale * 0.9})`, // 全体的に少し余裕を持たせる
+                                style: k.isJIS ? {
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: 0,
+                                    width: `${k.w - 6}px`,
+                                    height: '50px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transform: `scale(${targetScale * 0.9})`,
                                     transformOrigin: 'center center',
                                     padding: '2px',
-                                    marginTop: isExportMode ? '-2px' : '0'
+                                    zIndex: 2
+                                } : {
+                                    transform: `scale(${targetScale * 0.9})`,
+                                    transformOrigin: 'center center',
+                                    padding: '2px',
+                                    marginTop: isExportMode ? '-2px' : '0',
+                                    zIndex: 2
                                 }
                             },
                                 createElement('span', {

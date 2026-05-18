@@ -4,26 +4,26 @@
 export const KeymapDictionary = {
   modifiers: {
     // 修飾キー
-    "KC_LSFT": { win: "\uF4BF", mac: "\uF4BF", isFluent: true,  text: "Shift" },
-    "KC_RSFT": { win: "\uF4BF", mac: "\uF4BF", isFluent: true,  text: "Shift" },
-    "KC_LCTL": { win: "Ctrl",   mac: "\uF2B7", isFluent: "auto", text: "Ctrl" },
-    "KC_RCTL": { win: "Ctrl",   mac: "\uF2B7", isFluent: "auto", text: "Ctrl" },
-    "KC_LALT": { win: "Alt",    mac: "\u2325", isFluent: false, text: "Alt" },
-    "KC_RALT": { win: "Alt",    mac: "\u2325", isFluent: false, text: "Alt" },
-    "KC_LGUI": { win: "WIN",    mac: "\uE744", isFluent: "auto", text: "Win" },
-    "KC_RGUI": { win: "WIN",    mac: "\uE744", isFluent: "auto", text: "Win" }, 
-    "KC_APP":  { win: "MENU", mac: "\uF4EE", isFluent: "auto", text: "MENU" }, 
-    "KC_FN":   { win: "Fn",     mac: "\uF3F6", isFluent: "auto", text: "Fn" },
-    "JP_EISU": { win: "\uF4C0", mac: "英数",   isFluent: "auto", text: "Caps" },
-    "KC_JP_EISU": { win: "\uF4C0", mac: "英数",   isFluent: "auto", text: "Caps" }
+    "KC_LSFT": { win: "\uF4BF", mac: "\uF4BF", isFluent: true,  text: "Shift", macText: "Shift" },
+    "KC_RSFT": { win: "\uF4BF", mac: "\uF4BF", isFluent: true,  text: "Shift", macText: "Shift" },
+    "KC_LCTL": { win: "Ctrl",   mac: "\uF2B7", isFluent: "auto", text: "Ctrl",  macText: "Ctrl" },
+    "KC_RCTL": { win: "Ctrl",   mac: "\uF2B7", isFluent: "auto", text: "Ctrl",  macText: "Ctrl" },
+    "KC_LALT": { win: "Alt",    mac: "\u2325", isFluent: false, text: "Alt",   macText: "Opt" },
+    "KC_RALT": { win: "Alt",    mac: "\u2325", isFluent: false, text: "Alt",   macText: "Opt" },
+    "KC_LGUI": { win: "WIN",    mac: "\uE744", isFluent: "auto", text: "Win",   macText: "Cmd" },
+    "KC_RGUI": { win: "WIN",    mac: "\uE744", isFluent: "auto", text: "Win",   macText: "Cmd" }, 
+    "KC_APP":  { win: "MENU",   mac: "\uF4EE", isFluent: "auto", text: "MENU",  macText: "Opt" }, 
+    "KC_FN":   { win: "Fn",     mac: "\uF3F6", isFluent: "auto", text: "Fn",    macText: "Fn" },
+    "JP_EISU": { win: "\uF4C0", mac: "英数",   isFluent: "auto", text: "Caps",  macText: "英数" },
+    "KC_JP_EISU": { win: "\uF4C0", mac: "英数",   isFluent: "auto", text: "Caps",  macText: "英数" }
   },
   keys: {
     // 特殊キー (アイコン優先)
-    "KC_ENT":  { text: "\u23CE", fluent: "\uE0C1" }, // arrow_enter_left
+    "KC_ENT":  { text: "ENTER", fluent: "\uE0C1" }, // arrow_enter_left
     "KC_PENT": { text: "\u23CE", fluent: "\uE0C1" }, 
-    "KC_BSPC": { text: "Back",   fluent: "\uF1B2" },
-    "KC_TAB":  { text: "\u21E5", fluent: "\uF4C1" }, // keyboard_tab
-    "KC_CAPS": { text: "\u21EA", fluent: "\uF4C0" }, // keyboard_shift_uppercase
+    "KC_BSPC": { text: "BACK",  fluent: "\uF1B2" },
+    "KC_TAB":  { text: "TAB",   fluent: "\uF4C1" }, // keyboard_tab
+    "KC_CAPS": { text: "CAPS",  fluent: "\uF4C0" }, // keyboard_shift_uppercase
     "KC_ESC":  { text: "Esc" },                     
     "KC_SPC":  { text: "Space",  fluent: "\uF6F8" }, // keyboard_spacebar
 

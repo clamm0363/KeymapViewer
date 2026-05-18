@@ -30,10 +30,18 @@
     ],
     [
       null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-      null, "MO(0)", "MO(1)", "MO(2)", "TG(0)", "TG(1)", "TG(2)", "TT(0)", "TT(1)", "TT(2)", "OSL(0)", "OSL(1)", "OSL(2)", null, null, null, null, null, null, null, null, null, null, null,
+      null, "MO(0)", "MO(1)", "MO(2)", "TG(0)", "TG(1)", "TG(2)", "TT(0)", "TT(1)", "TT(2)", "OSL(0)", "OSL(1)", "OSL(2)", "MO(3)", null, null, null, null, null, null, null, null, null, null,
       null, "TO(0)", "TO(1)", "TO(2)", "DF(0)", "DF(1)", "DF(2)", "Fn1", "Fn2", "Fn3", "FN_MO13", "FN_MO23", null, null, null, null, null, null, null, null, null, null, null, null,
       null, "LT(1,KC_SPC)", "LT(2,KC_SPC)", "LT(3,KC_SPC)", "LSFT_T(KC_SPC)", "LCTL_T(KC_ESC)", "LALT_T(KC_TAB)", "LGUI_T(KC_ENT)", "MT(MOD_LCTL, KC_ENT)", "MT(MOD_LSFT, KC_SPC)", null, null, null, null, null, null, null, null, null, null, null, null, null, null,
       null, "LCTL(LALT(KC_DEL))", "LSFT(KC_1)", "MEH(KC_SPC)", "HYPR(KC_ENT)", "LCA(KC_D)", "LSA(KC_E)", "RCS(KC_F)", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+    ],
+    [
+      null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, "KC_RGB_TOG", "KC_RGB_MOD", "KC_RGB_RMOD", "KC_RGB_HUI", "KC_RGB_HUD", "KC_RGB_SAI", "KC_RGB_SAD", "KC_RGB_VAI", "KC_RGB_VAD", "KC_RGB_SPI", "KC_RGB_SPD", null, null, null, null, null, null, null, null, null, null, null, null,
+      null, "KC_OUT_AUTO", "KC_OUT_USB", "KC_OUT_BT", "KC_BT_SEL_0", "KC_BT_SEL_1", "KC_BT_SEL_2", "KC_BT_CLR", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, "KC_MS_U", "KC_MS_D", "KC_MS_L", "KC_MS_R", "KC_BTN1", "KC_BTN2", "KC_BTN3", "KC_WH_U", "KC_WH_D", null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, "KC_RESET", "KC_EE_CLR", "KC_DEBUG", "KC_AST_TOG", "KC_DM_REC1", "KC_DM_REC2", "KC_DM_PLY1", "KC_DM_PLY2", "KC_DM_RSTP", null, null, null, null, null, null, null, null, null, null, null, null, null, null,
       null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
     ]
   ]
