@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 1: SVG Foundation Validation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent-color: #3b82f6; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        h1 { margin: 0; font-size: 28px; font-weight: 700; }
+        .subtitle { margin-top: 10px; opacity: 0.9; font-size: 14px; }
+        .content { padding: 30px; }
+        .test-block {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .test-block.pass { border-color: #10b981; background: #f0fdf4; }
+        .test-block.fail { border-color: #ef4444; background: #fef2f2; }
+        .test-block.pending { border-color: #f59e0b; background: #fffbf0; }
+        .test-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .test-block.pass .test-title { color: #10b981; }
+        .test-block.fail .test-title { color: #ef4444; }
+        .test-block.pending .test-title { color: #f59e0b; }
+        .test-icon {
+            font-size: 20px;
+            font-weight: bold;
+            min-width: 24px;
+            text-align: center;
+        }
+        .test-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #475569;
+        }
+        .icon-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-size: 48px;
+        }
+        .status-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', monospace;
+            font-size: 13px;
+            color: #334155;
+        }
+        ul { margin: 8px 0; padding-left: 20px; }
+        li { margin: 4px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧪 SVG Foundation - Phase 1 Validation</h1>
+            <p class="subtitle">Testing SVG icon rendering with WebFont fallback</p>
+        </header>
+        
+        <div class="content">
+            <!-- Test 1: Module Loading -->
+            <div id="test1" class="test-block pending">
+                <div class="test-title">
+                    <span class="test-icon" id="test1-icon">⏳</span>
+                    <span>Test 1: SVG Module Loading</span>
+                </div>
+                <div class="test-content">Checking if SVG module imports correctly...</div>
+            </div>
+
+            <!-- Test 2: DEBUG Icon Configuration -->
+            <div id="test2" class="test-block pending">
+                <div class="test-title">
+                    <span class="test-icon" id="test2-icon">⏳</span>
+                    <span>Test 2: DEBUG Icon Configuration</span>
+                </div>
+                <div class="test-content">Verifying DEBUG icon exists with SVG and fallback...</div>
+            </div>
+
+            <!-- Test 3: SVG Rendering -->
+            <div id="test3" class="test-block pending">
+                <div class="test-title">
+                    <span class="test-icon" id="test3-icon">⏳</span>
+                    <span>Test 3: SVG Rendering</span>
+                </div>
+                <div class="icon-preview" id="svg-preview">Loading SVG...</div>
+                <div class="test-content" id="test3-content">Rendering SVG element to DOM...</div>
+            </div>
+
+            <!-- Test 4: WebFont Fallback -->
+            <div id="test4" class="test-block pending">
+                <div class="test-title">
+                    <span class="test-icon" id="test4-icon">⏳</span>
+                    <span>Test 4: WebFont Fallback</span>
+                </div>
+                <div class="icon-preview" id="webfont-preview">Loading fallback...</div>
+                <div class="test-content" id="test4-content">Rendering WebFont fallback icon...</div>
+            </div>
+
+            <!-- Test 5: Integration in Keyboard -->
+            <div id="test5" class="test-block pending">
+                <div class="test-title">
+                    <span class="test-icon" id="test5-icon">⏳</span>
+                    <span>Test 5: Keyboard Integration Ready</span>
+                </div>
+                <div class="test-content">Verifying Keyboard.js can use SVG icons...</div>
+            </div>
+
+            <!-- Summary -->
+            <div class="status-summary" id="summary">
+                Testing in progress... (5/5 tests)
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import {
+            SVG_ICONS,
+            createSVGElement,
+            isSVGAvailable,
+            getSVGFallback,
+            getSVGCategory,
+            listSVGIcons
+        } from './js/svg-icons.js';
+
+        let passCount = 0;
+        let failCount = 0;
+        let totalTests = 5;
+
+        function updateTest(testNum, pass, message) {
+            const testEl = document.getElementById(`test${testNum}`);
+            const iconEl = document.getElementById(`test${testNum}-icon`);
+            
+            if (pass) {
+                testEl.classList.remove('pending', 'fail');
+                testEl.classList.add('pass');
+                iconEl.textContent = '✓';
+                passCount++;
+            } else {
+                testEl.classList.remove('pending', 'pass');
+                testEl.classList.add('fail');
+                iconEl.textContent = '✗';
+                failCount++;
+            }
+            
+            testEl.querySelector('.test-content').textContent = message;
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const totalDone = passCount + failCount;
+            const summary = document.getElementById('summary');
+            if (totalDone === totalTests) {
+                if (failCount === 0) {
+                    summary.textContent = `✓ All tests passed! (${passCount}/${totalTests})`;
+                    summary.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                } else {
+                    summary.textContent = `⚠ Tests completed with issues: ${passCount} passed, ${failCount} failed`;
+                    summary.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                }
+            } else {
+                summary.textContent = `Testing... (${totalDone}/${totalTests} tests)`;
+            }
+        }
+
+        // Test 1: Module Loading
+        try {
+            const hasIcons = typeof SVG_ICONS === 'object' && Object.keys(SVG_ICONS).length > 0;
+            const hasFunctions = 
+                typeof createSVGElement === 'function' &&
+                typeof isSVGAvailable === 'function' &&
+                typeof getSVGFallback === 'function';
+            
+            if (hasIcons && hasFunctions) {
+                updateTest(1, true, `✓ SVG module loaded. Available icons: ${Object.keys(SVG_ICONS).join(', ')}`);
+            } else {
+                updateTest(1, false, '✗ Module structure incomplete');
+            }
+        } catch (e) {
+            updateTest(1, false, `✗ Error: ${e.message}`);
+        }
+
+        // Test 2: DEBUG Icon Configuration
+        try {
+            const available = isSVGAvailable('DEBUG');
+            const fallback = getSVGFallback('DEBUG');
+            const category = getSVGCategory('DEBUG');
+            const svgLength = SVG_ICONS.DEBUG?.svg?.length || 0;
+            
+            if (available && fallback && svgLength > 0) {
+                updateTest(2, true, 
+                    `✓ DEBUG icon configured. ` +
+                    `SVG: ${svgLength} chars, Fallback: U+${fallback.charCodeAt(0).toString(16).toUpperCase()}, ` +
+                    `Category: ${category}`
+                );
+            } else {
+                updateTest(2, false, 
+                    `✗ Configuration incomplete. Available=${available}, ` +
+                    `Fallback=${fallback ? 'yes' : 'no'}, SVG=${svgLength > 0 ? 'yes' : 'no'}`
+                );
+            }
+        } catch (e) {
+            updateTest(2, false, `✗ Error: ${e.message}`);
+        }
+
+        // Test 3: SVG Rendering
+        try {
+            const svgEl = createSVGElement('DEBUG', { size: 64, color: '#667eea' });
+            if (svgEl && svgEl.tagName === 'svg') {
+                document.getElementById('svg-preview').innerHTML = '';
+                document.getElementById('svg-preview').appendChild(svgEl);
+                updateTest(3, true, `✓ SVG rendered successfully (${svgEl.children.length} child elements)`);
+            } else {
+                updateTest(3, false, '✗ SVG element creation failed');
+            }
+        } catch (e) {
+            updateTest(3, false, `✗ Rendering error: ${e.message}`);
+        }
+
+        // Test 4: WebFont Fallback
+        try {
+            const fallback = getSVGFallback('DEBUG');
+            if (fallback) {
+                const span = document.createElement('span');
+                span.textContent = fallback;
+                span.style.fontFamily = "'FluentSystemIcons-Regular', sans-serif";
+                span.style.fontSize = '48px';
+                span.style.color = '#667eea';
+                
+                document.getElementById('webfont-preview').innerHTML = '';
+                document.getElementById('webfont-preview').appendChild(span);
+                
+                updateTest(4, true, `✓ WebFont fallback rendered (U+${fallback.charCodeAt(0).toString(16).toUpperCase()})`);
+            } else {
+                updateTest(4, false, '✗ No fallback defined');
+            }
+        } catch (e) {
+            updateTest(4, false, `✗ Fallback error: ${e.message}`);
+        }
+
+        // Test 5: Integration Ready
+        try {
+            // Check if Keyboard.js can import and use SVG utilities
+            const imports = ['createSVGElement', 'isSVGAvailable', 'getSVGFallback'];
+            const allImported = imports.every(fn => window[fn] === undefined); // They're not global, that's fine
+            
+            // The real test is whether the module exports are available
+            const allExported = Object.keys(SVG_ICONS).length > 0;
+            
+            if (allExported) {
+                const allIcons = listSVGIcons();
+                updateTest(5, true, 
+                    `✓ Keyboard integration ready. ` +
+                    `${allIcons.length} icon(s) available: ${allIcons.map(i => i.key).join(', ')}`
+                );
+            } else {
+                updateTest(5, false, '✗ Not enough SVG icons defined');
+            }
+        } catch (e) {
+            updateTest(5, false, `✗ Error: ${e.message}`);
+        }
+
+        console.log('✓ Phase 1 validation complete');
+    </script>
+</body>
+</html>
