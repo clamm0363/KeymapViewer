@@ -18,6 +18,35 @@ export function App() {
         return null;
     }, []);
     const [devices, setDevices] = useState(() => {
+        // Try to restore from URL parameter first
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const dataParam = params.get('data');
+            if (dataParam && window.LZString) {
+                const decompressed = window.LZString.decompressFromEncodedURIComponent(dataParam);
+                if (decompressed) {
+                    const parsed = JSON.parse(decompressed);
+                    if (parsed && parsed.design) {
+                        return [{
+                            id: Date.now(),
+                            name: parsed.name || 'Shared Device',
+                            design: parsed.design,
+                            keymapJson: parsed.keymapJson,
+                            layer: 0,
+                            displayMode: parsed.displayMode || 'Fluent',
+                            theme: parsed.theme || 'System',
+                            keyStyle: parsed.keyStyle || 'Windows',
+                            macroAliases: parsed.keymapJson?.macroAliases || {},
+                            showSettings: false
+                        }];
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Failed to restore shared state from URL:', e);
+        }
+
+        // Fallback to saved state
         if (saved && saved.devices && saved.devices.length > 0) return saved.devices;
         return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', showSettings: false }];
     });
@@ -36,8 +65,8 @@ export function App() {
     const exportRef = useRef(null);
 
     useEffect(() => {
-        // If there is a saved state, we don't overwrite it with samples
-        if (saved && saved.devices && saved.devices.length > 0 && saved.devices[0].design) return; 
+        // Skip loading samples if we already have a loaded device design (e.g. from saved state or URL sharing)
+        if (devices && devices.length > 0 && devices[0].design) return; 
 
         const loadSamples = async () => {
             const sampleFiles = [

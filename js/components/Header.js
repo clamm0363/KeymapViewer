@@ -3,7 +3,7 @@ const { createElement } = React;
 export function Header({ isLightApp, layoutMode, deviceCount, onShowHelp, onAddSlot, onSetLayoutMode, onSetAppTheme, appTheme }) {
     return createElement('header', { key: 'header', className: 'flex flex-col md:flex-row justify-between items-center mb-12 gap-6 w-full' }, [
         createElement('div', { key: 'logo', className: 'flex items-center gap-6', onClick: () => window.location.reload(), style: { cursor: 'pointer' } }, [
-            createElement('div', { key: 'km-box', className: 'bg-blue-600 w-14 h-14 rounded-3xl flex items-center justify-center shadow-2xl font-black text-white text-2xl tracking-tighter' }, 'KM'),
+            createElement('div', { key: 'kv-box', className: 'bg-blue-600 w-14 h-14 rounded-3xl flex items-center justify-center shadow-2xl font-black text-white text-2xl tracking-tighter' }, 'KV'),
             createElement('div', { key: 'title-box' }, [
                 createElement('h1', { key: 'title', className: 'text-3xl font-black tracking-tighter ' + (isLightApp ? 'text-slate-900' : 'text-white') + ' uppercase italic leading-none' }, [
                     'Keymap ',
