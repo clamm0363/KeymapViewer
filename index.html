@@ -94,9 +94,13 @@
         /* JIS L字エンターホバー＆トランジション */
         .key-cap:hover .jis-enter-path {
             stroke: #3b82f6 !important;
+            stroke-width: 1.8px !important; /* Matches the sharp, scaled-down visual thickness of normal 3px borders */
         }
-        .key-cap:hover {
+        .key-cap.jis-key:hover .jis-enter-svg {
             filter: drop-shadow(0 10px 15px rgb(0 0 0 / 0.15)) !important;
+        }
+        .key-cap.jis-key:hover {
+            box-shadow: none !important;
         }
     </style>
 </head>

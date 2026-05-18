@@ -413,6 +413,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         const dropShadow = isLight ? 'drop-shadow(0 4px 6px rgb(0 0 0 / 0.08))' : 'drop-shadow(0 20px 25px rgb(0 0 0 / 0.15))';
                         return createElement('svg', {
                             key: 'jis-enter-svg',
+                            className: 'jis-enter-svg',
                             style: {
                                 position: 'absolute',
                                 left: 0,
@@ -439,7 +440,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
 
                     return createElement('div', {
                         key: i,
-                        className: `key-cap group`,
+                        className: `key-cap group${k.isJIS ? ' jis-key' : ''}`,
                         title: val || fullRaw,
                         'data-key-raw': displayRaw,
                         onClick: (e) => {

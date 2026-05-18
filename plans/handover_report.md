@@ -65,3 +65,16 @@ Refer to this dictionary segment for the correct Fluent UI System Icons code poi
 | **`KC_DEBUG`**   | `DEBUG`  | `\uE207` | `ic_fluent_bug_24_regular` |
 | **`KC_BTN1`**    | `LCLK`   | `\uE446` | `ic_fluent_cursor_click_24_regular` |
 | **`KC_WH_U`**    | `WHL_UP` | `\uF5F9` | `ic_fluent_phone_vertical_scroll_24_regular` |
+
+### E. ISO/JIS Enter Key Hover UX & Shadow Realignment
+* **Goal**: Perfect the hover animation of the L-shaped Enter key (ISO/JIS layout), ensuring the projected shadow conforms to the L-shape instead of a rectangle, and matches the visual thickness of other keys' borders.
+* **Fix**:
+  * Tagged the JIS keycap container with a `.jis-key` class and the inner SVG with `.jis-enter-svg` inside [js/components/Keyboard.js](file:///c:/Git/KeymappingViewer/js/components/Keyboard.js).
+  * Disabled the default rectangular `box-shadow` on hover for the `.jis-key` container inside [index.html](file:///c:/Git/KeymappingViewer/index.html).
+  * Re-applied the L-shape-aligned `filter: drop-shadow` directly to the `.jis-enter-svg` on hover, which resolves overlapping shadows on the `]` key and preserves perfect sharpness of the `"ENTER"` legend text.
+  * Slimmed the hover blue highlight of the L-shaped border by setting `stroke-width: 1.8px !important` on hover to perfectly align its visual weight with other scaling-down normal key borders (which are CSS 3px borders).
+
+### F. Legacy Scratch File Clean Up
+* **Goal**: Declutter the root workspace and purge all temporary agent-generated scratch files.
+* **Fix**:
+  * Safely removed 9 temporary `scratch_*` files (HTML, JS, and TXT) from the root workspace, leaving the codebase pristine and highly maintainable.
