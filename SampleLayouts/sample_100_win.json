@@ -1,0 +1,48 @@
+{
+  "name": "SAMPLE KEYBOARD (100%)",
+  "layouts": {
+    "keymap": [
+      ["0,0", {"x": 1}, "0,1", "0,2", "0,3", "0,4", {"x": 0.5}, "0,5", "0,6", "0,7", "0,8", {"x": 0.5}, "0,9", "0,10", "0,11", "0,12", {"x": 0.25}, "0,16", "0,17", "0,18"],
+      ["1,0", "1,1", "1,2", "1,3", "1,4", "1,5", "1,6", "1,7", "1,8", "1,9", "1,10", "1,11", "1,12", {"w": 2}, "1,13", {"x": 0.25}, "1,16", "1,17", "1,18", {"x": 0.25}, "1,20", "1,21", "1,22", "1,23"],
+      [{"w": 1.5}, "2,0", "2,1", "2,2", "2,3", "2,4", "2,5", "2,6", "2,7", "2,8", "2,9", "2,10", "2,11", "2,12", {"w": 1.5}, "2,13", {"x": 0.25}, "2,16", "2,17", "2,18", {"x": 0.25}, "2,20", "2,21", "2,22", {"h": 2}, "2,23"],
+      [{"w": 1.75}, "3,0", "3,1", "3,2", "3,3", "3,4", "3,5", "3,6", "3,7", "3,8", "3,9", "3,10", "3,11", {"w": 2.25}, "3,12", {"x": 3.5}, "3,20", "3,21", "3,22"],
+      [{"w": 2.25}, "4,0", "4,1", "4,2", "4,3", "4,4", "4,5", "4,6", "4,7", "4,8", "4,9", "4,10", {"w": 2.75}, "4,11", {"x": 1.25}, "4,17", {"x": 1.25}, "4,20", "4,21", "4,22", {"h": 2}, "4,23"],
+      [{"w": 1.25}, "5,0", {"w": 1.25}, "5,1", {"w": 1.25}, "5,2", {"w": 6.25}, "5,3", {"w": 1.25}, "5,4", {"w": 1.25}, "5,5", {"w": 1.25}, "5,6", {"w": 1.25}, "5,7", {"x": 0.25}, "5,16", "5,17", "5,18", {"x": 0.25}, {"w": 2}, "5,20", "5,22"]
+    ]
+  },
+  "matrix": { "rows": 6, "cols": 24 },
+  "layers": [
+    [
+      "KC_ESC", "KC_F1", "KC_F2", "KC_F3", "KC_F4", "KC_F5", "KC_F6", "KC_F7", "KC_F8", "KC_F9", "KC_F10", "KC_F11", "KC_F12", null, null, null, "KC_PSCR", "KC_SLCK", "KC_PAUS", null, null, null, null, null,
+      "KC_GRV", "KC_1", "KC_2", "KC_3", "KC_4", "KC_5", "KC_6", "KC_7", "KC_8", "KC_9", "KC_0", "KC_MINS", "KC_EQL", "KC_BSPC", null, null, "KC_INS", "KC_HOME", "KC_PGUP", null, "KC_NUM", "KC_PSLS", "KC_PAST", "KC_PMNS",
+      "KC_TAB", "KC_Q", "KC_W", "KC_E", "KC_R", "KC_T", "KC_Y", "KC_U", "KC_I", "KC_O", "KC_P", "KC_LBRC", "KC_RBRC", "KC_BSLS", null, null, "KC_DEL", "KC_END", "KC_PGDN", null, "KC_P7", "KC_P8", "KC_P9", "KC_PPLS",
+      "KC_CAPS", "KC_A", "KC_S", "KC_D", "KC_F", "KC_G", "KC_H", "KC_J", "KC_K", "KC_L", "KC_SCLN", "KC_QUOT", "KC_ENT", null, null, null, null, null, null, null, "KC_P4", "KC_P5", "KC_P6", null,
+      "KC_LSFT", "KC_Z", "KC_X", "KC_C", "KC_V", "KC_B", "KC_N", "KC_M", "KC_COMM", "KC_DOT", "KC_SLSH", "KC_RSFT", null, null, null, null, null, "KC_UP", null, null, "KC_P1", "KC_P2", "KC_P3", "KC_PENT",
+      "KC_LCTL", "KC_LGUI", "KC_LALT", "KC_SPC", "KC_RALT", "KC_RGUI", "KC_APP", "KC_RCTL", null, null, null, null, null, null, null, null, "KC_LEFT", "KC_DOWN", "KC_RGHT", null, "KC_P0", null, "KC_PDOT", null
+    ],
+    [
+      "KC_SYSTEM_POWER", "KC_SYSTEM_SLEEP", "KC_SYSTEM_WAKE", "KC_KB_POWER", "KC_HELP", "KC_MENU", "KC_SELECT", "KC_STOP", "KC_AGAIN", "KC_UNDO", "KC_CUT", "KC_COPY", "KC_PASTE", null, null, null, "KC_FIND", "KC_AGAIN", "KC_UNDO", null, null, null, null, null,
+      null, "KC_KB_MUTE", "KC_KB_VOLUME_UP", "KC_KB_VOLUME_DOWN", "KC_AUDIO_MUTE", "KC_AUDIO_VOL_UP", "KC_AUDIO_VOL_DOWN", "KC_MEDIA_NEXT_TRACK", "KC_MEDIA_PREV_TRACK", "KC_MEDIA_STOP", "KC_MEDIA_PLAY_PAUSE", "KC_MEDIA_SELECT", "KC_MEDIA_EJECT", null, null, null, null, null, null, null, null, null, null, null,
+      null, "KC_MAIL", "KC_CALCULATOR", "KC_MY_COMPUTER", "KC_WWW_SEARCH", "KC_WWW_HOME", "KC_WWW_BACK", "KC_WWW_FORWARD", "KC_WWW_STOP", "KC_WWW_REFRESH", "KC_WWW_FAVORITES", null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, "KC_MEDIA_FAST_FORWARD", "KC_MEDIA_REWIND", "KC_BRIGHTNESS_UP", "KC_BRIGHTNESS_DOWN", "KC_CONTROL_PANEL", "KC_ASSISTANT", "KC_MISSION_CONTROL", "KC_LAUNCHPAD", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+    ],
+    [
+      null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, "MO(0)", "MO(1)", "MO(2)", "TG(0)", "TG(1)", "TG(2)", "TT(0)", "TT(1)", "TT(2)", "OSL(0)", "OSL(1)", "OSL(2)", "MO(3)", null, null, null, null, null, null, null, null, null, null,
+      null, "TO(0)", "TO(1)", "TO(2)", "DF(0)", "DF(1)", "DF(2)", "Fn1", "Fn2", "Fn3", "FN_MO13", "FN_MO23", null, null, null, null, null, null, null, null, null, null, null, null,
+      null, "LT(1,KC_SPC)", "LT(2,KC_SPC)", "LT(3,KC_SPC)", "LSFT_T(KC_SPC)", "LCTL_T(KC_ESC)", "LALT_T(KC_TAB)", "LGUI_T(KC_ENT)", "MT(MOD_LCTL, KC_ENT)", "MT(MOD_LSFT, KC_SPC)", null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, "LCTL(LALT(KC_DEL))", "LSFT(KC_1)", "MEH(KC_SPC)", "HYPR(KC_ENT)", "LCA(KC_D)", "LSA(KC_E)", "RCS(KC_F)", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+    ],
+    [
+      null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, "KC_RGB_TOG", "KC_RGB_MOD", "KC_RGB_RMOD", "KC_RGB_HUI", "KC_RGB_HUD", "KC_RGB_SAI", "KC_RGB_SAD", "KC_RGB_VAI", "KC_RGB_VAD", "KC_RGB_SPI", "KC_RGB_SPD", null, null, null, null, null, null, null, null, null, null, null, null,
+      null, "KC_OUT_AUTO", "KC_OUT_USB", "KC_OUT_BT", "KC_BT_SEL_0", "KC_BT_SEL_1", "KC_BT_SEL_2", "KC_BT_CLR", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, "KC_MS_U", "KC_MS_D", "KC_MS_L", "KC_MS_R", "KC_BTN1", "KC_BTN2", "KC_BTN3", "KC_WH_U", "KC_WH_D", null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, "KC_RESET", "KC_EE_CLR", "KC_DEBUG", "KC_AST_TOG", "KC_DM_REC1", "KC_DM_REC2", "KC_DM_PLY1", "KC_DM_PLY2", "KC_DM_RSTP", null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+      null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+    ]
+  ]
+}
