@@ -1,4 +1,4 @@
-const { createElement, Fragment } = React;
+const { createElement, Fragment, useState } = React;
 import { Keyboard } from './Keyboard.js';
 
 export function DeviceSlot({ 
@@ -23,6 +23,35 @@ export function DeviceSlot({
     onSetMacroModal,
     onSetExportModal
 }) {
+    const [copied, setCopied] = useState(false);
+    const hasData = !!dev.design;
+
+    const handleShare = () => {
+        if (!hasData) return;
+        try {
+            const shareData = {
+                name: dev.name,
+                design: dev.design,
+                keymapJson: dev.keymapJson,
+                keyStyle: dev.keyStyle,
+                theme: dev.theme,
+                displayMode: dev.displayMode
+            };
+            const compressed = window.LZString.compressToEncodedURIComponent(JSON.stringify(shareData));
+            const shareUrl = window.location.origin + window.location.pathname + '?data=' + compressed;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            }).catch(err => {
+                console.error('Failed to copy share URL:', err);
+                alert('URLのコピーに失敗しました。');
+            });
+        } catch (e) {
+            console.error('Failed to generate share URL:', e);
+            alert('共有URLの作成に失敗しました。');
+        }
+    };
+
     return createElement('div', { 
         key: dev.id,
         draggable: true,
@@ -113,6 +142,18 @@ export function DeviceSlot({
                 createElement('input', { key: 'map-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'mapping') })
             ]),
             createElement('button', { key: 'macro-btn', onClick: () => onSetMacroModal({ deviceId: dev.id, macroId: null }), className: 'flex-1 min-w-[80px] ' + (isLightApp ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm' : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200') + ' px-3 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest border ' + (isLightApp ? 'border-slate-200' : 'border-slate-700/50') }, 'MACROS'),
+            createElement('button', { 
+                key: 'share-btn', 
+                onClick: handleShare, 
+                disabled: !hasData,
+                className: 'flex-1 min-w-[80px] ' + 
+                    (!hasData ? 'opacity-40 cursor-not-allowed border-dashed ' : 'hover:scale-[1.02] ') +
+                    (copied 
+                        ? (isLightApp ? 'bg-green-50 text-green-600 border-green-200 shadow-inner' : 'bg-green-600/20 text-green-400 border-green-500/30 shadow-inner') 
+                        : (isLightApp ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm' : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200')) + 
+                    ' px-3 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest border ' + 
+                    (copied ? '' : (isLightApp ? 'border-slate-200' : 'border-slate-700/50')) 
+            }, copied ? 'COPIED!' : 'SHARE'),
             createElement('button', { key: 'export-btn', onClick: () => onSetExportModal(dev), className: 'flex-1 min-w-[80px] ' + (isLightApp ? 'bg-blue-50 hover:bg-blue-100 text-blue-600' : 'bg-blue-600/20 hover:bg-blue-600/40 text-blue-400') + ' px-3 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest border ' + (isLightApp ? 'border-blue-200' : 'border-blue-500/30') }, 'EXPORT')
         ]),
 
