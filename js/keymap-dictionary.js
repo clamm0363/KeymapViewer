@@ -26,6 +26,7 @@ export const KeymapDictionary = {
     "KC_CAPS": { text: "CAPS",  fluent: "\uF4C0" }, // keyboard_shift_uppercase
     "KC_ESC":  { text: "Esc" },                     
     "KC_SPC":  { text: "Space",  fluent: "\uF6F8" }, // keyboard_spacebar
+    "DEBUG":   { text: "DBG",    fluent: "\uE207" }, // SVG test: debug icon
 
     // システム・電源
     "KC_KB_POWER":     { text: "PWR",  fluent: "\uF60F" }, // power_24

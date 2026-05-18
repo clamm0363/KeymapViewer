@@ -2,6 +2,7 @@ const { createElement, useState, useEffect, useMemo, useRef } = React;
 const html = htm.bind(createElement);
 
 import { FLUENT_FONT_STACK } from '../constants.js';
+import { createSVGElement, isSVGAvailable, getSVGFallback, isWebFontOnly } from '../svg-icons.js';
 
 // Shared footer skeleton and text styling utilities for visual consistency across all keytypes
 const getFooterContainerStyle = (isLight, isAppDark) => ({
@@ -640,12 +641,33 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     zIndex: 2
                                 }
                             },
-                                createElement('span', {
-                                    className: "legend-text",
-                                    style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
-                                        ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
-                                    })
-                                }, finalDisplayText)
+                                // SVG rendering attempt for compatible icons
+                                (() => {
+                                    // Try to use SVG if available for this key
+                                    if (displayMode === 'Fluent' && isSVGAvailable(cleanRaw)) {
+                                        const svgEl = createSVGElement(cleanRaw, { size: 24, color: isLight ? '#1e293b' : '#fff' });
+                                        if (svgEl) {
+                                            return createElement('div', {
+                                                key: 'svg-render',
+                                                style: {
+                                                    width: '24px',
+                                                    height: '24px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }
+                                            }, svgEl);
+                                        }
+                                    }
+                                    
+                                    // Fallback to WebFont text rendering
+                                    return createElement('span', {
+                                        className: "legend-text",
+                                        style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
+                                            ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
+                                        })
+                                    }, finalDisplayText);
+                                })()
                             )
                         )
                     );
