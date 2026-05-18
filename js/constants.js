@@ -34,3 +34,10 @@ export const FLUENT_MAP = {
 };
 
 export const STORAGE_KEY = 'keymapViewer_state';
+
+// Fluent System Icons font family stack (for SVG migration compatibility)
+export const FLUENT_FONT_STACK = {
+  primary: '"FluentSystemIcons-Regular", "Segoe Fluent Icons", "Outfit", sans-serif',
+  jpKana: '"Segoe Fluent Icons", "FluentSystemIcons-Regular", sans-serif',  // JP_KANA special handling
+  fallback: '"Outfit", sans-serif'
+};

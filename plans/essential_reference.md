@@ -83,6 +83,26 @@ Always refer to the active [plans/handover_report.md](file:///c:/Git/KeymappingV
 
 ---
 
+## 5.5. Font Family Stack Constants (SVG Migration Preparation)
+
+The `FLUENT_FONT_STACK` constant in [js/constants.js](file:///c:/Git/KeymapViewer/js/constants.js) defines all WebFont rendering paths centrally:
+
+```javascript
+export const FLUENT_FONT_STACK = {
+  primary: '"FluentSystemIcons-Regular", "Segoe Fluent Icons", "Outfit", sans-serif',
+  jpKana: '"Segoe Fluent Icons", "FluentSystemIcons-Regular", sans-serif',  // JP_KANA special handling
+  fallback: '"Outfit", sans-serif'
+};
+```
+
+* **primary**: Default for standard Fluent icons and most keycaps.
+* **jpKana**: Special ordering for JP_KANA (`\uE986`) to ensure correct Kana rendering priority.
+* **fallback**: Text-only (no icons) rendering for non-icon keycaps.
+
+All components (`getOffsetPrimaryStyle`, `getMainLegendStyle`) use these constants to ensure SVG migration compatibility.
+
+---
+
 ## 6. Legacy & Low-Reference Files (DO NOT USE / RETIRED)
 
 The following files represent outdated architectures and have been retired or contain crucial filesystem behavior notes:

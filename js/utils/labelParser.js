@@ -145,6 +145,9 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
                 if (entry.isFluent === true || (entry.fluent)) {
                     isFluentIcon = true;
                 } else if (entry.isFluent === 'auto') {
+                    // Unicode fallback detection: identifies Fluent icon code points by PUA range (0xE000+)
+                    // Note for SVG migration: This charCodeAt check should be replaced with explicit isFluent flags
+                    // or SVG ID references when migrating away from WebFont rendering
                     isFluentIcon = (displayText.length === 1 && displayText.charCodeAt(0) >= 0xE000);
                 }
             }
@@ -187,6 +190,7 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
                 tapIsFluent = true;
                 tapLabel = FLUENT_MAP[cleanTKey];
             } else if (tapLabel.length === 1 && tapLabel.charCodeAt(0) >= 0xE000) {
+                // Unicode fallback detection for tap labels (see SVG migration note above)
                 tapIsFluent = true;
             }
         }
@@ -276,6 +280,7 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
                 baseIsFluent = true;
                 baseLabel = FLUENT_MAP[baseClean];
             } else if (baseLabel.length === 1 && baseLabel.charCodeAt(0) >= 0xE000) {
+                // Unicode fallback detection for base labels (see SVG migration note above)
                 baseIsFluent = true;
             }
         }
