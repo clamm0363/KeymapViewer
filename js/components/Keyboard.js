@@ -1,6 +1,8 @@
 const { createElement, useState, useEffect, useMemo, useRef } = React;
 const html = htm.bind(createElement);
 
+import { FLUENT_FONT_STACK } from '../constants.js';
+
 // Shared footer skeleton and text styling utilities for visual consistency across all keytypes
 const getFooterContainerStyle = (isLight, isAppDark) => ({
     marginTop: 'auto',
@@ -42,8 +44,8 @@ const getOffsetPrimaryStyle = (isLight, isFluent = false, customFontSize = null)
     fontSize: customFontSize || (isFluent ? '26px' : '22px'),
     fontWeight: '400',
     fontFamily: isFluent 
-        ? '"FluentSystemIcons-Regular", "Segoe Fluent Icons", "Outfit", sans-serif' 
-        : '"Outfit", sans-serif',
+        ? FLUENT_FONT_STACK.primary
+        : FLUENT_FONT_STACK.fallback,
     color: isLight ? '#1e293b' : '#fff',
     transform: 'scale(0.75)',
     transformOrigin: 'left bottom',
@@ -97,8 +99,8 @@ const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth
         color: isLight ? '#1e293b' : '#fff',
         fontWeight: isFluentIcon ? '400' : '400',
         fontFamily: isFluentIcon 
-            ? (displayText === '\uE986' ? '"Segoe Fluent Icons", "FluentSystemIcons-Regular", sans-serif' : '"FluentSystemIcons-Regular", "Segoe Fluent Icons", "Outfit", sans-serif')
-            : '"Outfit", sans-serif',
+            ? (displayText === '\uE986' ? FLUENT_FONT_STACK.jpKana : FLUENT_FONT_STACK.primary)
+            : FLUENT_FONT_STACK.fallback,
         fontSize: '22px',
         lineHeight: '1',
         transform: isFluentIcon ? 'translateY(1.5px)' : `scale(${textScale})`,
