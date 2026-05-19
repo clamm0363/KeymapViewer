@@ -20,10 +20,122 @@ export const SVG_ICONS = {
       <path d="M 7 17 Q 6 18 7 19 M 17 17 Q 18 18 17 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
       <path d="M 9 14 L 6 16 M 15 14 L 18 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
     </svg>`,
-    fallback: '\uE207',  // Fluent UI System Icons code point for DEBUG
+    fallback: '\uE207',
     width: 24,
     height: 24,
     category: 'utility'
+  },
+
+  // Phase 2: System/Media Icons (低リスク - Low Risk Group)
+  
+  // Power & System
+  KC_KB_POWER: {
+    id: 'power-icon',
+    svg: `<svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+      <!-- Power icon: circle with top notch -->
+      <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+      <path d="M 12 2 L 12 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+    fallback: '\uF60F',  // power_24
+    width: 24,
+    height: 24,
+    category: 'system'
+  },
+
+  KC_SYSTEM_SLEEP: {
+    id: 'sleep-icon',
+    svg: `<svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+      <!-- Sleep/Bed icon: pillow and blanket -->
+      <path d="M 3 10 L 3 19 Q 3 20 4 20 L 20 20 Q 21 20 21 19 L 21 10 Z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+      <path d="M 3 10 Q 3 6 9 6 Q 12 8 15 6 Q 21 6 21 10" stroke="currentColor" stroke-width="1.5" fill="currentColor" opacity="0.5" stroke-linejoin="round"/>
+    </svg>`,
+    fallback: '\uF1DA',  // bed_24
+    width: 24,
+    height: 24,
+    category: 'system'
+  },
+
+  KC_SYSTEM_WAKE: {
+    id: 'wake-icon',
+    svg: `<svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+      <!-- Wake/Eye icon: open eye -->
+      <circle cx="12" cy="12" r="3" fill="currentColor"/>
+      <path d="M 2 12 Q 6 8 12 8 Q 18 8 22 12 Q 18 16 12 16 Q 6 16 2 12" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+    </svg>`,
+    fallback: '\uE5F3',  // eye_24
+    width: 24,
+    height: 24,
+    category: 'system'
+  },
+
+  // Audio Controls
+  KC_AUDIO_MUTE: {
+    id: 'mute-icon',
+    svg: `<svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+      <!-- Mute icon: speaker with X -->
+      <path d="M 4 9 L 9 9 L 14 4 L 14 20 L 9 15 L 4 15 Q 3 15 3 14 L 3 10 Q 3 9 4 9 Z" fill="currentColor" opacity="0.7"/>
+      <path d="M 18 6 L 22 18 M 22 6 L 18 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+    fallback: '\uEB4B',  // speaker_mute_24
+    width: 24,
+    height: 24,
+    category: 'audio'
+  },
+
+  KC_AUDIO_VOL_UP: {
+    id: 'volume-up-icon',
+    svg: `<svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+      <!-- Volume Up icon: speaker with waves -->
+      <path d="M 4 9 L 9 9 L 14 4 L 14 20 L 9 15 L 4 15 Q 3 15 3 14 L 3 10 Q 3 9 4 9 Z" fill="currentColor" opacity="0.7"/>
+      <path d="M 16 7 Q 18 9 18 12 Q 18 15 16 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      <path d="M 19 4 Q 22 7 22 12 Q 22 17 19 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    </svg>`,
+    fallback: '\uEA5E',  // speaker_24
+    width: 24,
+    height: 24,
+    category: 'audio'
+  },
+
+  KC_AUDIO_VOL_DOWN: {
+    id: 'volume-down-icon',
+    svg: `<svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+      <!-- Volume Down icon: speaker with single wave -->
+      <path d="M 4 9 L 9 9 L 14 4 L 14 20 L 9 15 L 4 15 Q 3 15 3 14 L 3 10 Q 3 9 4 9 Z" fill="currentColor" opacity="0.7"/>
+      <path d="M 16 7 Q 18 9 18 12 Q 18 15 16 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    </svg>`,
+    fallback: '\uE74F',  // speaker_1_24
+    width: 24,
+    height: 24,
+    category: 'audio'
+  },
+
+  // Brightness Controls
+  KC_KB_BRIGHTNESS_UP: {
+    id: 'brightness-up-icon',
+    svg: `<svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+      <!-- Brightness Up icon: sun with rays -->
+      <circle cx="12" cy="12" r="5" fill="currentColor" opacity="0.7"/>
+      <path d="M 12 1 L 12 3 M 12 21 L 12 23 M 23 12 L 21 12 M 3 12 L 1 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M 19.07 4.93 L 17.66 6.34 M 6.34 17.66 L 4.93 19.07 M 19.07 19.07 L 17.66 17.66 M 6.34 6.34 L 4.93 4.93" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+    fallback: '\uF47F',  // brightness_high_24
+    width: 24,
+    height: 24,
+    category: 'system'
+  },
+
+  KC_KB_BRIGHTNESS_DOWN: {
+    id: 'brightness-down-icon',
+    svg: `<svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+      <!-- Brightness Down icon: moon or dimmed sun -->
+      <circle cx="12" cy="12" r="5" fill="currentColor" opacity="0.5"/>
+      <path d="M 12 1 L 12 3 M 12 21 L 12 23 M 23 12 L 21 12 M 3 12 L 1 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    </svg>`,
+    fallback: '\uF480',  // brightness_low_24
+    width: 24,
+    height: 24,
+    category: 'system'
   }
 };
 
