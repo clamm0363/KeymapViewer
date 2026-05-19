@@ -1,7 +1,7 @@
 const { useState, useEffect, useMemo, useRef, createElement } = React;
 
 import { STORAGE_KEY } from './constants.js';
-import { loadSavedState } from './utils/helpers.js';
+import { loadSavedState, sanitizeDeviceName } from './utils/helpers.js';
 import { Header } from './components/Header.js';
 import { DeviceSlot } from './components/DeviceSlot.js';
 import { HelpModal } from './components/Modals/HelpModal.js';
@@ -30,7 +30,7 @@ export function App() {
                     if (parsed && parsed.design) {
                         return [{
                             id: Date.now(),
-                            name: parsed.name || 'Shared Device',
+                            name: sanitizeDeviceName(parsed.name || 'Shared Device'),
                             design: parsed.design,
                             keymapJson: parsed.keymapJson,
                             layer: 0,
@@ -100,7 +100,7 @@ export function App() {
 
                     return {
                         id: Date.now() + idx,
-                        name: data.name,
+                        name: sanitizeDeviceName(data.name),
                         design: design,
                         keymapJson: keymapJson,
                         layer: 0,
@@ -195,7 +195,7 @@ export function App() {
                 try {
                     const j = JSON.parse(ev.target.result);
                     if (type === 'layout') {
-                        if (j.layouts) updateDevice(id, { design: j, name: j.name || 'Device' });
+                        if (j.layouts) updateDevice(id, { design: j, name: sanitizeDeviceName(j.name || 'Device') });
                         else alert('レイアウト情報が見つかりません');
                     } else {
                         if (j.layers) updateDevice(id, { keymapJson: j });
@@ -222,7 +222,8 @@ export function App() {
     };
 
     const finishEditing = (id) => {
-        if (editingName.trim()) updateDevice(id, { name: editingName.trim() });
+        const cleaned = sanitizeDeviceName(editingName);
+        if (cleaned.trim()) updateDevice(id, { name: cleaned.trim() });
         setEditingDeviceId(null);
     };
 
@@ -259,13 +260,13 @@ export function App() {
             try {
                 const j = JSON.parse(ev.target.result);
                 if (targetDevId) {
-                    if (j.layouts) updateDevice(targetDevId, { design: j, name: j.name || 'Device' });
+                    if (j.layouts) updateDevice(targetDevId, { design: j, name: sanitizeDeviceName(j.name || 'Device') });
                     else if (j.layers) updateDevice(targetDevId, { keymapJson: j });
                 } else {
                     if (devices.length >= 4) return;
                     const nd = { id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', showSettings: false };
-                    if (j.layouts) { nd.design = j; nd.name = j.name || 'Device'; }
-                    else if (j.layers) { nd.keymapJson = j; nd.name = j.name || 'Mapping'; }
+                    if (j.layouts) { nd.design = j; nd.name = sanitizeDeviceName(j.name || 'Device'); }
+                    else if (j.layers) { nd.keymapJson = j; nd.name = sanitizeDeviceName(j.name || 'Mapping'); }
                     setDevices(prev => [...prev, nd]);
                 }
             } catch (err) { alert('JSONファイルの解析に失敗しました'); }

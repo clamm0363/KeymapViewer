@@ -1,5 +1,6 @@
 const { createElement, Fragment, useState } = React;
 import { Keyboard } from './Keyboard.js';
+import { sanitizeDeviceName } from '../utils/helpers.js';
 
 export function DeviceSlot({ 
     dev, 
@@ -63,10 +64,23 @@ export function DeviceSlot({
         className: (isLightApp ? 'bg-white/80 border-slate-200' : 'bg-slate-900/40 border-slate-800') + ' relative flex flex-col rounded-[2rem] border-2 transition-all p-6 ' + (dragOverTarget === dev.id ? 'border-blue-400 scale-[1.01]' : '')
     }, [
         createElement('div', { key: 'slot-header', className: 'flex justify-between items-start mb-4' }, [
-            createElement('div', { key: 'title-grp', className: 'flex items-center gap-3' }, [
-                createElement('span', { key: 'slot-idx', className: 'inline-flex items-center justify-center text-[10px] font-black px-2 h-5 rounded-md bg-blue-600 text-white uppercase tracking-wider pt-[1px]' }, 'Slot ' + (idx + 1)),
+            createElement('div', { key: 'title-grp', className: 'flex items-center gap-3 flex-1 min-w-0' }, [
+                createElement('span', { key: 'slot-idx', className: 'inline-flex items-center justify-center text-[10px] font-black px-2 h-5 rounded-md bg-blue-600 text-white uppercase tracking-wider pt-[1px] flex-shrink-0 whitespace-nowrap' }, 'Slot ' + (idx + 1)),
                 editingDeviceId === dev.id ? 
-                    createElement('input', { key: 'name-input', type: 'text', value: editingName, onInput: (e) => onSetEditingName(e.target.value), onBlur: () => onFinishEditing(dev.id), onKeyDown: (e) => e.key === 'Enter' && onFinishEditing(dev.id), className: 'bg-transparent border-b border-blue-500 text-lg font-black outline-none w-48 uppercase', ref: (el) => el && el.focus() }) :
+                    createElement('input', { 
+                        key: 'name-input', 
+                        type: 'text', 
+                        value: editingName, 
+                        onInput: (e) => onSetEditingName(sanitizeDeviceName(e.target.value)), 
+                        onBlur: () => onFinishEditing(dev.id), 
+                        onKeyDown: (e) => e.key === 'Enter' && onFinishEditing(dev.id), 
+                        placeholder: 'DEVICE NAME...',
+                        className: (isLightApp 
+                            ? 'bg-blue-50/80 border-blue-400 text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20' 
+                            : 'bg-blue-950/30 border-blue-500/60 text-white placeholder-slate-600 focus:bg-blue-950/50 focus:ring-2 focus:ring-blue-500/30') 
+                            + ' text-lg font-black outline-none border-2 w-full max-w-[560px] min-w-0 px-3 py-1 rounded-xl transition-all uppercase',
+                        ref: (el) => el && el.focus() 
+                    }) :
                     createElement(Fragment, { key: 'name-static' }, [
                         createElement('h2', { 
                             key: 'h2', 
