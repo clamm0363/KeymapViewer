@@ -655,8 +655,9 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center'
-                                                }
-                                            }, svgEl);
+                                                },
+                                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+                                            });
                                         }
                                     }
                                     
