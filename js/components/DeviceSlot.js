@@ -1,5 +1,26 @@
-const { createElement, Fragment } = React;
+const { createElement, Fragment, useState } = React;
 import { Keyboard } from './Keyboard.js';
+import { sanitizeDeviceName, findSplitX } from '../utils/helpers.js';
+
+const getEncoderIndices = (design) => {
+    if (!design || !design.layouts || !design.layouts.keymap) return [];
+    const indices = new Set();
+    design.layouts.keymap.forEach(row => {
+        row.forEach(item => {
+            if (typeof item === 'string') {
+                const parts = item.split('\n');
+                const encoderMatch = parts.find(p => /^e\d+$/.test(p.trim()));
+                if (encoderMatch) {
+                    const idx = parseInt(encoderMatch.replace('e', ''), 10);
+                    if (!isNaN(idx)) {
+                        indices.add(idx);
+                    }
+                }
+            }
+        });
+    });
+    return [...indices].sort((a, b) => a - b);
+};
 
 export function DeviceSlot({ 
     dev, 
@@ -23,6 +44,36 @@ export function DeviceSlot({
     onSetMacroModal,
     onSetExportModal
 }) {
+    const [copied, setCopied] = useState(false);
+    const hasData = !!dev.design;
+    const encoderIndices = getEncoderIndices(dev.design);
+
+    const handleShare = () => {
+        if (!hasData) return;
+        try {
+            const shareData = {
+                name: dev.name,
+                design: dev.design,
+                keymapJson: dev.keymapJson,
+                keyStyle: dev.keyStyle,
+                theme: dev.theme,
+                displayMode: dev.displayMode
+            };
+            const compressed = window.LZString.compressToEncodedURIComponent(JSON.stringify(shareData));
+            const shareUrl = window.location.origin + window.location.pathname + '?data=' + compressed;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            }).catch(err => {
+                console.error('Failed to copy share URL:', err);
+                alert('URLのコピーに失敗しました。');
+            });
+        } catch (e) {
+            console.error('Failed to generate share URL:', e);
+            alert('共有URLの作成に失敗しました。');
+        }
+    };
+
     return createElement('div', { 
         key: dev.id,
         draggable: true,
@@ -34,10 +85,23 @@ export function DeviceSlot({
         className: (isLightApp ? 'bg-white/80 border-slate-200' : 'bg-slate-900/40 border-slate-800') + ' relative flex flex-col rounded-[2rem] border-2 transition-all p-6 ' + (dragOverTarget === dev.id ? 'border-blue-400 scale-[1.01]' : '')
     }, [
         createElement('div', { key: 'slot-header', className: 'flex justify-between items-start mb-4' }, [
-            createElement('div', { key: 'title-grp', className: 'flex items-center gap-3' }, [
-                createElement('span', { key: 'slot-idx', className: 'inline-flex items-center justify-center text-[10px] font-black px-2 h-5 rounded-md bg-blue-600 text-white uppercase tracking-wider pt-[1px]' }, 'Slot ' + (idx + 1)),
+            createElement('div', { key: 'title-grp', className: 'flex items-center gap-3 flex-1 min-w-0' }, [
+                createElement('span', { key: 'slot-idx', className: 'inline-flex items-center justify-center text-[10px] font-black px-2 h-5 rounded-md bg-blue-600 text-white uppercase tracking-wider pt-[1px] flex-shrink-0 whitespace-nowrap' }, 'Slot ' + (idx + 1)),
                 editingDeviceId === dev.id ? 
-                    createElement('input', { key: 'name-input', type: 'text', value: editingName, onInput: (e) => onSetEditingName(e.target.value), onBlur: () => onFinishEditing(dev.id), onKeyDown: (e) => e.key === 'Enter' && onFinishEditing(dev.id), className: 'bg-transparent border-b border-blue-500 text-lg font-black outline-none w-48 uppercase', ref: (el) => el && el.focus() }) :
+                    createElement('input', { 
+                        key: 'name-input', 
+                        type: 'text', 
+                        value: editingName, 
+                        onInput: (e) => onSetEditingName(sanitizeDeviceName(e.target.value)), 
+                        onBlur: () => onFinishEditing(dev.id), 
+                        onKeyDown: (e) => e.key === 'Enter' && onFinishEditing(dev.id), 
+                        placeholder: 'DEVICE NAME...',
+                        className: (isLightApp 
+                            ? 'bg-blue-50/80 border-blue-400 text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20' 
+                            : 'bg-blue-950/30 border-blue-500/60 text-white placeholder-slate-600 focus:bg-blue-950/50 focus:ring-2 focus:ring-blue-500/30') 
+                            + ' text-lg font-black outline-none border-2 w-full max-w-[560px] min-w-0 px-3 py-1 rounded-xl transition-all uppercase',
+                        ref: (el) => el && el.focus() 
+                    }) :
                     createElement(Fragment, { key: 'name-static' }, [
                         createElement('h2', { 
                             key: 'h2', 
@@ -100,7 +164,74 @@ export function DeviceSlot({
                     ),
                     createElement('span', { key: 's', className: 'text-[9px] font-bold ' + ((dev.keyStyle || 'Windows') === opt ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
                 ])))
-            ])
+            ]),
+            createElement('div', { key: 'separation-sect', className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
+                createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'SEPARATION:'),
+                createElement('div', { key: 'btns', className: 'flex gap-4' }, ['Disable', 'Enable'].map(opt => {
+                    const isChecked = (opt === 'Enable' ? dev.separation === 'ENABLE' : (!dev.separation || dev.separation === 'DISABLE'));
+                    return createElement('label', { 
+                        key: opt, 
+                        onClick: (e) => {
+                            e.preventDefault();
+                            if (opt === 'Enable') {
+                                const hasGap = findSplitX(dev.design) !== null;
+                                if (hasGap) {
+                                    onUpdateDevice(dev.id, { separation: 'ENABLE' });
+                                } else {
+                                    alert('有効なギャップが検出できませんでした。');
+                                    onUpdateDevice(dev.id, { separation: 'DISABLE' });
+                                }
+                            } else {
+                                onUpdateDevice(dev.id, { separation: 'DISABLE' });
+                            }
+                        },
+                        className: 'flex items-center gap-1.5 cursor-pointer group' 
+                    }, [
+                        createElement('input', { 
+                            key: 'i', 
+                            type: 'radio', 
+                            name: 'separation-' + dev.id, 
+                            checked: isChecked, 
+                            readOnly: true,
+                            className: 'hidden' 
+                        }),
+                        createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (isChecked ? 'border-blue-500' : '') }, 
+                            isChecked ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                        ),
+                        createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (isChecked ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
+                    ]);
+                }))
+            ]),
+            ...encoderIndices.map(idx => {
+                const styles = dev.encoderStyles || {};
+                const currentStyle = styles[idx] || 'Dial';
+                return createElement('div', { key: 'encoder-sect-' + idx, className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
+                    createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'ENCODER e' + idx + ':'),
+                    createElement('div', { key: 'btns', className: 'flex gap-4' }, [
+                        { value: 'Dial', label: 'Dial' },
+                        { value: 'VerticalWheel', label: 'Wheel (V)' },
+                        { value: 'HorizontalWheel', label: 'Wheel (H)' }
+                    ].map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
+                        createElement('input', { 
+                            key: 'i', 
+                            type: 'radio', 
+                            name: 'encoderStyle-' + idx + '-' + dev.id, 
+                            checked: currentStyle === opt.value, 
+                            onChange: () => onUpdateDevice(dev.id, { 
+                                encoderStyles: {
+                                    ...styles,
+                                    [idx]: opt.value
+                                } 
+                            }), 
+                            className: 'hidden' 
+                        }),
+                        createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentStyle === opt.value ? 'border-blue-500' : '') }, 
+                            currentStyle === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                        ),
+                        createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentStyle === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
+                    ])))
+                ]);
+            })
         ]) : null,
 
         createElement('div', { key: 'slot-actions', className: 'flex flex-wrap items-center gap-2 mb-6 p-2 ' + (isLightApp ? 'bg-slate-100/50' : 'bg-slate-950/30') + ' rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
@@ -113,6 +244,18 @@ export function DeviceSlot({
                 createElement('input', { key: 'map-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'mapping') })
             ]),
             createElement('button', { key: 'macro-btn', onClick: () => onSetMacroModal({ deviceId: dev.id, macroId: null }), className: 'flex-1 min-w-[80px] ' + (isLightApp ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm' : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200') + ' px-3 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest border ' + (isLightApp ? 'border-slate-200' : 'border-slate-700/50') }, 'MACROS'),
+            createElement('button', { 
+                key: 'share-btn', 
+                onClick: handleShare, 
+                disabled: !hasData,
+                className: 'flex-1 min-w-[80px] ' + 
+                    (!hasData ? 'opacity-40 cursor-not-allowed border-dashed ' : 'hover:scale-[1.02] ') +
+                    (copied 
+                        ? (isLightApp ? 'bg-green-50 text-green-600 border-green-200 shadow-inner' : 'bg-green-600/20 text-green-400 border-green-500/30 shadow-inner') 
+                        : (isLightApp ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm' : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200')) + 
+                    ' px-3 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest border ' + 
+                    (copied ? '' : (isLightApp ? 'border-slate-200' : 'border-slate-700/50')) 
+            }, copied ? 'COPIED!' : 'SHARE'),
             createElement('button', { key: 'export-btn', onClick: () => onSetExportModal(dev), className: 'flex-1 min-w-[80px] ' + (isLightApp ? 'bg-blue-50 hover:bg-blue-100 text-blue-600' : 'bg-blue-600/20 hover:bg-blue-600/40 text-blue-400') + ' px-3 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest border ' + (isLightApp ? 'border-blue-200' : 'border-blue-500/30') }, 'EXPORT')
         ]),
 
@@ -133,7 +276,9 @@ export function DeviceSlot({
                     appTheme: appTheme,
                     macroAliases: dev.macroAliases || {},
                     onMacroClick: (macroId) => onSetMacroModal({ deviceId: dev.id, macroId }),
-                    keyStyle: dev.keyStyle || 'Windows'
+                    keyStyle: dev.keyStyle || 'Windows',
+                    separation: dev.separation || 'DISABLE',
+                    encoderStyles: dev.encoderStyles || {}
                 })
             )
         ]) : createElement('div', { key: 'empty-area', className: 'py-20 text-center opacity-20' }, [

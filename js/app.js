@@ -1,10 +1,11 @@
 const { useState, useEffect, useMemo, useRef, createElement } = React;
 
 import { STORAGE_KEY } from './constants.js';
-import { loadSavedState } from './utils/helpers.js';
+import { loadSavedState, sanitizeDeviceName } from './utils/helpers.js';
 import { Header } from './components/Header.js';
 import { DeviceSlot } from './components/DeviceSlot.js';
 import { HelpModal } from './components/Modals/HelpModal.js';
+import { LinksModal } from './components/Modals/LinksModal.js';
 import { MacroModal } from './components/Modals/MacroModal.js';
 import { ExportModal } from './components/Modals/ExportModal.js';
 import { Keyboard } from './components/Keyboard.js';
@@ -18,8 +19,38 @@ export function App() {
         return null;
     }, []);
     const [devices, setDevices] = useState(() => {
+        // Try to restore from URL parameter first
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const dataParam = params.get('data');
+            if (dataParam && window.LZString) {
+                const decompressed = window.LZString.decompressFromEncodedURIComponent(dataParam);
+                if (decompressed) {
+                    const parsed = JSON.parse(decompressed);
+                    if (parsed && parsed.design) {
+                        return [{
+                            id: Date.now(),
+                            name: sanitizeDeviceName(parsed.name || 'Shared Device'),
+                            design: parsed.design,
+                            keymapJson: parsed.keymapJson,
+                            layer: 0,
+                            displayMode: parsed.displayMode || 'Fluent',
+                            theme: parsed.theme || 'System',
+                            keyStyle: parsed.keyStyle || 'Windows',
+                            encoderStyles: parsed.encoderStyles || {},
+                            macroAliases: parsed.keymapJson?.macroAliases || {},
+                            showSettings: false
+                        }];
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Failed to restore shared state from URL:', e);
+        }
+
+        // Fallback to saved state
         if (saved && saved.devices && saved.devices.length > 0) return saved.devices;
-        return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', showSettings: false }];
+        return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, showSettings: false }];
     });
     const [layoutMode, setLayoutMode] = useState(() => (saved && saved.layoutMode) || 'stack');
     const [appTheme, setAppTheme] = useState(() => (saved && saved.appTheme) || 'dark');
@@ -28,6 +59,7 @@ export function App() {
     const [draggedSlotId, setDraggedSlotId] = useState(null);
     const [dragOverTarget, setDragOverTarget] = useState(null);
     const [showHelp, setShowHelp] = useState(false);
+    const [showLinks, setShowLinks] = useState(false);
     const [macroModalState, setMacroModalState] = useState(null);
     const [exportModalDevId, setExportModalDevId] = useState(null);
     const [exportSettings, setExportSettings] = useState({ layers: [], includeMacros: true, background: 'Dark' });
@@ -36,15 +68,16 @@ export function App() {
     const exportRef = useRef(null);
 
     useEffect(() => {
-        // If there is a saved state, we don't overwrite it with samples
-        if (saved && saved.devices && saved.devices.length > 0 && saved.devices[0].design) return; 
+        // Skip loading samples if we already have a loaded device design (e.g. from saved state or URL sharing)
+        if (devices && devices.length > 0 && devices[0].design) return; 
 
         const loadSamples = async () => {
             const sampleFiles = [
                 { file: 'SampleLayouts/sample_tkl_jp.json', keyStyle: 'Windows' },
                 { file: 'SampleLayouts/sample_100_win.json', keyStyle: 'Windows' },
                 { file: 'SampleLayouts/sample_hhkb_mac.json', keyStyle: 'Mac' },
-                { file: 'SampleLayouts/sample_numpad.json', keyStyle: 'Windows' }
+                { file: 'SampleLayouts/sample_numpad.json', keyStyle: 'Windows' },
+                { file: 'SampleLayouts/sample_dual_encoder.json', keyStyle: 'Windows' }
             ];
 
             try {
@@ -58,24 +91,27 @@ export function App() {
                     const design = {
                         name: data.name,
                         layouts: data.layouts,
-                        matrix: data.matrix
+                        matrix: data.matrix,
+                        encoders: data.encoders || []
                     };
                     
                     const keymapJson = {
                         layers: data.layers || [],
                         macros: data.macros || [],
-                        macroAliases: data.macroAliases || {}
+                        macroAliases: data.macroAliases || {},
+                        encoders: data.encoders || []
                     };
 
                     return {
                         id: Date.now() + idx,
-                        name: data.name,
+                        name: sanitizeDeviceName(data.name),
                         design: design,
                         keymapJson: keymapJson,
                         layer: 0,
                         displayMode: 'Fluent',
                         theme: 'System',
                         keyStyle: s.keyStyle,
+                        encoderStyles: {},
                         macroAliases: keymapJson.macroAliases,
                         showSettings: false
                     };
@@ -148,7 +184,7 @@ export function App() {
     const addSlot = () => {
         if (devices.length >= 4) return;
         setDevices(prev => [...prev, {
-            id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', showSettings: false
+            id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, showSettings: false
         }]);
     };
 
@@ -164,7 +200,7 @@ export function App() {
                 try {
                     const j = JSON.parse(ev.target.result);
                     if (type === 'layout') {
-                        if (j.layouts) updateDevice(id, { design: j, name: j.name || 'Device' });
+                        if (j.layouts) updateDevice(id, { design: j, name: sanitizeDeviceName(j.name || 'Device') });
                         else alert('レイアウト情報が見つかりません');
                     } else {
                         if (j.layers) updateDevice(id, { keymapJson: j });
@@ -179,7 +215,7 @@ export function App() {
 
     const removeDevice = (id) => {
         if (devices.length === 1) {
-            updateDevice(id, { name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', keyStyle: 'Windows', showSettings: false });
+            updateDevice(id, { name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', keyStyle: 'Windows', encoderStyles: {}, showSettings: false });
         } else {
             setDevices(prev => prev.filter(d => d.id !== id));
         }
@@ -191,7 +227,8 @@ export function App() {
     };
 
     const finishEditing = (id) => {
-        if (editingName.trim()) updateDevice(id, { name: editingName.trim() });
+        const cleaned = sanitizeDeviceName(editingName);
+        if (cleaned.trim()) updateDevice(id, { name: cleaned.trim() });
         setEditingDeviceId(null);
     };
 
@@ -228,13 +265,13 @@ export function App() {
             try {
                 const j = JSON.parse(ev.target.result);
                 if (targetDevId) {
-                    if (j.layouts) updateDevice(targetDevId, { design: j, name: j.name || 'Device' });
+                    if (j.layouts) updateDevice(targetDevId, { design: j, name: sanitizeDeviceName(j.name || 'Device') });
                     else if (j.layers) updateDevice(targetDevId, { keymapJson: j });
                 } else {
                     if (devices.length >= 4) return;
-                    const nd = { id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', showSettings: false };
-                    if (j.layouts) { nd.design = j; nd.name = j.name || 'Device'; }
-                    else if (j.layers) { nd.keymapJson = j; nd.name = j.name || 'Mapping'; }
+                    const nd = { id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, showSettings: false };
+                    if (j.layouts) { nd.design = j; nd.name = sanitizeDeviceName(j.name || 'Device'); }
+                    else if (j.layers) { nd.keymapJson = j; nd.name = sanitizeDeviceName(j.name || 'Mapping'); }
                     setDevices(prev => [...prev, nd]);
                 }
             } catch (err) { alert('JSONファイルの解析に失敗しました'); }
@@ -268,7 +305,7 @@ export function App() {
     const isLightApp = appTheme === 'light';
 
     return createElement('div', {
-        className: (isLightApp ? 'app-light' : 'app-dark') + ' min-h-screen p-6 md:p-8 flex flex-col transition-colors duration-300'
+        className: (isLightApp ? 'app-light' : 'app-dark') + ' min-h-screen min-w-full w-fit p-6 md:p-8 flex flex-col transition-colors duration-300'
     }, [
         createElement(Header, {
             key: 'header',
@@ -276,6 +313,7 @@ export function App() {
             layoutMode,
             deviceCount: devices.length,
             onShowHelp: () => setShowHelp(true),
+            onShowLinks: () => setShowLinks(true),
             onAddSlot: addSlot,
             onSetLayoutMode: setLayoutMode,
             onSetAppTheme: setAppTheme,
@@ -286,6 +324,12 @@ export function App() {
             key: 'help-modal',
             isLightApp,
             onClose: () => setShowHelp(false)
+        }),
+
+        showLinks && createElement(LinksModal, {
+            key: 'links-modal',
+            isLightApp,
+            onClose: () => setShowLinks(false)
         }),
 
         macroModalState && createElement(MacroModal, {
@@ -329,8 +373,10 @@ export function App() {
                     appTheme: exportSettings.background === 'Light' ? 'light' : 'dark',
                     macroAliases: dev.macroAliases || {},
                     keyStyle: dev.keyStyle || 'Windows',
+                    encoderStyles: dev.encoderStyles || {},
                     isExportMode: true,
-                    forcedScale: 1.0 
+                    forcedScale: 1.0,
+                    separation: dev.separation || 'DISABLE'
                 })
             ]);
         })(),

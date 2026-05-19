@@ -3,6 +3,7 @@ const html = htm.bind(createElement);
 
 import { FLUENT_FONT_STACK } from '../constants.js';
 import { createSVGElement, isSVGAvailable, getSVGFallback, isWebFontOnly } from '../svg-icons.js';
+import { findSplitX } from '../utils/helpers.js';
 
 // Shared footer skeleton and text styling utilities for visual consistency across all keytypes
 const getFooterContainerStyle = (isLight, isAppDark) => ({
@@ -125,7 +126,7 @@ const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth
 
 import { parseKeyLabel } from '../utils/labelParser.js';
 
-export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, keyStyle = 'Windows' }) {
+export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, keyStyle = 'Windows', separation = 'DISABLE', encoderStyles = {} }) {
     const [codes, setCodes] = useState({});
     const containerRef = useRef(null);
     const [scale, setScale] = useState(1);
@@ -142,6 +143,12 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         }
         return null;
     };
+
+    const isSeparationEnabled = separation === 'ENABLE';
+    const splitX = useMemo(() => {
+        if (!isSeparationEnabled) return null;
+        return findSplitX(design);
+    }, [design, isSeparationEnabled]);
 
     const keys = useMemo(() => {
         if (!design || !design.layouts || !design.layouts.keymap) return [];
@@ -181,8 +188,28 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             });
             y++;
         });
+
+        // Shift right keys to ensure 1u physical gap
+        if (isSeparationEnabled && splitX !== null) {
+            const leftKeys = list.filter(k => (k.x + k.w / 2) < splitX);
+            const rightKeys = list.filter(k => (k.x + k.w / 2) >= splitX);
+
+            if (leftKeys.length > 0 && rightKeys.length > 0) {
+                const leftMaxX = Math.max(...leftKeys.map(k => k.x + k.w));
+                const rightMinX = Math.min(...rightKeys.map(k => k.x));
+
+                const originalGap = rightMinX - leftMaxX;
+                const targetGap = UNIT * 1.5; // 84px (1.5u)
+                const shiftX = targetGap - originalGap;
+
+                rightKeys.forEach(k => {
+                    k.x += shiftX;
+                });
+            }
+        }
+
         return list;
-    }, [design]);
+    }, [design, isSeparationEnabled, splitX]);
 
     const maxWidth = useMemo(() => keys.length ? Math.max(...keys.map(k => k.x + k.w), 0) + 40 : 0, [keys]);
     const maxHeight = useMemo(() => keys.length ? Math.max(...keys.map(k => k.y + k.h), 0) + 40 : 0, [keys]);
@@ -225,12 +252,59 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
 
     // --- Styling Constants & Helpers ---
     
+    const leftCaseStyle = useMemo(() => {
+        if (!isSeparationEnabled || splitX === null) return null;
+        const leftKeys = keys.filter(k => (k.x + k.w / 2) < splitX);
+        if (leftKeys.length === 0) return null;
+
+        const minX = Math.min(...leftKeys.map(k => k.x));
+        const maxX = Math.max(...leftKeys.map(k => k.x + k.w));
+        const minY = Math.min(...leftKeys.map(k => k.y));
+        const maxY = Math.max(...leftKeys.map(k => k.y + k.h));
+
+        const paddingOffset = 20;
+        return {
+            position: 'absolute',
+            left: `${minX + paddingOffset - 20}px`,
+            top: `${minY + paddingOffset - 20}px`,
+            width: `${(maxX - minX) + 40}px`,
+            height: `${(maxY - minY) + 40}px`,
+            borderRadius: '2rem',
+            zIndex: 0
+        };
+    }, [keys, isSeparationEnabled, splitX]);
+
+    const rightCaseStyle = useMemo(() => {
+        if (!isSeparationEnabled || splitX === null) return null;
+        const rightKeys = keys.filter(k => (k.x + k.w / 2) >= splitX);
+        if (rightKeys.length === 0) return null;
+
+        const minX = Math.min(...rightKeys.map(k => k.x));
+        const maxX = Math.max(...rightKeys.map(k => k.x + k.w));
+        const minY = Math.min(...rightKeys.map(k => k.y));
+        const maxY = Math.max(...rightKeys.map(k => k.y + k.h));
+
+        const paddingOffset = 20;
+        return {
+            position: 'absolute',
+            left: `${minX + paddingOffset - 20}px`,
+            top: `${minY + paddingOffset - 20}px`,
+            width: `${(maxX - minX) + 40}px`,
+            height: `${(maxY - minY) + 40}px`,
+            borderRadius: '2rem',
+            zIndex: 0
+        };
+    }, [keys, isSeparationEnabled, splitX]);
+
     const getKbdContainerClass = () => {
-        const base = "kbd-container relative transition-all duration-200 border-2";
-        const lightTheme = "bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]";
+        const base = "kbd-container relative transition-all duration-200";
+        if (isSeparationEnabled && splitX !== null) {
+            return `${base} border-0 bg-transparent shadow-none`;
+        }
+        const lightTheme = "border-2 bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]";
         const darkTheme = isAppDark
-            ? "bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
-            : "bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]";
+            ? "border-2 bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
+            : "border-2 bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]";
         return `${base} ${isLight ? lightTheme : darkTheme}`;
     };
 
@@ -243,33 +317,87 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         const darkBorder = isAppDark ? '#475569' : '#334155';
         
         if (k.isEncoder) {
-            const knobSize = 44;
-            const offset = (56 - knobSize) / 2;
-            return {
-                left: `${k.x + paddingOffset + offset}px`,
-                top: `${k.y + paddingOffset + offset}px`,
-                width: `${knobSize}px`,
-                height: `${knobSize}px`,
-                position: 'absolute',
-                borderRadius: '50%',
-                borderWidth: '3px',
-                borderStyle: 'solid',
-                borderColor: isLight ? lightBorder : darkBorder,
-                background: isLight 
-                    ? 'radial-gradient(circle at 35% 35%, #ffffff 0%, #f1f5f9 50%, #cbd5e1 100%)' 
-                    : 'radial-gradient(circle at 35% 35%, #334155 0%, #1e293b 50%, #0f172a 100%)',
-                boxShadow: isLight 
-                    ? '0 6px 10px -1px rgb(0 0 0 / 0.15), inset 0 2px 4px rgba(255,255,255,0.8), inset 0 -2px 4px rgba(0,0,0,0.1)' 
-                    : '0 10px 15px -3px rgb(0 0 0 / 0.3), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 -4px 6px rgba(0,0,0,0.5)',
-                overflow: 'hidden',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'column',
-                transition: 'all 0.075s ease',
-                cursor: 'pointer',
-                zIndex: 40
-            };
+            const currentStyle = (encoderStyles && encoderStyles[k.encoderIndex]) || 'Dial';
+            if (currentStyle === 'VerticalWheel') {
+                const wellW = 33;
+                const wellH = 44;
+                const leftOffset = (k.w - 6) / 2 - wellW / 2;
+                const topOffset = (k.h - 6) / 2 - wellH / 2;
+                return {
+                    left: `${k.x + paddingOffset + leftOffset}px`,
+                    top: `${k.y + paddingOffset + topOffset}px`,
+                    width: `${wellW}px`,
+                    height: `${wellH}px`,
+                    position: 'absolute',
+                    borderRadius: '6px',
+                    border: `1.5px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#1e293b' : '#334155')}`,
+                    background: isLight 
+                        ? 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)' 
+                        : 'linear-gradient(135deg, #0f172a 0%, #020617 100%)',
+                    boxShadow: isLight
+                        ? 'inset 0 3px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.05)'
+                        : 'inset 0 4px 8px rgba(0,0,0,0.65), 0 1px 2px rgba(255,255,255,0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 40
+                };
+            } else if (currentStyle === 'HorizontalWheel') {
+                const wellW = 44;
+                const wellH = 33;
+                const leftOffset = (k.w - 6) / 2 - wellW / 2;
+                const topOffset = (k.h - 6) / 2 - wellH / 2;
+                return {
+                    left: `${k.x + paddingOffset + leftOffset}px`,
+                    top: `${k.y + paddingOffset + topOffset}px`,
+                    width: `${wellW}px`,
+                    height: `${wellH}px`,
+                    position: 'absolute',
+                    borderRadius: '6px',
+                    border: `1.5px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#1e293b' : '#334155')}`,
+                    background: isLight 
+                        ? 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)' 
+                        : 'linear-gradient(135deg, #0f172a 0%, #020617 100%)',
+                    boxShadow: isLight
+                        ? 'inset 0 3px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.05)'
+                        : 'inset 0 4px 8px rgba(0,0,0,0.65), 0 1px 2px rgba(255,255,255,0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 40
+                };
+            } else {
+                const knobSize = 44;
+                const leftOffset = (k.w - 6) / 2 - knobSize / 2;
+                const topOffset = (k.h - 6) / 2 - knobSize / 2;
+                return {
+                    left: `${k.x + paddingOffset + leftOffset}px`,
+                    top: `${k.y + paddingOffset + topOffset}px`,
+                    width: `${knobSize}px`,
+                    height: `${knobSize}px`,
+                    position: 'absolute',
+                    borderRadius: '50%',
+                    borderWidth: '3px',
+                    borderStyle: 'solid',
+                    borderColor: isLight ? lightBorder : darkBorder,
+                    background: isLight 
+                        ? 'radial-gradient(circle at 35% 35%, #ffffff 0%, #f1f5f9 50%, #cbd5e1 100%)' 
+                        : 'radial-gradient(circle at 35% 35%, #334155 0%, #1e293b 50%, #0f172a 100%)',
+                    boxShadow: isLight 
+                        ? '0 6px 10px -1px rgb(0 0 0 / 0.15), inset 0 2px 4px rgba(255,255,255,0.8), inset 0 -2px 4px rgba(0,0,0,0.1)' 
+                        : '0 10px 15px -3px rgb(0 0 0 / 0.3), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 -4px 6px rgba(0,0,0,0.5)',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexDirection: 'column',
+                    transition: 'all 0.075s ease',
+                    cursor: 'pointer',
+                    zIndex: 40
+                };
+            }
         }
         
         if (k.isJIS) {
@@ -366,8 +494,26 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             createElement('div', {
                 className: getKbdContainerClass(),
                 style: { width: '100%', height: '100%', transform: 'none' }
-            },
-                keys.map((k, i) => {
+            }, [
+                isSeparationEnabled && splitX !== null && leftCaseStyle && createElement('div', {
+                    key: 'left-case',
+                    style: leftCaseStyle,
+                    className: "border-2 transition-all duration-200 " + (isLight 
+                        ? "bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]"
+                        : (isAppDark 
+                            ? "bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
+                            : "bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]"))
+                }),
+                isSeparationEnabled && splitX !== null && rightCaseStyle && createElement('div', {
+                    key: 'right-case',
+                    style: rightCaseStyle,
+                    className: "border-2 transition-all duration-200 " + (isLight 
+                        ? "bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]"
+                        : (isAppDark 
+                            ? "bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
+                            : "bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]"))
+                }),
+                ...keys.map((k, i) => {
                     const mK = k.matrix ? `${k.matrix[0]},${k.matrix[1]}` : null;
                     const val = mK ? codes[mK] : null;
                     
@@ -398,76 +544,154 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     const isFluentCenter = isFluentIcon || (isModKey && baseIsFluent);
                     const centerText = (isModKey && modType !== 'base') ? baseLabel : displayText;
 
-                    // Resolving rotary encoder actions (Push, CCW, CW) and generating rich tooltip
-                    const actions = k.isEncoder ? getEncoderActions(k.encoderIndex, layer) : null;
-                    let tooltipText = val || fullRaw;
-                    if (k.isEncoder && actions) {
-                        const [ccwCode, cwCode] = actions;
-                        const ccwParsed = parseKeyLabel(ccwCode, ccwCode, displayMode, keyStyle, macroAliases);
-                        const cwParsed = parseKeyLabel(cwCode, cwCode, displayMode, keyStyle, macroAliases);
-                        tooltipText = `Push: ${val || fullRaw}\n🔄 CCW (Rotate Left): ${ccwCode} (${ccwParsed.displayText})\n🔄 CW (Rotate Right): ${cwCode} (${cwParsed.displayText})`;
-                    }
-
-                    const cleanRaw = fullRaw ? fullRaw.toUpperCase() : '';
-                    const displayRaw = (val && typeof val === 'string' && val.toUpperCase().startsWith('KC_'))
-                        ? val.toUpperCase()
-                        : (cleanRaw.startsWith('KC_') ? cleanRaw : 'KC_' + cleanRaw);
-
                     if (k.isEncoder) {
-                        let finalDisplayText = centerText;
-                        let targetScale = 1.0;
-                        const availableWidth = 44 - 10;
-                        const estimatedPxWidth = (isFluentCenter ? 1.2 : centerText.length) * 11.0;
-                        if (estimatedPxWidth > availableWidth) {
-                            targetScale = availableWidth / estimatedPxWidth;
+                        const currentStyle = (encoderStyles && encoderStyles[k.encoderIndex]) || 'Dial';
+                        const ccwActions = getEncoderActions(k.encoderIndex, layer);
+                        let ccwLabel = '';
+                        let cwLabel = '';
+                        let ccwCode = 'KC_NO';
+                        let cwCode = 'KC_NO';
+                        if (ccwActions) {
+                            ccwCode = ccwActions[0] || 'KC_NO';
+                            cwCode = ccwActions[1] || 'KC_NO';
+                            const parsedCcw = parseKeyLabel(ccwCode, ccwCode, displayMode, keyStyle, macroAliases);
+                            const parsedCw = parseKeyLabel(cwCode, cwCode, displayMode, keyStyle, macroAliases);
+                            ccwLabel = parsedCcw.displayText;
+                            cwLabel = parsedCw.displayText;
                         }
-                        targetScale = Math.max(0.5, Math.min(1.0, targetScale));
+
+                        const parsedPush = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases);
+                        const pushText = parsedPush.displayText;
+
+                        let tooltipText = `Encoder e${k.encoderIndex}\n`;
+                        tooltipText += `Push: ${pushText || 'None'} (${val || 'KC_NO'})`;
+                        if (ccwActions) {
+                            if (currentStyle === 'VerticalWheel') {
+                                tooltipText += `\n🔄 UP (Rotate Right): ${cwLabel || 'None'} (${cwCode})`;
+                                tooltipText += `\n🔄 DOWN (Rotate Left): ${ccwLabel || 'None'} (${ccwCode})`;
+                            } else if (currentStyle === 'HorizontalWheel') {
+                                tooltipText += `\n🔄 RIGHT (Rotate Right): ${cwLabel || 'None'} (${cwCode})`;
+                                tooltipText += `\n🔄 LEFT (Rotate Left): ${ccwLabel || 'None'} (${ccwCode})`;
+                            } else {
+                                tooltipText += `\n🔄 CW (Rotate Right): ${cwLabel || 'None'} (${cwCode})`;
+                                tooltipText += `\n🔄 CCW (Rotate Left): ${ccwLabel || 'None'} (${ccwCode})`;
+                            }
+                        }
+
+                        const cleanRaw = fullRaw ? fullRaw.toUpperCase() : '';
+                        const displayRaw = (val && typeof val === 'string' && val.toUpperCase().startsWith('KC_'))
+                            ? val.toUpperCase()
+                            : (cleanRaw.startsWith('KC_') ? cleanRaw : 'KC_' + cleanRaw);
+
+                        const containerClass = (currentStyle === 'VerticalWheel' || currentStyle === 'HorizontalWheel')
+                            ? 'encoder-wheel-container group'
+                            : 'key-cap encoder-knob group';
+
+                        let childElements = null;
+                        if (currentStyle === 'VerticalWheel') {
+                            const wheelBg = isLight
+                                ? `linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(255,255,255,0.4) 15%, rgba(255,255,255,0.6) 30%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.45) 100%),
+                                   repeating-linear-gradient(to right, transparent, transparent 1px, rgba(0,0,0,0.18) 1px, rgba(0,0,0,0.18) 2px),
+                                   #94a3b8`
+                                : `linear-gradient(to right, rgba(0,0,0,0.7) 0%, rgba(255,255,255,0.18) 15%, rgba(255,255,255,0.3) 30%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.7) 100%),
+                                   repeating-linear-gradient(to right, transparent, transparent 1px, rgba(0,0,0,0.38) 1px, rgba(0,0,0,0.38) 2px),
+                                   #334155`;
+                            childElements = [
+                                createElement('div', {
+                                    key: 'wheel-vertical',
+                                    className: 'w-[22px] h-[36px] rounded-[3px] transition-all duration-200 group-hover:scale-x-105 group-hover:brightness-110 shadow-md shadow-black/30 group-hover:shadow-blue-500/25',
+                                    style: {
+                                        background: wheelBg,
+                                        boxShadow: isLight
+                                            ? '0 2px 4px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                            : '0 3px 6px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)'
+                                    }
+                                })
+                            ];
+                        } else if (currentStyle === 'HorizontalWheel') {
+                            const wheelBg = isLight
+                                ? `linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(255,255,255,0.4) 15%, rgba(255,255,255,0.6) 30%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.45) 100%),
+                                   repeating-linear-gradient(to bottom, transparent, transparent 1px, rgba(0,0,0,0.18) 1px, rgba(0,0,0,0.18) 2px),
+                                   #94a3b8`
+                                : `linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(255,255,255,0.18) 15%, rgba(255,255,255,0.3) 30%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.7) 100%),
+                                   repeating-linear-gradient(to bottom, transparent, transparent 1px, rgba(0,0,0,0.38) 1px, rgba(0,0,0,0.38) 2px),
+                                   #334155`;
+                            childElements = [
+                                createElement('div', {
+                                    key: 'wheel-horizontal',
+                                    className: 'w-[36px] h-[22px] rounded-[3px] transition-all duration-200 group-hover:scale-y-105 group-hover:brightness-110 shadow-md shadow-black/30 group-hover:shadow-blue-500/25',
+                                    style: {
+                                        background: wheelBg,
+                                        boxShadow: isLight
+                                            ? '0 2px 4px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                            : '0 3px 6px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)'
+                                    }
+                                })
+                            ];
+                        } else {
+                            // Dial style: render both indicator line AND text legend (knob-legend)
+                            let finalDisplayText = centerText;
+                            let targetScale = 1.0;
+                            const availableWidth = 44 - 10;
+                            const estimatedPxWidth = (isFluentCenter ? 1.2 : centerText.length) * 11.0;
+                            if (estimatedPxWidth > availableWidth) {
+                                targetScale = availableWidth / estimatedPxWidth;
+                            }
+                            targetScale = Math.max(0.5, Math.min(1.0, targetScale));
+
+                            childElements = [
+                                createElement('div', {
+                                    key: 'knob-indicator',
+                                    className: 'knob-indicator',
+                                    style: {
+                                        position: 'absolute',
+                                        top: '4px',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        width: '3.5px',
+                                        height: '8px',
+                                        borderRadius: '1.5px',
+                                        backgroundColor: isLight ? '#94a3b8' : '#64748b',
+                                        opacity: 0.8
+                                    }
+                                }),
+                                createElement('div', {
+                                    key: 'knob-legend',
+                                    className: "key-content flex-1 flex items-center justify-center w-full h-full",
+                                    style: {
+                                        transform: `scale(${targetScale * 0.8})`,
+                                        transformOrigin: 'center center',
+                                        padding: '2px',
+                                        marginTop: '2px',
+                                        zIndex: 2
+                                    }
+                                },
+                                    createElement('span', {
+                                        className: "legend-text font-bold",
+                                        style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, 1, {
+                                            fontSize: '18px',
+                                            color: isLight ? '#1e293b' : '#ffffff'
+                                        })
+                                    }, finalDisplayText)
+                                )
+                            ];
+                        }
 
                         return createElement('div', {
                             key: i,
-                            className: 'key-cap encoder-knob group',
+                            className: containerClass,
                             title: tooltipText,
                             'data-key-raw': displayRaw,
-                            style: getKeycapFrameStyle(k, false)
-                        }, [
-                            createElement('div', {
-                                key: 'knob-dot',
-                                style: {
-                                    position: 'absolute',
-                                    width: '5px',
-                                    height: '5px',
-                                    borderRadius: '50%',
-                                    backgroundColor: isLight ? '#94a3b8' : '#475569',
-                                    top: '5px',
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    opacity: 0.7,
-                                    boxShadow: isLight ? 'inset 0 1px 1px rgba(0,0,0,0.2)' : '0 1px 1px rgba(255,255,255,0.1)'
-                                }
-                            }),
-                            createElement('div', {
-                                key: 'knob-legend',
-                                className: "key-content flex-1 flex items-center justify-center w-full h-full",
-                                style: {
-                                    transform: `scale(${targetScale * 0.8})`,
-                                    transformOrigin: 'center center',
-                                    padding: '2px',
-                                    marginTop: '2px',
-                                    zIndex: 2
+                            onClick: (e) => {
+                                const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);
+                                if (macroMatch && onMacroClick) {
+                                    e.stopPropagation();
+                                    onMacroClick(parseInt(macroMatch[1], 10));
                                 }
                             },
-                                createElement('span', {
-                                    className: "legend-text font-bold",
-                                    style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, 1, {
-                                        fontSize: '18px',
-                                        color: isLight ? '#1e293b' : '#ffffff'
-                                    })
-                                }, finalDisplayText)
-                            )
-                        ]);
+                            style: getKeycapFrameStyle(k, false)
+                        }, childElements);
                     }
-
-
 
                     // 自動スケーリングと折り返しの計算
                     let finalDisplayText = centerText;
@@ -800,7 +1024,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         )
                     );
                 })
-            )
+            ])
         )
     );
 }
