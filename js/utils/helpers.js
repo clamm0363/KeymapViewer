@@ -17,3 +17,17 @@ export const loadSavedState = () => {
     } catch (e) { console.warn('Failed to load saved state:', e); }
     return null;
 };
+
+export const sanitizeDeviceName = (name) => {
+    if (!name) return '';
+    // Strip HTML tags
+    let sanitized = name.replace(/<[^>]*>?/gm, '');
+    // Strip javascript: protocol and onEvent= handlers
+    sanitized = sanitized.replace(/javascript\s*:/gi, '');
+    sanitized = sanitized.replace(/on\w+\s*=/gi, '');
+    // Strip quotes and other potentially dangerous shell/HTML injection characters
+    sanitized = sanitized.replace(/[<>'"\\`]/g, '');
+    // Limit length to prevent UI layout breakage (Max 32 characters)
+    return sanitized.substring(0, 32);
+};
+
