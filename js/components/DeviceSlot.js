@@ -1,6 +1,6 @@
 const { createElement, Fragment, useState } = React;
 import { Keyboard } from './Keyboard.js';
-import { sanitizeDeviceName } from '../utils/helpers.js';
+import { sanitizeDeviceName, findSplitX } from '../utils/helpers.js';
 
 export function DeviceSlot({ 
     dev, 
@@ -143,6 +143,43 @@ export function DeviceSlot({
                     ),
                     createElement('span', { key: 's', className: 'text-[9px] font-bold ' + ((dev.keyStyle || 'Windows') === opt ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
                 ])))
+            ]),
+            createElement('div', { key: 'separation-sect', className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
+                createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'SEPARATION:'),
+                createElement('div', { key: 'btns', className: 'flex gap-4' }, ['Disable', 'Enable'].map(opt => {
+                    const isChecked = (opt === 'Enable' ? dev.separation === 'ENABLE' : (!dev.separation || dev.separation === 'DISABLE'));
+                    return createElement('label', { 
+                        key: opt, 
+                        onClick: (e) => {
+                            e.preventDefault();
+                            if (opt === 'Enable') {
+                                const hasGap = findSplitX(dev.design) !== null;
+                                if (hasGap) {
+                                    onUpdateDevice(dev.id, { separation: 'ENABLE' });
+                                } else {
+                                    alert('有効なギャップが検出できませんでした。');
+                                    onUpdateDevice(dev.id, { separation: 'DISABLE' });
+                                }
+                            } else {
+                                onUpdateDevice(dev.id, { separation: 'DISABLE' });
+                            }
+                        },
+                        className: 'flex items-center gap-1.5 cursor-pointer group' 
+                    }, [
+                        createElement('input', { 
+                            key: 'i', 
+                            type: 'radio', 
+                            name: 'separation-' + dev.id, 
+                            checked: isChecked, 
+                            readOnly: true,
+                            className: 'hidden' 
+                        }),
+                        createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (isChecked ? 'border-blue-500' : '') }, 
+                            isChecked ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                        ),
+                        createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (isChecked ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
+                    ]);
+                }))
             ])
         ]) : null,
 
@@ -188,7 +225,8 @@ export function DeviceSlot({
                     appTheme: appTheme,
                     macroAliases: dev.macroAliases || {},
                     onMacroClick: (macroId) => onSetMacroModal({ deviceId: dev.id, macroId }),
-                    keyStyle: dev.keyStyle || 'Windows'
+                    keyStyle: dev.keyStyle || 'Windows',
+                    separation: dev.separation || 'DISABLE'
                 })
             )
         ]) : createElement('div', { key: 'empty-area', className: 'py-20 text-center opacity-20' }, [

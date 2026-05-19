@@ -2,6 +2,7 @@ const { createElement, useState, useEffect, useMemo, useRef } = React;
 const html = htm.bind(createElement);
 
 import { FLUENT_FONT_STACK } from '../constants.js';
+import { findSplitX } from '../utils/helpers.js';
 
 // Shared footer skeleton and text styling utilities for visual consistency across all keytypes
 const getFooterContainerStyle = (isLight, isAppDark) => ({
@@ -124,13 +125,19 @@ const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth
 
 import { parseKeyLabel } from '../utils/labelParser.js';
 
-export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, keyStyle = 'Windows' }) {
+export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, keyStyle = 'Windows', separation = 'DISABLE' }) {
     const [codes, setCodes] = useState({});
     const containerRef = useRef(null);
     const [scale, setScale] = useState(1);
     
     const isLight = theme === 'Light' || (theme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
     const isAppDark = (appTheme === 'dark' || (appTheme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
+
+    const isSeparationEnabled = separation === 'ENABLE';
+    const splitX = useMemo(() => {
+        if (!isSeparationEnabled) return null;
+        return findSplitX(design);
+    }, [design, isSeparationEnabled]);
 
     const keys = useMemo(() => {
         if (!design || !design.layouts || !design.layouts.keymap) return [];
@@ -164,8 +171,28 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             });
             y++;
         });
+
+        // Shift right keys to ensure 1u physical gap
+        if (isSeparationEnabled && splitX !== null) {
+            const leftKeys = list.filter(k => (k.x + k.w / 2) < splitX);
+            const rightKeys = list.filter(k => (k.x + k.w / 2) >= splitX);
+
+            if (leftKeys.length > 0 && rightKeys.length > 0) {
+                const leftMaxX = Math.max(...leftKeys.map(k => k.x + k.w));
+                const rightMinX = Math.min(...rightKeys.map(k => k.x));
+
+                const originalGap = rightMinX - leftMaxX;
+                const targetGap = UNIT * 1.5; // 84px (1.5u)
+                const shiftX = targetGap - originalGap;
+
+                rightKeys.forEach(k => {
+                    k.x += shiftX;
+                });
+            }
+        }
+
         return list;
-    }, [design]);
+    }, [design, isSeparationEnabled, splitX]);
 
     const maxWidth = useMemo(() => keys.length ? Math.max(...keys.map(k => k.x + k.w), 0) + 40 : 0, [keys]);
     const maxHeight = useMemo(() => keys.length ? Math.max(...keys.map(k => k.y + k.h), 0) + 40 : 0, [keys]);
@@ -208,12 +235,59 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
 
     // --- Styling Constants & Helpers ---
     
+    const leftCaseStyle = useMemo(() => {
+        if (!isSeparationEnabled || splitX === null) return null;
+        const leftKeys = keys.filter(k => (k.x + k.w / 2) < splitX);
+        if (leftKeys.length === 0) return null;
+
+        const minX = Math.min(...leftKeys.map(k => k.x));
+        const maxX = Math.max(...leftKeys.map(k => k.x + k.w));
+        const minY = Math.min(...leftKeys.map(k => k.y));
+        const maxY = Math.max(...leftKeys.map(k => k.y + k.h));
+
+        const paddingOffset = 20;
+        return {
+            position: 'absolute',
+            left: `${minX + paddingOffset - 20}px`,
+            top: `${minY + paddingOffset - 20}px`,
+            width: `${(maxX - minX) + 40}px`,
+            height: `${(maxY - minY) + 40}px`,
+            borderRadius: '2rem',
+            zIndex: 0
+        };
+    }, [keys, isSeparationEnabled, splitX]);
+
+    const rightCaseStyle = useMemo(() => {
+        if (!isSeparationEnabled || splitX === null) return null;
+        const rightKeys = keys.filter(k => (k.x + k.w / 2) >= splitX);
+        if (rightKeys.length === 0) return null;
+
+        const minX = Math.min(...rightKeys.map(k => k.x));
+        const maxX = Math.max(...rightKeys.map(k => k.x + k.w));
+        const minY = Math.min(...rightKeys.map(k => k.y));
+        const maxY = Math.max(...rightKeys.map(k => k.y + k.h));
+
+        const paddingOffset = 20;
+        return {
+            position: 'absolute',
+            left: `${minX + paddingOffset - 20}px`,
+            top: `${minY + paddingOffset - 20}px`,
+            width: `${(maxX - minX) + 40}px`,
+            height: `${(maxY - minY) + 40}px`,
+            borderRadius: '2rem',
+            zIndex: 0
+        };
+    }, [keys, isSeparationEnabled, splitX]);
+
     const getKbdContainerClass = () => {
-        const base = "kbd-container relative transition-all duration-200 border-2";
-        const lightTheme = "bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]";
+        const base = "kbd-container relative transition-all duration-200";
+        if (isSeparationEnabled && splitX !== null) {
+            return `${base} border-0 bg-transparent shadow-none`;
+        }
+        const lightTheme = "border-2 bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]";
         const darkTheme = isAppDark
-            ? "bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
-            : "bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]";
+            ? "border-2 bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
+            : "border-2 bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]";
         return `${base} ${isLight ? lightTheme : darkTheme}`;
     };
 
@@ -319,8 +393,26 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             createElement('div', {
                 className: getKbdContainerClass(),
                 style: { width: '100%', height: '100%', transform: 'none' }
-            },
-                keys.map((k, i) => {
+            }, [
+                isSeparationEnabled && splitX !== null && leftCaseStyle && createElement('div', {
+                    key: 'left-case',
+                    style: leftCaseStyle,
+                    className: "border-2 transition-all duration-200 " + (isLight 
+                        ? "bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]"
+                        : (isAppDark 
+                            ? "bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
+                            : "bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]"))
+                }),
+                isSeparationEnabled && splitX !== null && rightCaseStyle && createElement('div', {
+                    key: 'right-case',
+                    style: rightCaseStyle,
+                    className: "border-2 transition-all duration-200 " + (isLight 
+                        ? "bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]"
+                        : (isAppDark 
+                            ? "bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
+                            : "bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]"))
+                }),
+                ...keys.map((k, i) => {
                     const mK = k.matrix ? `${k.matrix[0]},${k.matrix[1]}` : null;
                     const val = mK ? codes[mK] : null;
                     
@@ -650,7 +742,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         )
                     );
                 })
-            )
+            ])
         )
     );
 }
