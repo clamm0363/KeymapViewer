@@ -5,6 +5,7 @@ import { loadSavedState } from './utils/helpers.js';
 import { Header } from './components/Header.js';
 import { DeviceSlot } from './components/DeviceSlot.js';
 import { HelpModal } from './components/Modals/HelpModal.js';
+import { LinksModal } from './components/Modals/LinksModal.js';
 import { MacroModal } from './components/Modals/MacroModal.js';
 import { ExportModal } from './components/Modals/ExportModal.js';
 import { Keyboard } from './components/Keyboard.js';
@@ -57,6 +58,7 @@ export function App() {
     const [draggedSlotId, setDraggedSlotId] = useState(null);
     const [dragOverTarget, setDragOverTarget] = useState(null);
     const [showHelp, setShowHelp] = useState(false);
+    const [showLinks, setShowLinks] = useState(false);
     const [macroModalState, setMacroModalState] = useState(null);
     const [exportModalDevId, setExportModalDevId] = useState(null);
     const [exportSettings, setExportSettings] = useState({ layers: [], includeMacros: true, background: 'Dark' });
@@ -297,7 +299,7 @@ export function App() {
     const isLightApp = appTheme === 'light';
 
     return createElement('div', {
-        className: (isLightApp ? 'app-light' : 'app-dark') + ' min-h-screen p-6 md:p-8 flex flex-col transition-colors duration-300'
+        className: (isLightApp ? 'app-light' : 'app-dark') + ' min-h-screen min-w-full w-fit p-6 md:p-8 flex flex-col transition-colors duration-300'
     }, [
         createElement(Header, {
             key: 'header',
@@ -305,6 +307,7 @@ export function App() {
             layoutMode,
             deviceCount: devices.length,
             onShowHelp: () => setShowHelp(true),
+            onShowLinks: () => setShowLinks(true),
             onAddSlot: addSlot,
             onSetLayoutMode: setLayoutMode,
             onSetAppTheme: setAppTheme,
@@ -315,6 +318,12 @@ export function App() {
             key: 'help-modal',
             isLightApp,
             onClose: () => setShowHelp(false)
+        }),
+
+        showLinks && createElement(LinksModal, {
+            key: 'links-modal',
+            isLightApp,
+            onClose: () => setShowLinks(false)
         }),
 
         macroModalState && createElement(MacroModal, {
