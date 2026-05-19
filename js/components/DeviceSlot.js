@@ -78,7 +78,7 @@ export function DeviceSlot({
                         className: (isLightApp 
                             ? 'bg-blue-50/80 border-blue-400 text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20' 
                             : 'bg-blue-950/30 border-blue-500/60 text-white placeholder-slate-600 focus:bg-blue-950/50 focus:ring-2 focus:ring-blue-500/30') 
-                            + ' text-lg font-black outline-none border-2 w-full max-w-[280px] px-3 py-1 rounded-xl transition-all uppercase',
+                            + ' text-lg font-black outline-none border-2 w-full max-w-[560px] px-3 py-1 rounded-xl transition-all uppercase',
                         ref: (el) => el && el.focus() 
                     }) :
                     createElement(Fragment, { key: 'name-static' }, [
