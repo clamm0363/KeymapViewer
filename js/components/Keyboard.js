@@ -554,8 +554,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         if (ccwActions) {
                             ccwCode = ccwActions[0] || 'KC_NO';
                             cwCode = ccwActions[1] || 'KC_NO';
-                            const parsedCcw = parseKeyLabel(ccwCode, ccwCode, displayMode, keyStyle, macroAliases);
-                            const parsedCw = parseKeyLabel(cwCode, cwCode, displayMode, keyStyle, macroAliases);
+                            const parsedCcw = parseKeyLabel(ccwCode, ccwCode, 'Text', keyStyle, macroAliases);
+                            const parsedCw = parseKeyLabel(cwCode, cwCode, 'Text', keyStyle, macroAliases);
                             ccwLabel = parsedCcw.displayText;
                             cwLabel = parsedCw.displayText;
                         }
@@ -567,14 +567,14 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         tooltipText += `Push: ${pushText || 'None'} (${val || 'KC_NO'})`;
                         if (ccwActions) {
                             if (currentStyle === 'VerticalWheel') {
-                                tooltipText += `\n🔄 UP (Rotate Right): ${cwLabel || 'None'} (${cwCode})`;
-                                tooltipText += `\n🔄 DOWN (Rotate Left): ${ccwLabel || 'None'} (${ccwCode})`;
+                                tooltipText += `\nUP: ${cwLabel || 'None'} (${cwCode})`;
+                                tooltipText += `\nDOWN: ${ccwLabel || 'None'} (${ccwCode})`;
                             } else if (currentStyle === 'HorizontalWheel') {
-                                tooltipText += `\n🔄 RIGHT (Rotate Right): ${cwLabel || 'None'} (${cwCode})`;
-                                tooltipText += `\n🔄 LEFT (Rotate Left): ${ccwLabel || 'None'} (${ccwCode})`;
+                                tooltipText += `\nRIGHT: ${cwLabel || 'None'} (${cwCode})`;
+                                tooltipText += `\nLEFT: ${ccwLabel || 'None'} (${ccwCode})`;
                             } else {
-                                tooltipText += `\n🔄 CW (Rotate Right): ${cwLabel || 'None'} (${cwCode})`;
-                                tooltipText += `\n🔄 CCW (Rotate Left): ${ccwLabel || 'None'} (${ccwCode})`;
+                                tooltipText += `\nCW (Clockwise): ${cwLabel || 'None'} (${cwCode})`;
+                                tooltipText += `\nCCW (Counter-Clockwise): ${ccwLabel || 'None'} (${ccwCode})`;
                             }
                         }
 
@@ -629,16 +629,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                 })
                             ];
                         } else {
-                            // Dial style: render both indicator line AND text legend (knob-legend)
-                            let finalDisplayText = centerText;
-                            let targetScale = 1.0;
-                            const availableWidth = 44 - 10;
-                            const estimatedPxWidth = (isFluentCenter ? 1.2 : centerText.length) * 11.0;
-                            if (estimatedPxWidth > availableWidth) {
-                                targetScale = availableWidth / estimatedPxWidth;
-                            }
-                            targetScale = Math.max(0.5, Math.min(1.0, targetScale));
-
+                            // Dial style: render ONLY indicator line, no text legend (per pre-merge dev branch design)
                             childElements = [
                                 createElement('div', {
                                     key: 'knob-indicator',
@@ -654,26 +645,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                         backgroundColor: isLight ? '#94a3b8' : '#64748b',
                                         opacity: 0.8
                                     }
-                                }),
-                                createElement('div', {
-                                    key: 'knob-legend',
-                                    className: "key-content flex-1 flex items-center justify-center w-full h-full",
-                                    style: {
-                                        transform: `scale(${targetScale * 0.8})`,
-                                        transformOrigin: 'center center',
-                                        padding: '2px',
-                                        marginTop: '2px',
-                                        zIndex: 2
-                                    }
-                                },
-                                    createElement('span', {
-                                        className: "legend-text font-bold",
-                                        style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, 1, {
-                                            fontSize: '18px',
-                                            color: isLight ? '#1e293b' : '#ffffff'
-                                        })
-                                    }, finalDisplayText)
-                                )
+                                })
                             ];
                         }
 
