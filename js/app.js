@@ -369,7 +369,8 @@ export function App() {
                     macroAliases: dev.macroAliases || {},
                     keyStyle: dev.keyStyle || 'Windows',
                     isExportMode: true,
-                    forcedScale: 1.0 
+                    forcedScale: 1.0,
+                    separation: dev.separation || 'DISABLE'
                 })
             ]);
         })(),
