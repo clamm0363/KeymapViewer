@@ -403,6 +403,12 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         ? val.toUpperCase()
                         : (cleanRaw.startsWith('KC_') ? cleanRaw : 'KC_' + cleanRaw);
 
+                    // 🌟🌟🌟 以下の3行を新しく追加 🌟🌟🌟
+                    if (displayMode?.toLowerCase() === 'fluent' && isSVGAvailable(displayRaw)) {
+                    targetScale = 1.11; // SVGの場合は文字数による縮小を解除（後で0.9が掛けられて1.0倍になります）
+                    }
+                    // 🌟🌟🌟 追加ここまで 🌟🌟🌟
+
                     const jisSvg = k.isJIS && (() => {
                         const W = k.w - 6;
                         const H = k.h - 6;
@@ -643,9 +649,15 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                             },
                                 // SVG rendering attempt for compatible icons
                                 (() => {
+                                    // --- デバッグ用ログ（自白剤） ---
+                                    const modeCheck = (displayMode === 'Fluent');
+                                    const svgCheck = isSVGAvailable(displayRaw);
+                                    
+                                    console.log(`[SVG判定] ${displayRaw} | ModeOK: ${modeCheck} | SvgOK: ${svgCheck}`);
+
                                     // Try to use SVG if available for this key
-                                    if (displayMode === 'Fluent' && isSVGAvailable(cleanRaw)) {
-                                        const svgEl = createSVGElement(cleanRaw, { size: 24, color: isLight ? '#1e293b' : '#fff' });
+                                    if (modeCheck && svgCheck) {
+                                        const svgEl = createSVGElement(displayRaw, { size: 24, color: isLight ? '#1e293b' : '#fff' });
                                         if (svgEl) {
                                             return createElement('div', {
                                                 key: 'svg-render',
