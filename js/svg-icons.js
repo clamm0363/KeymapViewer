@@ -114,7 +114,7 @@ export const SVG_ICONS = {
     id: 'brightness-up-icon',
     svg: `<svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
       <!-- Brightness Up icon: sun with rays -->
-      <circle cx="12" cy="12" r="5" fill="currentColor" opacity="0.7"/>
+      <circle cx="12" cy="12" r="5" fill="currentColor"/>
       <path d="M 12 1 L 12 3 M 12 21 L 12 23 M 23 12 L 21 12 M 3 12 L 1 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       <path d="M 19.07 4.93 L 17.66 6.34 M 6.34 17.66 L 4.93 19.07 M 19.07 19.07 L 17.66 17.66 M 6.34 6.34 L 4.93 4.93" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     </svg>`,
@@ -127,10 +127,10 @@ export const SVG_ICONS = {
   KC_KB_BRIGHTNESS_DOWN: {
     id: 'brightness-down-icon',
     svg: `<svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
-      <!-- Brightness Down icon: moon or dimmed sun -->
-      <circle cx="12" cy="12" r="5" fill="currentColor" opacity="0.5"/>
-      <path d="M 12 1 L 12 3 M 12 21 L 12 23 M 23 12 L 21 12 M 3 12 L 1 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      <!-- Brightness Down icon: dimmed sun -->
+      <circle cx="12" cy="12" r="5" fill="currentColor" opacity="0.4"/>
       <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+      <path d="M 12 2 L 12 4 M 12 20 L 12 22 M 22 12 L 20 12 M 4 12 L 2 12" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
     </svg>`,
     fallback: '\uF480',  // brightness_low_24
     width: 24,
