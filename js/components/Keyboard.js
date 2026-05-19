@@ -125,13 +125,23 @@ const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth
 
 import { parseKeyLabel } from '../utils/labelParser.js';
 
-export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, keyStyle = 'Windows', separation = 'DISABLE' }) {
+export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, keyStyle = 'Windows', separation = 'DISABLE', encoderStyles = {} }) {
     const [codes, setCodes] = useState({});
     const containerRef = useRef(null);
     const [scale, setScale] = useState(1);
     
     const isLight = theme === 'Light' || (theme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
     const isAppDark = (appTheme === 'dark' || (appTheme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
+
+    const getEncoderActions = (encoderIdx, layerIdx) => {
+        const encodersSource = (externalMap && externalMap.encoders) || (design && design.encoders);
+        if (!encodersSource || !encodersSource[encoderIdx]) return null;
+        const encData = encodersSource[encoderIdx];
+        if (encData && encData[layerIdx]) {
+            return encData[layerIdx];
+        }
+        return null;
+    };
 
     const isSeparationEnabled = separation === 'ENABLE';
     const splitX = useMemo(() => {
@@ -149,7 +159,11 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             x = 0;
             row.forEach(item => {
                 if (typeof item === 'string') {
-                    const m = item.split('\n')[0].match(/(\d+),(\d+)/);
+                    const parts = item.split('\n');
+                    const m = parts[0].match(/(\d+),(\d+)/);
+                    const encoderMatch = parts.find(p => /^e\d+$/.test(p.trim()));
+                    const isEncoder = !!encoderMatch;
+                    const encoderIndex = isEncoder ? parseInt(encoderMatch.replace('e', ''), 10) : null;
                     list.push({ 
                         id: item, 
                         matrix: m ? [parseInt(m[1]), parseInt(m[2])] : null, 
@@ -157,7 +171,9 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         y: y * UNIT, 
                         w: w * UNIT, 
                         h: h * UNIT,
-                        isJIS: isJISKey
+                        isJIS: isJISKey,
+                        isEncoder,
+                        encoderIndex
                     });
                     x += w; w = 1; h = 1;
                     isJISKey = false;
@@ -298,6 +314,90 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         const paddingOffset = 20;
         const lightBorder = isAppDark ? '#94a3b8' : '#cbd5e1';
         const darkBorder = isAppDark ? '#475569' : '#334155';
+        
+        if (k.isEncoder) {
+            const currentStyle = (encoderStyles && encoderStyles[k.encoderIndex]) || 'Dial';
+            if (currentStyle === 'VerticalWheel') {
+                const wellW = 33;
+                const wellH = 44;
+                const leftOffset = (k.w - 6) / 2 - wellW / 2;
+                const topOffset = (k.h - 6) / 2 - wellH / 2;
+                return {
+                    left: `${k.x + paddingOffset + leftOffset}px`,
+                    top: `${k.y + paddingOffset + topOffset}px`,
+                    width: `${wellW}px`,
+                    height: `${wellH}px`,
+                    position: 'absolute',
+                    borderRadius: '6px',
+                    border: `1.5px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#1e293b' : '#334155')}`,
+                    background: isLight 
+                        ? 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)' 
+                        : 'linear-gradient(135deg, #0f172a 0%, #020617 100%)',
+                    boxShadow: isLight
+                        ? 'inset 0 3px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.05)'
+                        : 'inset 0 4px 8px rgba(0,0,0,0.65), 0 1px 2px rgba(255,255,255,0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 40
+                };
+            } else if (currentStyle === 'HorizontalWheel') {
+                const wellW = 44;
+                const wellH = 33;
+                const leftOffset = (k.w - 6) / 2 - wellW / 2;
+                const topOffset = (k.h - 6) / 2 - wellH / 2;
+                return {
+                    left: `${k.x + paddingOffset + leftOffset}px`,
+                    top: `${k.y + paddingOffset + topOffset}px`,
+                    width: `${wellW}px`,
+                    height: `${wellH}px`,
+                    position: 'absolute',
+                    borderRadius: '6px',
+                    border: `1.5px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#1e293b' : '#334155')}`,
+                    background: isLight 
+                        ? 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)' 
+                        : 'linear-gradient(135deg, #0f172a 0%, #020617 100%)',
+                    boxShadow: isLight
+                        ? 'inset 0 3px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.05)'
+                        : 'inset 0 4px 8px rgba(0,0,0,0.65), 0 1px 2px rgba(255,255,255,0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 40
+                };
+            } else {
+                const knobSize = 44;
+                const leftOffset = (k.w - 6) / 2 - knobSize / 2;
+                const topOffset = (k.h - 6) / 2 - knobSize / 2;
+                return {
+                    left: `${k.x + paddingOffset + leftOffset}px`,
+                    top: `${k.y + paddingOffset + topOffset}px`,
+                    width: `${knobSize}px`,
+                    height: `${knobSize}px`,
+                    position: 'absolute',
+                    borderRadius: '50%',
+                    borderWidth: '3px',
+                    borderStyle: 'solid',
+                    borderColor: isLight ? lightBorder : darkBorder,
+                    background: isLight 
+                        ? 'radial-gradient(circle at 35% 35%, #ffffff 0%, #f1f5f9 50%, #cbd5e1 100%)' 
+                        : 'radial-gradient(circle at 35% 35%, #334155 0%, #1e293b 50%, #0f172a 100%)',
+                    boxShadow: isLight 
+                        ? '0 6px 10px -1px rgb(0 0 0 / 0.15), inset 0 2px 4px rgba(255,255,255,0.8), inset 0 -2px 4px rgba(0,0,0,0.1)' 
+                        : '0 10px 15px -3px rgb(0 0 0 / 0.3), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 -4px 6px rgba(0,0,0,0.5)',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexDirection: 'column',
+                    transition: 'all 0.075s ease',
+                    cursor: 'pointer',
+                    zIndex: 40
+                };
+            }
+        }
         
         if (k.isJIS) {
             return {
@@ -443,7 +543,121 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     const isFluentCenter = isFluentIcon || (isModKey && baseIsFluent);
                     const centerText = (isModKey && modType !== 'base') ? baseLabel : displayText;
 
+                    if (k.isEncoder) {
+                        const currentStyle = (encoderStyles && encoderStyles[k.encoderIndex]) || 'Dial';
+                        const ccwActions = getEncoderActions(k.encoderIndex, layer);
+                        let ccwLabel = '';
+                        let cwLabel = '';
+                        if (ccwActions) {
+                            const parsedCcw = parseKeyLabel(ccwActions[0] || "", "", 'Text', keyStyle, macroAliases);
+                            const parsedCw = parseKeyLabel(ccwActions[1] || "", "", 'Text', keyStyle, macroAliases);
+                            ccwLabel = parsedCcw.displayText;
+                            cwLabel = parsedCw.displayText;
+                        }
 
+                        const parsedPush = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases);
+                        const pushText = parsedPush.displayText;
+
+                        let tooltipText = `Encoder e${k.encoderIndex}\n`;
+                        tooltipText += `Push: ${pushText || 'None'} (${val || 'KC_NO'})`;
+                        if (ccwActions) {
+                            if (currentStyle === 'VerticalWheel') {
+                                tooltipText += `\nUP: ${cwLabel || 'None'} (${ccwActions[1] || 'KC_NO'})`;
+                                tooltipText += `\nDOWN: ${ccwLabel || 'None'} (${ccwActions[0] || 'KC_NO'})`;
+                            } else if (currentStyle === 'HorizontalWheel') {
+                                tooltipText += `\nRIGHT: ${cwLabel || 'None'} (${ccwActions[1] || 'KC_NO'})`;
+                                tooltipText += `\nLEFT: ${ccwLabel || 'None'} (${ccwActions[0] || 'KC_NO'})`;
+                            } else {
+                                tooltipText += `\nCW (Clockwise): ${cwLabel || 'None'} (${ccwActions[1] || 'KC_NO'})`;
+                                tooltipText += `\nCCW (Counter-Clockwise): ${ccwLabel || 'None'} (${ccwActions[0] || 'KC_NO'})`;
+                            }
+                        }
+
+                        const cleanRaw = fullRaw ? fullRaw.toUpperCase() : '';
+                        const displayRaw = (val && typeof val === 'string' && val.toUpperCase().startsWith('KC_'))
+                            ? val.toUpperCase()
+                            : (cleanRaw.startsWith('KC_') ? cleanRaw : 'KC_' + cleanRaw);
+
+                        const containerClass = (currentStyle === 'VerticalWheel' || currentStyle === 'HorizontalWheel')
+                            ? 'encoder-wheel-container group'
+                            : 'key-cap encoder-knob group';
+
+                        let childElements = null;
+                        if (currentStyle === 'VerticalWheel') {
+                            const wheelBg = isLight
+                                ? `linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(255,255,255,0.4) 15%, rgba(255,255,255,0.6) 30%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.45) 100%),
+                                   repeating-linear-gradient(to right, transparent, transparent 1px, rgba(0,0,0,0.18) 1px, rgba(0,0,0,0.18) 2px),
+                                   #94a3b8`
+                                : `linear-gradient(to right, rgba(0,0,0,0.7) 0%, rgba(255,255,255,0.18) 15%, rgba(255,255,255,0.3) 30%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.7) 100%),
+                                   repeating-linear-gradient(to right, transparent, transparent 1px, rgba(0,0,0,0.38) 1px, rgba(0,0,0,0.38) 2px),
+                                   #334155`;
+                            childElements = [
+                                createElement('div', {
+                                    key: 'wheel-vertical',
+                                    className: 'w-[22px] h-[36px] rounded-[3px] transition-all duration-200 group-hover:scale-x-105 group-hover:brightness-110 shadow-md shadow-black/30 group-hover:shadow-blue-500/25',
+                                    style: {
+                                        background: wheelBg,
+                                        boxShadow: isLight
+                                            ? '0 2px 4px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                            : '0 3px 6px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)'
+                                    }
+                                })
+                            ];
+                        } else if (currentStyle === 'HorizontalWheel') {
+                            const wheelBg = isLight
+                                ? `linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(255,255,255,0.4) 15%, rgba(255,255,255,0.6) 30%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.45) 100%),
+                                   repeating-linear-gradient(to bottom, transparent, transparent 1px, rgba(0,0,0,0.18) 1px, rgba(0,0,0,0.18) 2px),
+                                   #94a3b8`
+                                : `linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(255,255,255,0.18) 15%, rgba(255,255,255,0.3) 30%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.7) 100%),
+                                   repeating-linear-gradient(to bottom, transparent, transparent 1px, rgba(0,0,0,0.38) 1px, rgba(0,0,0,0.38) 2px),
+                                   #334155`;
+                            childElements = [
+                                createElement('div', {
+                                    key: 'wheel-horizontal',
+                                    className: 'w-[36px] h-[22px] rounded-[3px] transition-all duration-200 group-hover:scale-y-105 group-hover:brightness-110 shadow-md shadow-black/30 group-hover:shadow-blue-500/25',
+                                    style: {
+                                        background: wheelBg,
+                                        boxShadow: isLight
+                                            ? '0 2px 4px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                            : '0 3px 6px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)'
+                                    }
+                                })
+                            ];
+                        } else {
+                            childElements = [
+                                createElement('div', {
+                                    key: 'knob-indicator',
+                                    className: 'knob-indicator',
+                                    style: {
+                                        position: 'absolute',
+                                        top: '4px',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        width: '3.5px',
+                                        height: '8px',
+                                        borderRadius: '1.5px',
+                                        backgroundColor: isLight ? '#94a3b8' : '#64748b',
+                                        opacity: 0.8
+                                    }
+                                })
+                            ];
+                        }
+
+                        return createElement('div', {
+                            key: i,
+                            className: containerClass,
+                            title: tooltipText,
+                            'data-key-raw': displayRaw,
+                            onClick: (e) => {
+                                const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);
+                                if (macroMatch && onMacroClick) {
+                                    e.stopPropagation();
+                                    onMacroClick(parseInt(macroMatch[1], 10));
+                                }
+                            },
+                            style: getKeycapFrameStyle(k, false)
+                        }, childElements);
+                    }
 
                     // 自動スケーリングと折り返しの計算
                     let finalDisplayText = centerText;

@@ -3,7 +3,8 @@ import { getRawLabel } from './helpers.js';
 import { KeymapDictionary } from '../keymap-dictionary.js';
 
 export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, isJIS = false) {
-    const fullRaw = getRawLabel(val || (keyId.includes('\n') ? keyId.split('\n').pop() : keyId));
+    const safeKeyId = keyId || '';
+    const fullRaw = getRawLabel(val || (safeKeyId.includes('\n') ? safeKeyId.split('\n').pop() : safeKeyId));
     
     // 1. Smart parsing for single-key Shift modifications: S(KC_X) or LSFT(KC_X)
     const shiftMatch = fullRaw.match(/^(S|LSFT)\((KC_)?([A-Z0-9_]+)\)$/);
