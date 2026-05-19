@@ -2,6 +2,26 @@ const { createElement, Fragment, useState } = React;
 import { Keyboard } from './Keyboard.js';
 import { sanitizeDeviceName, findSplitX } from '../utils/helpers.js';
 
+const getEncoderIndices = (design) => {
+    if (!design || !design.layouts || !design.layouts.keymap) return [];
+    const indices = new Set();
+    design.layouts.keymap.forEach(row => {
+        row.forEach(item => {
+            if (typeof item === 'string') {
+                const parts = item.split('\n');
+                const encoderMatch = parts.find(p => /^e\d+$/.test(p.trim()));
+                if (encoderMatch) {
+                    const idx = parseInt(encoderMatch.replace('e', ''), 10);
+                    if (!isNaN(idx)) {
+                        indices.add(idx);
+                    }
+                }
+            }
+        });
+    });
+    return [...indices].sort((a, b) => a - b);
+};
+
 export function DeviceSlot({ 
     dev, 
     idx, 
@@ -26,6 +46,7 @@ export function DeviceSlot({
 }) {
     const [copied, setCopied] = useState(false);
     const hasData = !!dev.design;
+    const encoderIndices = getEncoderIndices(dev.design);
 
     const handleShare = () => {
         if (!hasData) return;
@@ -180,7 +201,37 @@ export function DeviceSlot({
                         createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (isChecked ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
                     ]);
                 }))
-            ])
+            ]),
+            ...encoderIndices.map(idx => {
+                const styles = dev.encoderStyles || {};
+                const currentStyle = styles[idx] || 'Dial';
+                return createElement('div', { key: 'encoder-sect-' + idx, className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
+                    createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'ENCODER e' + idx + ':'),
+                    createElement('div', { key: 'btns', className: 'flex gap-4' }, [
+                        { value: 'Dial', label: 'Dial' },
+                        { value: 'VerticalWheel', label: 'Wheel (V)' },
+                        { value: 'HorizontalWheel', label: 'Wheel (H)' }
+                    ].map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
+                        createElement('input', { 
+                            key: 'i', 
+                            type: 'radio', 
+                            name: 'encoderStyle-' + idx + '-' + dev.id, 
+                            checked: currentStyle === opt.value, 
+                            onChange: () => onUpdateDevice(dev.id, { 
+                                encoderStyles: {
+                                    ...styles,
+                                    [idx]: opt.value
+                                } 
+                            }), 
+                            className: 'hidden' 
+                        }),
+                        createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentStyle === opt.value ? 'border-blue-500' : '') }, 
+                            currentStyle === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                        ),
+                        createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentStyle === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
+                    ])))
+                ]);
+            })
         ]) : null,
 
         createElement('div', { key: 'slot-actions', className: 'flex flex-wrap items-center gap-2 mb-6 p-2 ' + (isLightApp ? 'bg-slate-100/50' : 'bg-slate-950/30') + ' rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
@@ -226,7 +277,8 @@ export function DeviceSlot({
                     macroAliases: dev.macroAliases || {},
                     onMacroClick: (macroId) => onSetMacroModal({ deviceId: dev.id, macroId }),
                     keyStyle: dev.keyStyle || 'Windows',
-                    separation: dev.separation || 'DISABLE'
+                    separation: dev.separation || 'DISABLE',
+                    encoderStyles: dev.encoderStyles || {}
                 })
             )
         ]) : createElement('div', { key: 'empty-area', className: 'py-20 text-center opacity-20' }, [

@@ -37,6 +37,7 @@ export function App() {
                             displayMode: parsed.displayMode || 'Fluent',
                             theme: parsed.theme || 'System',
                             keyStyle: parsed.keyStyle || 'Windows',
+                            encoderStyles: parsed.encoderStyles || {},
                             macroAliases: parsed.keymapJson?.macroAliases || {},
                             showSettings: false
                         }];
@@ -49,7 +50,7 @@ export function App() {
 
         // Fallback to saved state
         if (saved && saved.devices && saved.devices.length > 0) return saved.devices;
-        return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', showSettings: false }];
+        return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, showSettings: false }];
     });
     const [layoutMode, setLayoutMode] = useState(() => (saved && saved.layoutMode) || 'stack');
     const [appTheme, setAppTheme] = useState(() => (saved && saved.appTheme) || 'dark');
@@ -75,7 +76,8 @@ export function App() {
                 { file: 'SampleLayouts/sample_tkl_jp.json', keyStyle: 'Windows' },
                 { file: 'SampleLayouts/sample_100_win.json', keyStyle: 'Windows' },
                 { file: 'SampleLayouts/sample_hhkb_mac.json', keyStyle: 'Mac' },
-                { file: 'SampleLayouts/sample_numpad.json', keyStyle: 'Windows' }
+                { file: 'SampleLayouts/sample_numpad.json', keyStyle: 'Windows' },
+                { file: 'SampleLayouts/sample_dual_encoder.json', keyStyle: 'Windows' }
             ];
 
             try {
@@ -89,13 +91,15 @@ export function App() {
                     const design = {
                         name: data.name,
                         layouts: data.layouts,
-                        matrix: data.matrix
+                        matrix: data.matrix,
+                        encoders: data.encoders || []
                     };
                     
                     const keymapJson = {
                         layers: data.layers || [],
                         macros: data.macros || [],
-                        macroAliases: data.macroAliases || {}
+                        macroAliases: data.macroAliases || {},
+                        encoders: data.encoders || []
                     };
 
                     return {
@@ -107,6 +111,7 @@ export function App() {
                         displayMode: 'Fluent',
                         theme: 'System',
                         keyStyle: s.keyStyle,
+                        encoderStyles: {},
                         macroAliases: keymapJson.macroAliases,
                         showSettings: false
                     };
@@ -179,7 +184,7 @@ export function App() {
     const addSlot = () => {
         if (devices.length >= 4) return;
         setDevices(prev => [...prev, {
-            id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', showSettings: false
+            id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, showSettings: false
         }]);
     };
 
@@ -210,7 +215,7 @@ export function App() {
 
     const removeDevice = (id) => {
         if (devices.length === 1) {
-            updateDevice(id, { name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', keyStyle: 'Windows', showSettings: false });
+            updateDevice(id, { name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', keyStyle: 'Windows', encoderStyles: {}, showSettings: false });
         } else {
             setDevices(prev => prev.filter(d => d.id !== id));
         }
@@ -264,7 +269,7 @@ export function App() {
                     else if (j.layers) updateDevice(targetDevId, { keymapJson: j });
                 } else {
                     if (devices.length >= 4) return;
-                    const nd = { id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', showSettings: false };
+                    const nd = { id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, showSettings: false };
                     if (j.layouts) { nd.design = j; nd.name = sanitizeDeviceName(j.name || 'Device'); }
                     else if (j.layers) { nd.keymapJson = j; nd.name = sanitizeDeviceName(j.name || 'Mapping'); }
                     setDevices(prev => [...prev, nd]);
@@ -368,6 +373,7 @@ export function App() {
                     appTheme: exportSettings.background === 'Light' ? 'light' : 'dark',
                     macroAliases: dev.macroAliases || {},
                     keyStyle: dev.keyStyle || 'Windows',
+                    encoderStyles: dev.encoderStyles || {},
                     isExportMode: true,
                     forcedScale: 1.0,
                     separation: dev.separation || 'DISABLE'
