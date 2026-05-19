@@ -57,7 +57,7 @@
       "KC_B",
       "KC_NO",
       "KC_NO",
-      "MACRO(0)",
+      "MO(1)",
       "KC_LCTL",
       "KC_LGUI",
       "KC_LALT",
@@ -132,7 +132,7 @@
       "KC_NO",
       "KC_NO",
       "KC_TRNS",
-      "KC_TRNS",
+      "KC_CAPS",
       "KC_NO",
       "TO(2)",
       "KC_TRNS",
@@ -198,7 +198,7 @@
       "CUSTOM(7)",
       "KC_NO",
       "KC_RALT",
-      "0x700b",
+      "MAGIC_TOGGLE_GUI",
       "KC_NO",
       "RGB_SPD",
       "RGB_VAD",
@@ -391,7 +391,7 @@
   ],
   "encoders": [
     [
-      ["KC_PGUP", "KC_PGDN"],
+      ["KC_VOLD", "KC_VOLU"],
       ["KC_VOLD", "KC_VOLU"],
       ["KC_VOLD", "KC_VOLU"],
       ["KC_VOLD", "KC_VOLU"]

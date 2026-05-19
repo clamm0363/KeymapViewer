@@ -133,6 +133,16 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
     const isLight = theme === 'Light' || (theme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
     const isAppDark = (appTheme === 'dark' || (appTheme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
 
+    const getEncoderActions = (encoderIdx, layerIdx) => {
+        const encodersSource = (externalMap && externalMap.encoders) || (design && design.encoders);
+        if (!encodersSource || !encodersSource[encoderIdx]) return null;
+        const encData = encodersSource[encoderIdx];
+        if (encData && encData[layerIdx]) {
+            return encData[layerIdx];
+        }
+        return null;
+    };
+
     const keys = useMemo(() => {
         if (!design || !design.layouts || !design.layouts.keymap) return [];
         const list = [];
@@ -143,7 +153,11 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             x = 0;
             row.forEach(item => {
                 if (typeof item === 'string') {
-                    const m = item.split('\n')[0].match(/(\d+),(\d+)/);
+                    const parts = item.split('\n');
+                    const m = parts[0].match(/(\d+),(\d+)/);
+                    const encoderMatch = parts.find(p => /^e\d+$/.test(p.trim()));
+                    const isEncoder = !!encoderMatch;
+                    const encoderIndex = isEncoder ? parseInt(encoderMatch.replace('e', ''), 10) : null;
                     list.push({ 
                         id: item, 
                         matrix: m ? [parseInt(m[1]), parseInt(m[2])] : null, 
@@ -151,7 +165,9 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         y: y * UNIT, 
                         w: w * UNIT, 
                         h: h * UNIT,
-                        isJIS: isJISKey
+                        isJIS: isJISKey,
+                        isEncoder,
+                        encoderIndex
                     });
                     x += w; w = 1; h = 1;
                     isJISKey = false;
@@ -225,6 +241,36 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         const paddingOffset = 20;
         const lightBorder = isAppDark ? '#94a3b8' : '#cbd5e1';
         const darkBorder = isAppDark ? '#475569' : '#334155';
+        
+        if (k.isEncoder) {
+            const knobSize = 44;
+            const offset = (56 - knobSize) / 2;
+            return {
+                left: `${k.x + paddingOffset + offset}px`,
+                top: `${k.y + paddingOffset + offset}px`,
+                width: `${knobSize}px`,
+                height: `${knobSize}px`,
+                position: 'absolute',
+                borderRadius: '50%',
+                borderWidth: '3px',
+                borderStyle: 'solid',
+                borderColor: isLight ? lightBorder : darkBorder,
+                background: isLight 
+                    ? 'radial-gradient(circle at 35% 35%, #ffffff 0%, #f1f5f9 50%, #cbd5e1 100%)' 
+                    : 'radial-gradient(circle at 35% 35%, #334155 0%, #1e293b 50%, #0f172a 100%)',
+                boxShadow: isLight 
+                    ? '0 6px 10px -1px rgb(0 0 0 / 0.15), inset 0 2px 4px rgba(255,255,255,0.8), inset 0 -2px 4px rgba(0,0,0,0.1)' 
+                    : '0 10px 15px -3px rgb(0 0 0 / 0.3), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 -4px 6px rgba(0,0,0,0.5)',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                transition: 'all 0.075s ease',
+                cursor: 'pointer',
+                zIndex: 40
+            };
+        }
         
         if (k.isJIS) {
             return {
@@ -351,6 +397,75 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
 
                     const isFluentCenter = isFluentIcon || (isModKey && baseIsFluent);
                     const centerText = (isModKey && modType !== 'base') ? baseLabel : displayText;
+
+                    // Resolving rotary encoder actions (Push, CCW, CW) and generating rich tooltip
+                    const actions = k.isEncoder ? getEncoderActions(k.encoderIndex, layer) : null;
+                    let tooltipText = val || fullRaw;
+                    if (k.isEncoder && actions) {
+                        const [ccwCode, cwCode] = actions;
+                        const ccwParsed = parseKeyLabel(ccwCode, ccwCode, displayMode, keyStyle, macroAliases);
+                        const cwParsed = parseKeyLabel(cwCode, cwCode, displayMode, keyStyle, macroAliases);
+                        tooltipText = `Push: ${val || fullRaw}\n🔄 CCW (Rotate Left): ${ccwCode} (${ccwParsed.displayText})\n🔄 CW (Rotate Right): ${cwCode} (${cwParsed.displayText})`;
+                    }
+
+                    const cleanRaw = fullRaw ? fullRaw.toUpperCase() : '';
+                    const displayRaw = (val && typeof val === 'string' && val.toUpperCase().startsWith('KC_'))
+                        ? val.toUpperCase()
+                        : (cleanRaw.startsWith('KC_') ? cleanRaw : 'KC_' + cleanRaw);
+
+                    if (k.isEncoder) {
+                        let finalDisplayText = centerText;
+                        let targetScale = 1.0;
+                        const availableWidth = 44 - 10;
+                        const estimatedPxWidth = (isFluentCenter ? 1.2 : centerText.length) * 11.0;
+                        if (estimatedPxWidth > availableWidth) {
+                            targetScale = availableWidth / estimatedPxWidth;
+                        }
+                        targetScale = Math.max(0.5, Math.min(1.0, targetScale));
+
+                        return createElement('div', {
+                            key: i,
+                            className: 'key-cap encoder-knob group',
+                            title: tooltipText,
+                            'data-key-raw': displayRaw,
+                            style: getKeycapFrameStyle(k, false)
+                        }, [
+                            createElement('div', {
+                                key: 'knob-dot',
+                                style: {
+                                    position: 'absolute',
+                                    width: '5px',
+                                    height: '5px',
+                                    borderRadius: '50%',
+                                    backgroundColor: isLight ? '#94a3b8' : '#475569',
+                                    top: '5px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    opacity: 0.7,
+                                    boxShadow: isLight ? 'inset 0 1px 1px rgba(0,0,0,0.2)' : '0 1px 1px rgba(255,255,255,0.1)'
+                                }
+                            }),
+                            createElement('div', {
+                                key: 'knob-legend',
+                                className: "key-content flex-1 flex items-center justify-center w-full h-full",
+                                style: {
+                                    transform: `scale(${targetScale * 0.8})`,
+                                    transformOrigin: 'center center',
+                                    padding: '2px',
+                                    marginTop: '2px',
+                                    zIndex: 2
+                                }
+                            },
+                                createElement('span', {
+                                    className: "legend-text font-bold",
+                                    style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, 1, {
+                                        fontSize: '18px',
+                                        color: isLight ? '#1e293b' : '#ffffff'
+                                    })
+                                }, finalDisplayText)
+                            )
+                        ]);
+                    }
 
 
 
