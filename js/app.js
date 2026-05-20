@@ -357,12 +357,16 @@ export function App() {
                 key: 'export-hidden',
                 ref: exportRef,
                 style: {
-                    position: 'absolute',
-                    left: '-9999px',
+                    position: 'fixed',
                     top: '0',
+                    left: '0',
+                    width: 'fit-content',
+                    height: 'fit-content',
                     padding: '40px',
                     background: exportSettings.background === 'Light' ? '#f1f5f9' : '#020617',
-                    width: 'fit-content'
+                    opacity: '0',
+                    pointerEvents: 'none',
+                    zIndex: '-100'
                 }
             }, [
                 createElement(Keyboard, {
@@ -376,7 +380,6 @@ export function App() {
                     keyStyle: dev.keyStyle || 'Windows',
                     encoderStyles: dev.encoderStyles || {},
                     layoutOptions: dev.layoutOptions || {},
-                    isExportMode: true,
                     forcedScale: 1.0,
                     separation: dev.separation || 'DISABLE'
                 })

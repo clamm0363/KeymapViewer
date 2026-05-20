@@ -126,7 +126,7 @@ const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth
 
 import { parseKeyLabel } from '../utils/labelParser.js';
 
-export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, keyStyle = 'Windows', separation = 'DISABLE', encoderStyles = {}, layoutOptions = {} }) {
+export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, keyStyle = 'Windows', separation = 'DISABLE', encoderStyles = {}, layoutOptions = {} }) {
     const [codes, setCodes] = useState({});
     const containerRef = useRef(null);
     const [scale, setScale] = useState(1);
@@ -712,7 +712,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     }
 
                     const kWidth = (k.w - 12); // 内寸の目安
-                    const availableWidth = kWidth - (isExportMode ? 4 : 2);
+                    const availableWidth = kWidth - 2;
                     
                     // スケール計算: visualWeightに基づき、かつ1u(56px)基準で調整
                     let visualWeightForScale = centerText.length;
@@ -739,7 +739,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
 
                     // 最小/最大スケールの制限（長文のNUMLOCK等は十分に縮小できるように閾値を引き下げる）
                     const minScaleLimit = centerText.length >= 7 ? 0.4 : (centerText.length >= 5 ? 0.5 : 0.6);
-                    targetScale = Math.max(isExportMode ? Math.min(minScaleLimit, 0.55) : minScaleLimit, Math.min(1.1, targetScale));
+                    targetScale = Math.max(minScaleLimit, Math.min(1.1, targetScale));
                     if (manualWrap) targetScale = Math.min(0.9, targetScale);
 
                     const cleanRaw = fullRaw ? fullRaw.toUpperCase() : '';
@@ -913,19 +913,32 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     createElement('div', {
                                         className: "key-content flex-1 flex items-center justify-center w-full h-full",
                                         style: {
-                                            transform: `scale(${targetScale * 0.9})`,
-                                            transformOrigin: 'center center',
-                                            padding: '2px',
-                                            paddingLeft: '6px' // offset from left accent bar
+                                            paddingLeft: '6px', // offset from left accent bar
+                                            overflow: 'visible',
+                                            position: 'relative'
                                         }
                                     },
-                                        createElement('span', {
-                                            className: "legend-text",
-                                            style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
-                                                color: getModColor(modKeys[0], isLight),
-                                                ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
-                                            })
-                                        }, finalDisplayText)
+                                        createElement('div', {
+                                            style: {
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                width: '100%',
+                                                height: '100%',
+                                                transform: `scale(${targetScale * 0.9})`,
+                                                transformOrigin: 'center center',
+                                                padding: '2px',
+                                                boxSizing: 'border-box'
+                                            }
+                                        },
+                                            createElement('span', {
+                                                className: "legend-text",
+                                                style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
+                                                    color: getModColor(modKeys[0], isLight),
+                                                    ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
+                                                })
+                                            }, finalDisplayText)
+                                        )
                                     )
                                 ) : (
                                     // ② Mod-Tap or Direct Mod: split layout with premium colored footer band
@@ -979,52 +992,66 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    transform: `scale(${targetScale * 0.9})`,
-                                    transformOrigin: 'center center',
-                                    padding: '2px',
+                                    overflow: 'visible',
                                     zIndex: 2
                                 } : {
-                                    transform: `scale(${targetScale * 0.9})`,
-                                    transformOrigin: 'center center',
-                                    padding: '2px',
-                                    marginTop: isExportMode ? '-2px' : '0',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '100%',
+                                    height: '100%',
+                                    overflow: 'visible',
                                     zIndex: 2
                                 }
                             },
-                                // SVG rendering attempt for compatible icons
-                                (() => {
-                                    // --- デバッグ用ログ（自白剤） ---
-                                    const modeCheck = (displayMode === 'Fluent');
-                                    const svgCheck = isSVGAvailable(displayRaw);
-                                    
-                                    console.log(`[SVG判定] ${displayRaw} | ModeOK: ${modeCheck} | SvgOK: ${svgCheck}`);
-
-                                    // Try to use SVG if available for this key
-                                    if (modeCheck && svgCheck) {
-                                        const svgEl = createSVGElement(displayRaw, { size: 24, color: isLight ? '#1e293b' : '#fff' });
-                                        if (svgEl) {
-                                            return createElement('div', {
-                                                key: 'svg-render',
-                                                style: {
-                                                    width: '24px',
-                                                    height: '24px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center'
-                                                },
-                                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
-                                            });
-                                        }
+                                createElement('div', {
+                                    style: {
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: '100%',
+                                        height: '100%',
+                                        transform: `scale(${targetScale * 0.9})`,
+                                        transformOrigin: 'center center',
+                                        padding: '2px',
+                                        boxSizing: 'border-box'
                                     }
-                                    
-                                    // Fallback to WebFont text rendering
-                                    return createElement('span', {
-                                        className: "legend-text",
-                                        style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
-                                            ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
-                                        })
-                                    }, finalDisplayText);
-                                })()
+                                },
+                                    // SVG rendering attempt for compatible icons
+                                    (() => {
+                                        // --- デバッグ用ログ（自白剤） ---
+                                        const modeCheck = (displayMode === 'Fluent');
+                                        const svgCheck = isSVGAvailable(displayRaw);
+                                        
+                                        console.log(`[SVG判定] ${displayRaw} | ModeOK: ${modeCheck} | SvgOK: ${svgCheck}`);
+
+                                        // Try to use SVG if available for this key
+                                        if (modeCheck && svgCheck) {
+                                            const svgEl = createSVGElement(displayRaw, { size: 24, color: isLight ? '#1e293b' : '#fff' });
+                                            if (svgEl) {
+                                                return createElement('div', {
+                                                    key: 'svg-render',
+                                                    style: {
+                                                        width: '24px',
+                                                        height: '24px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    },
+                                                    dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+                                                });
+                                            }
+                                        }
+                                        
+                                        // Fallback to WebFont text rendering
+                                        return createElement('span', {
+                                            className: "legend-text",
+                                            style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
+                                                ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
+                                            })
+                                        }, finalDisplayText);
+                                    })()
+                                )
                             )
                         )
                     );
