@@ -302,21 +302,17 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
 
         const paddingOffset = 20;
 
-        let background = '';
         let border = '';
         let boxShadow = '';
         
         if (isLight) {
-            background = 'rgba(226, 232, 240, 0.8)'; // slate-200/80
-            border = '2px solid rgba(203, 213, 225, 0.5)'; // slate-300/50
+            border = '2px solid rgba(203, 213, 225, 0.5)';
             boxShadow = 'inset 0 2px 10px rgba(0,0,0,0.05)';
         } else if (isAppDark) {
-            background = 'linear-gradient(135deg, rgba(148, 163, 184, 0.4) 0%, rgba(71, 85, 105, 0.4) 100%)'; // slate-400/40 to slate-600/40
-            border = '2px solid rgba(100, 116, 139, 0.4)'; // slate-500/40
+            border = '2px solid rgba(100, 116, 139, 0.4)';
             boxShadow = 'inset 0 2px 20px rgba(0,0,0,0.4)';
         } else {
-            background = 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 50%, #64748b 100%)'; // slate-300 via slate-400 to slate-500
-            border = '2px solid rgba(148, 163, 184, 0.8)'; // slate-400/80
+            border = '2px solid rgba(148, 163, 184, 0.8)';
             boxShadow = '0 10px 30px -10px rgba(15,23,42,0.18), inset 0 2px 4px rgba(255,255,255,0.55), inset 0 -2px 4px rgba(0,0,0,0.15)';
         }
 
@@ -327,9 +323,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             width: `${(maxX - minX) + 40}px`,
             height: `${(maxY - minY) + 40}px`,
             borderRadius: '2rem',
-            overflow: 'hidden', // html2canvas の角丸グラデーション描画バグ回避
+            overflow: 'hidden',
             zIndex: 0,
-            background,
             border,
             boxShadow
         };
@@ -347,21 +342,17 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
 
         const paddingOffset = 20;
 
-        let background = '';
         let border = '';
         let boxShadow = '';
         
         if (isLight) {
-            background = 'rgba(226, 232, 240, 0.8)'; // slate-200/80
-            border = '2px solid rgba(203, 213, 225, 0.5)'; // slate-300/50
+            border = '2px solid rgba(203, 213, 225, 0.5)';
             boxShadow = 'inset 0 2px 10px rgba(0,0,0,0.05)';
         } else if (isAppDark) {
-            background = 'linear-gradient(135deg, rgba(148, 163, 184, 0.4) 0%, rgba(71, 85, 105, 0.4) 100%)'; // slate-400/40 to slate-600/40
-            border = '2px solid rgba(100, 116, 139, 0.4)'; // slate-500/40
+            border = '2px solid rgba(100, 116, 139, 0.4)';
             boxShadow = 'inset 0 2px 20px rgba(0,0,0,0.4)';
         } else {
-            background = 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 50%, #64748b 100%)'; // slate-300 via slate-400 to slate-500
-            border = '2px solid rgba(148, 163, 184, 0.8)'; // slate-400/80
+            border = '2px solid rgba(148, 163, 184, 0.8)';
             boxShadow = '0 10px 30px -10px rgba(15,23,42,0.18), inset 0 2px 4px rgba(255,255,255,0.55), inset 0 -2px 4px rgba(0,0,0,0.15)';
         }
 
@@ -372,9 +363,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             width: `${(maxX - minX) + 40}px`,
             height: `${(maxY - minY) + 40}px`,
             borderRadius: '2rem',
-            overflow: 'hidden', // html2canvas の角丸グラデーション描画バグ回避
+            overflow: 'hidden',
             zIndex: 0,
-            background,
             border,
             boxShadow
         };
@@ -384,13 +374,17 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         return "kbd-container relative transition-all duration-200";
     };
 
+    // kbd-container の外枠スタイル（角丸 + overflow:hidden でクリッピングを担当）
+    // html2canvas は要素自身の background を border-radius でクリップするのにバグがあるため、
+    // 背景は子要素として分離し、overflow:hidden で物理的にクリップする2層構造を採る。
     const getKbdContainerStyle = () => {
         const baseStyle = { 
             width: '100%', 
             height: '100%', 
             transform: 'none',
             borderRadius: '2rem',
-            overflow: 'hidden' // html2canvas の角丸クリッピングバグ回避
+            overflow: 'hidden',
+            position: 'relative'
         };
         
         if (isSeparationEnabled && splitX !== null) {
@@ -402,32 +396,74 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             };
         }
         
-        let background = '';
         let border = '';
         let boxShadow = '';
         
         if (isLight) {
-            background = 'rgba(226, 232, 240, 0.8)'; // slate-200/80
-            border = '2px solid rgba(203, 213, 225, 0.5)'; // slate-300/50
+            border = '2px solid rgba(203, 213, 225, 0.5)';
             boxShadow = 'inset 0 2px 10px rgba(0,0,0,0.05)';
         } else if (isAppDark) {
-            background = 'linear-gradient(135deg, rgba(148, 163, 184, 0.4) 0%, rgba(71, 85, 105, 0.4) 100%)'; // slate-400/40 to slate-600/40
-            border = '2px solid rgba(100, 116, 139, 0.4)'; // slate-500/40
+            border = '2px solid rgba(100, 116, 139, 0.4)';
             boxShadow = 'inset 0 2px 20px rgba(0,0,0,0.4)';
         } else {
-            background = 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 50%, #64748b 100%)'; // slate-300 via slate-400 to slate-500
-            border = '2px solid rgba(148, 163, 184, 0.8)'; // slate-400/80
+            border = '2px solid rgba(148, 163, 184, 0.8)';
             boxShadow = '0 10px 30px -10px rgba(15,23,42,0.18), inset 0 2px 4px rgba(255,255,255,0.55), inset 0 -2px 4px rgba(0,0,0,0.15)';
         }
 
         return {
             ...baseStyle,
-            background,
             border,
             boxShadow
         };
     };
 
+    // kbd-container 背景塗り用の内部子要素スタイル
+    // border-radius の外枠側で overflow:hidden によりクリップされるため、
+    // この子要素のグラデーション背景は角丸に沿って正しく切り抜かれる。
+    const getKbdBackgroundStyle = () => {
+        if (isSeparationEnabled && splitX !== null) return null;
+
+        let background = '';
+        if (isLight) {
+            background = 'rgba(226, 232, 240, 0.8)';
+        } else if (isAppDark) {
+            background = 'linear-gradient(135deg, rgba(148, 163, 184, 0.4) 0%, rgba(71, 85, 105, 0.4) 100%)';
+        } else {
+            background = 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 50%, #64748b 100%)';
+        }
+
+        return {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background,
+            zIndex: 0,
+            pointerEvents: 'none'
+        };
+    };
+
+    // 分離筐体用の背景塗り子要素スタイル
+    const getCaseBgFillStyle = () => {
+        let background = '';
+        if (isLight) {
+            background = 'rgba(226, 232, 240, 0.8)';
+        } else if (isAppDark) {
+            background = 'linear-gradient(135deg, rgba(148, 163, 184, 0.4) 0%, rgba(71, 85, 105, 0.4) 100%)';
+        } else {
+            background = 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 50%, #64748b 100%)';
+        }
+        return {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background,
+            pointerEvents: 'none'
+        };
+    };
 
     /**
      * キートップの外枠（Frame）スタイル
@@ -616,16 +652,25 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                 className: getKbdContainerClass(),
                 style: getKbdContainerStyle()
             }, [
+                // 筐体背景の塗り用子要素（外枠の overflow:hidden で角丸クリップされる）
+                getKbdBackgroundStyle() && createElement('div', {
+                    key: 'kbd-bg-fill',
+                    style: getKbdBackgroundStyle()
+                }),
                 isSeparationEnabled && splitX !== null && leftCaseStyle && createElement('div', {
                     key: 'left-case',
                     style: leftCaseStyle,
                     className: "transition-all duration-200"
-                }),
+                },
+                    createElement('div', { style: getCaseBgFillStyle() })
+                ),
                 isSeparationEnabled && splitX !== null && rightCaseStyle && createElement('div', {
                     key: 'right-case',
                     style: rightCaseStyle,
                     className: "transition-all duration-200"
-                }),
+                },
+                    createElement('div', { style: getCaseBgFillStyle() })
+                ),
                 ...filteredKeys.map((k, i) => {
                     const mK = k.matrix ? `${k.matrix[0]},${k.matrix[1]}` : null;
                     const val = mK ? codes[mK] : null;
@@ -1018,8 +1063,11 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                     style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
                                                         color: getModColor(modKeys[0], isLight),
                                                         transform: 'none',
-                                                        display: 'block',
-                                                        lineHeight: '1.2',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        height: '100%',
+                                                        maxHeight: 'none',
                                                         ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
                                                     })
                                                 }, finalDisplayText)
@@ -1136,8 +1184,11 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                 className: "legend-text",
                                                 style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
                                                     transform: 'none',
-                                                    display: 'block',
-                                                    lineHeight: '1.2',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    height: '100%',
+                                                    maxHeight: 'none',
                                                     ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
                                                 })
                                             }, finalDisplayText);
