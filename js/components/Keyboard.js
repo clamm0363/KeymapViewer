@@ -68,34 +68,39 @@ const getOffsetSecondaryStyle = (isLight) => ({
     lineHeight: '1'
 });
 
-// Shared main legend styling utility for standard/modifier/layer text keycaps to enforce strict size harmony
-const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth = 1, customOverrides = {}) => {
-    // 1uキーキャップ基準で、文字数（長さ）に応じて完全に均一な縮小率を適用し、表示崩れを防ぐ
+// Calculate text scale based on character length and key width to maintain physical harmony
+const getTextScale = (displayText, keyWidth = 1, isFluentIcon = false) => {
     let textScale = 1.0;
     if (!isFluentIcon && displayText) {
         const isFunctionKey = /^F\d+$/.test(displayText);
         if (isFunctionKey) {
-            textScale = 1.0;                   // F1-F12はすべて2文字サイズ（等倍）に統一
+            textScale = 1.0;
         } else {
             const len = displayText.length;
             if (len === 3) {
-                textScale = keyWidth >= 1.25 ? 0.85 : 0.70; // 1.25u以上の3文字キーは0.85、1uキーは0.70(PSCR等とサイズを統一)
+                textScale = keyWidth >= 1.25 ? 0.85 : 0.70;
             }
             else if (len === 4) {
-                textScale = keyWidth >= 1.25 ? 0.85 : 0.70;  // 1.25u以上の4文字キーは0.85、1uキーは0.70
+                textScale = keyWidth >= 1.25 ? 0.85 : 0.70;
             }
             else if (len >= 5) {
-                // SHIFTやENTER、SPACE、BACKSPACEなど、大きなキーにある5文字以上の文字サイズを調和させる
                 if (keyWidth >= 2.0) {
-                    textScale = 0.85;  // 2u以上の大きなキーは0.85 (SHIFT, ENTER, BACKSPACE等)
+                    textScale = 0.85;
                 } else if (keyWidth >= 1.25) {
-                    textScale = 0.70;  // 1.25u〜2u未満のキーは0.70
+                    textScale = 0.70;
                 } else {
-                    textScale = 0.55;  // 1uなどの狭いキーは0.55
+                    textScale = 0.55;
                 }
             }
         }
     }
+    return textScale;
+};
+
+// Shared main legend styling utility for standard/modifier/layer text keycaps to enforce strict size harmony
+const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth = 1, customOverrides = {}) => {
+    // 1uキーキャップ基準で、文字数（長さ）に応じて完全に均一な縮小率を適用し、表示崩れを防ぐ
+    const textScale = getTextScale(displayText, keyWidth, isFluentIcon);
 
     const baseStyle = {
         color: isLight ? '#1e293b' : '#fff',
@@ -296,6 +301,25 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         const maxY = Math.max(...leftKeys.map(k => k.y + k.h));
 
         const paddingOffset = 20;
+
+        let background = '';
+        let border = '';
+        let boxShadow = '';
+        
+        if (isLight) {
+            background = 'rgba(226, 232, 240, 0.8)'; // slate-200/80
+            border = '2px solid rgba(203, 213, 225, 0.5)'; // slate-300/50
+            boxShadow = 'inset 0 2px 10px rgba(0,0,0,0.05)';
+        } else if (isAppDark) {
+            background = 'linear-gradient(135deg, rgba(148, 163, 184, 0.4) 0%, rgba(71, 85, 105, 0.4) 100%)'; // slate-400/40 to slate-600/40
+            border = '2px solid rgba(100, 116, 139, 0.4)'; // slate-500/40
+            boxShadow = 'inset 0 2px 20px rgba(0,0,0,0.4)';
+        } else {
+            background = 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 50%, #64748b 100%)'; // slate-300 via slate-400 to slate-500
+            border = '2px solid rgba(148, 163, 184, 0.8)'; // slate-400/80
+            boxShadow = '0 10px 30px -10px rgba(15,23,42,0.18), inset 0 2px 4px rgba(255,255,255,0.55), inset 0 -2px 4px rgba(0,0,0,0.15)';
+        }
+
         return {
             position: 'absolute',
             left: `${minX + paddingOffset - 20}px`,
@@ -303,9 +327,13 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             width: `${(maxX - minX) + 40}px`,
             height: `${(maxY - minY) + 40}px`,
             borderRadius: '2rem',
-            zIndex: 0
+            overflow: 'hidden', // html2canvas の角丸グラデーション描画バグ回避
+            zIndex: 0,
+            background,
+            border,
+            boxShadow
         };
-    }, [filteredKeys, isSeparationEnabled, splitX]);
+    }, [filteredKeys, isSeparationEnabled, splitX, isLight, isAppDark]);
 
     const rightCaseStyle = useMemo(() => {
         if (!isSeparationEnabled || splitX === null) return null;
@@ -318,6 +346,25 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         const maxY = Math.max(...rightKeys.map(k => k.y + k.h));
 
         const paddingOffset = 20;
+
+        let background = '';
+        let border = '';
+        let boxShadow = '';
+        
+        if (isLight) {
+            background = 'rgba(226, 232, 240, 0.8)'; // slate-200/80
+            border = '2px solid rgba(203, 213, 225, 0.5)'; // slate-300/50
+            boxShadow = 'inset 0 2px 10px rgba(0,0,0,0.05)';
+        } else if (isAppDark) {
+            background = 'linear-gradient(135deg, rgba(148, 163, 184, 0.4) 0%, rgba(71, 85, 105, 0.4) 100%)'; // slate-400/40 to slate-600/40
+            border = '2px solid rgba(100, 116, 139, 0.4)'; // slate-500/40
+            boxShadow = 'inset 0 2px 20px rgba(0,0,0,0.4)';
+        } else {
+            background = 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 50%, #64748b 100%)'; // slate-300 via slate-400 to slate-500
+            border = '2px solid rgba(148, 163, 184, 0.8)'; // slate-400/80
+            boxShadow = '0 10px 30px -10px rgba(15,23,42,0.18), inset 0 2px 4px rgba(255,255,255,0.55), inset 0 -2px 4px rgba(0,0,0,0.15)';
+        }
+
         return {
             position: 'absolute',
             left: `${minX + paddingOffset - 20}px`,
@@ -325,21 +372,62 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             width: `${(maxX - minX) + 40}px`,
             height: `${(maxY - minY) + 40}px`,
             borderRadius: '2rem',
-            zIndex: 0
+            overflow: 'hidden', // html2canvas の角丸グラデーション描画バグ回避
+            zIndex: 0,
+            background,
+            border,
+            boxShadow
         };
-    }, [filteredKeys, isSeparationEnabled, splitX]);
+    }, [filteredKeys, isSeparationEnabled, splitX, isLight, isAppDark]);
 
     const getKbdContainerClass = () => {
-        const base = "kbd-container relative transition-all duration-200";
-        if (isSeparationEnabled && splitX !== null) {
-            return `${base} border-0 bg-transparent shadow-none`;
-        }
-        const lightTheme = "border-2 bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]";
-        const darkTheme = isAppDark
-            ? "border-2 bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
-            : "border-2 bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]";
-        return `${base} ${isLight ? lightTheme : darkTheme}`;
+        return "kbd-container relative transition-all duration-200";
     };
+
+    const getKbdContainerStyle = () => {
+        const baseStyle = { 
+            width: '100%', 
+            height: '100%', 
+            transform: 'none',
+            borderRadius: '2rem',
+            overflow: 'hidden' // html2canvas の角丸クリッピングバグ回避
+        };
+        
+        if (isSeparationEnabled && splitX !== null) {
+            return {
+                ...baseStyle,
+                border: 'none',
+                background: 'transparent',
+                boxShadow: 'none'
+            };
+        }
+        
+        let background = '';
+        let border = '';
+        let boxShadow = '';
+        
+        if (isLight) {
+            background = 'rgba(226, 232, 240, 0.8)'; // slate-200/80
+            border = '2px solid rgba(203, 213, 225, 0.5)'; // slate-300/50
+            boxShadow = 'inset 0 2px 10px rgba(0,0,0,0.05)';
+        } else if (isAppDark) {
+            background = 'linear-gradient(135deg, rgba(148, 163, 184, 0.4) 0%, rgba(71, 85, 105, 0.4) 100%)'; // slate-400/40 to slate-600/40
+            border = '2px solid rgba(100, 116, 139, 0.4)'; // slate-500/40
+            boxShadow = 'inset 0 2px 20px rgba(0,0,0,0.4)';
+        } else {
+            background = 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 50%, #64748b 100%)'; // slate-300 via slate-400 to slate-500
+            border = '2px solid rgba(148, 163, 184, 0.8)'; // slate-400/80
+            boxShadow = '0 10px 30px -10px rgba(15,23,42,0.18), inset 0 2px 4px rgba(255,255,255,0.55), inset 0 -2px 4px rgba(0,0,0,0.15)';
+        }
+
+        return {
+            ...baseStyle,
+            background,
+            border,
+            boxShadow
+        };
+    };
+
 
     /**
      * キートップの外枠（Frame）スタイル
@@ -526,25 +614,17 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         },
             createElement('div', {
                 className: getKbdContainerClass(),
-                style: { width: '100%', height: '100%', transform: 'none' }
+                style: getKbdContainerStyle()
             }, [
                 isSeparationEnabled && splitX !== null && leftCaseStyle && createElement('div', {
                     key: 'left-case',
                     style: leftCaseStyle,
-                    className: "border-2 transition-all duration-200 " + (isLight 
-                        ? "bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]"
-                        : (isAppDark 
-                            ? "bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
-                            : "bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]"))
+                    className: "transition-all duration-200"
                 }),
                 isSeparationEnabled && splitX !== null && rightCaseStyle && createElement('div', {
                     key: 'right-case',
                     style: rightCaseStyle,
-                    className: "border-2 transition-all duration-200 " + (isLight 
-                        ? "bg-slate-200/80 border-slate-300/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]"
-                        : (isAppDark 
-                            ? "bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
-                            : "bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]"))
+                    className: "transition-all duration-200"
                 }),
                 ...filteredKeys.map((k, i) => {
                     const mK = k.matrix ? `${k.matrix[0]},${k.matrix[1]}` : null;
@@ -910,36 +990,42 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                             },
                                 modType === 'base' ? (
                                     // ① Base Modifier: color-matched icon/text
-                                    createElement('div', {
-                                        className: "key-content flex-1 flex items-center justify-center w-full h-full",
-                                        style: {
-                                            paddingLeft: '6px', // offset from left accent bar
-                                            overflow: 'visible',
-                                            position: 'relative'
-                                        }
-                                    },
-                                        createElement('div', {
+                                    (() => {
+                                        const textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
+                                        return createElement('div', {
+                                            className: "key-content flex-1 flex items-center justify-center w-full h-full",
                                             style: {
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                width: '100%',
-                                                height: '100%',
-                                                transform: `scale(${targetScale * 0.9})`,
-                                                transformOrigin: 'center center',
-                                                padding: '2px',
-                                                boxSizing: 'border-box'
+                                                paddingLeft: '6px', // offset from left accent bar
+                                                overflow: 'visible',
+                                                position: 'relative'
                                             }
                                         },
-                                            createElement('span', {
-                                                className: "legend-text",
-                                                style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
-                                                    color: getModColor(modKeys[0], isLight),
-                                                    ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
-                                                })
-                                            }, finalDisplayText)
-                                        )
-                                    )
+                                            createElement('div', {
+                                                style: {
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    transform: `scale(${targetScale * textScale * 0.9})`,
+                                                    transformOrigin: 'center center',
+                                                    padding: '2px',
+                                                    boxSizing: 'border-box'
+                                                }
+                                            },
+                                                createElement('div', {
+                                                    className: "legend-text",
+                                                    style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
+                                                        color: getModColor(modKeys[0], isLight),
+                                                        transform: 'none',
+                                                        display: 'block',
+                                                        lineHeight: '1.2',
+                                                        ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
+                                                    })
+                                                }, finalDisplayText)
+                                            )
+                                        );
+                                    })()
                                 ) : (
                                     // ② Mod-Tap or Direct Mod: split layout with premium colored footer band
                                     (() => {
@@ -1004,54 +1090,60 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     zIndex: 2
                                 }
                             },
-                                createElement('div', {
-                                    style: {
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        width: '100%',
-                                        height: '100%',
-                                        transform: `scale(${targetScale * 0.9})`,
-                                        transformOrigin: 'center center',
-                                        padding: '2px',
-                                        boxSizing: 'border-box'
-                                    }
-                                },
-                                    // SVG rendering attempt for compatible icons
-                                    (() => {
-                                        // --- デバッグ用ログ（自白剤） ---
-                                        const modeCheck = (displayMode === 'Fluent');
-                                        const svgCheck = isSVGAvailable(displayRaw);
-                                        
-                                        console.log(`[SVG判定] ${displayRaw} | ModeOK: ${modeCheck} | SvgOK: ${svgCheck}`);
-
-                                        // Try to use SVG if available for this key
-                                        if (modeCheck && svgCheck) {
-                                            const svgEl = createSVGElement(displayRaw, { size: 24, color: isLight ? '#1e293b' : '#fff' });
-                                            if (svgEl) {
-                                                return createElement('div', {
-                                                    key: 'svg-render',
-                                                    style: {
-                                                        width: '24px',
-                                                        height: '24px',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center'
-                                                    },
-                                                    dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
-                                                });
-                                            }
+                                (() => {
+                                    const textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
+                                    return createElement('div', {
+                                        style: {
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: '100%',
+                                            height: '100%',
+                                            transform: `scale(${targetScale * textScale * 0.9})`,
+                                            transformOrigin: 'center center',
+                                            padding: '2px',
+                                            boxSizing: 'border-box'
                                         }
-                                        
-                                        // Fallback to WebFont text rendering
-                                        return createElement('span', {
-                                            className: "legend-text",
-                                            style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
-                                                ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
-                                            })
-                                        }, finalDisplayText);
-                                    })()
-                                )
+                                    },
+                                        // SVG rendering attempt for compatible icons
+                                        (() => {
+                                            // --- デバッグ用ログ（自白剤） ---
+                                            const modeCheck = (displayMode === 'Fluent');
+                                            const svgCheck = isSVGAvailable(displayRaw);
+                                            
+                                            console.log(`[SVG判定] ${displayRaw} | ModeOK: ${modeCheck} | SvgOK: ${svgCheck}`);
+
+                                            // Try to use SVG if available for this key
+                                            if (modeCheck && svgCheck) {
+                                                const svgEl = createSVGElement(displayRaw, { size: 24, color: isLight ? '#1e293b' : '#fff' });
+                                                if (svgEl) {
+                                                    return createElement('div', {
+                                                        key: 'svg-render',
+                                                        style: {
+                                                            width: '24px',
+                                                            height: '24px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center'
+                                                        },
+                                                        dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+                                                    });
+                                                }
+                                            }
+                                            
+                                            // Fallback to WebFont text rendering
+                                            return createElement('div', {
+                                                className: "legend-text",
+                                                style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
+                                                    transform: 'none',
+                                                    display: 'block',
+                                                    lineHeight: '1.2',
+                                                    ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
+                                                })
+                                            }, finalDisplayText);
+                                        })()
+                                    );
+                                })()
                             )
                         )
                     );
