@@ -38,6 +38,8 @@ export function App() {
                             theme: parsed.theme || 'System',
                             keyStyle: parsed.keyStyle || 'Windows',
                             encoderStyles: parsed.encoderStyles || {},
+                            layoutOptions: parsed.layoutOptions || {},
+                            separation: parsed.separation || 'DISABLE',
                             macroAliases: parsed.keymapJson?.macroAliases || {},
                             showSettings: false
                         }];
@@ -48,9 +50,8 @@ export function App() {
             console.error('Failed to restore shared state from URL:', e);
         }
 
-        // Fallback to saved state
         if (saved && saved.devices && saved.devices.length > 0) return saved.devices;
-        return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, showSettings: false }];
+        return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, layoutOptions: {}, showSettings: false }];
     });
     const [layoutMode, setLayoutMode] = useState(() => (saved && saved.layoutMode) || 'stack');
     const [appTheme, setAppTheme] = useState(() => (saved && saved.appTheme) || 'dark');
@@ -112,6 +113,7 @@ export function App() {
                         theme: 'System',
                         keyStyle: s.keyStyle,
                         encoderStyles: {},
+                        layoutOptions: {},
                         macroAliases: keymapJson.macroAliases,
                         showSettings: false
                     };
@@ -184,7 +186,7 @@ export function App() {
     const addSlot = () => {
         if (devices.length >= 4) return;
         setDevices(prev => [...prev, {
-            id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, showSettings: false
+            id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, layoutOptions: {}, showSettings: false
         }]);
     };
 
@@ -200,7 +202,7 @@ export function App() {
                 try {
                     const j = JSON.parse(ev.target.result);
                     if (type === 'layout') {
-                        if (j.layouts) updateDevice(id, { design: j, name: sanitizeDeviceName(j.name || 'Device') });
+                        if (j.layouts) updateDevice(id, { design: j, name: sanitizeDeviceName(j.name || 'Device'), layoutOptions: {} });
                         else alert('レイアウト情報が見つかりません');
                     } else {
                         if (j.layers) updateDevice(id, { keymapJson: j });
@@ -215,7 +217,7 @@ export function App() {
 
     const removeDevice = (id) => {
         if (devices.length === 1) {
-            updateDevice(id, { name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', keyStyle: 'Windows', encoderStyles: {}, showSettings: false });
+            updateDevice(id, { name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', keyStyle: 'Windows', encoderStyles: {}, layoutOptions: {}, showSettings: false });
         } else {
             setDevices(prev => prev.filter(d => d.id !== id));
         }
@@ -265,12 +267,12 @@ export function App() {
             try {
                 const j = JSON.parse(ev.target.result);
                 if (targetDevId) {
-                    if (j.layouts) updateDevice(targetDevId, { design: j, name: sanitizeDeviceName(j.name || 'Device') });
+                    if (j.layouts) updateDevice(targetDevId, { design: j, name: sanitizeDeviceName(j.name || 'Device'), layoutOptions: {} });
                     else if (j.layers) updateDevice(targetDevId, { keymapJson: j });
                 } else {
                     if (devices.length >= 4) return;
-                    const nd = { id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, showSettings: false };
-                    if (j.layouts) { nd.design = j; nd.name = sanitizeDeviceName(j.name || 'Device'); }
+                    const nd = { id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, layoutOptions: {}, showSettings: false };
+                    if (j.layouts) { nd.design = j; nd.name = sanitizeDeviceName(j.name || 'Device'); nd.layoutOptions = {}; }
                     else if (j.layers) { nd.keymapJson = j; nd.name = sanitizeDeviceName(j.name || 'Mapping'); }
                     setDevices(prev => [...prev, nd]);
                 }
@@ -374,6 +376,7 @@ export function App() {
                     macroAliases: dev.macroAliases || {},
                     keyStyle: dev.keyStyle || 'Windows',
                     encoderStyles: dev.encoderStyles || {},
+                    layoutOptions: dev.layoutOptions || {},
                     isExportMode: true,
                     forcedScale: 1.0,
                     separation: dev.separation || 'DISABLE'

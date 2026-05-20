@@ -22,6 +22,45 @@ const getEncoderIndices = (design) => {
     return [...indices].sort((a, b) => a - b);
 };
 
+const parseLayoutOption = (label, idx) => {
+    let labelName = `OPTION ${idx + 1}`;
+    let originalLabel = '';
+    let choices = [
+        { value: 0, label: 'MODE A' },
+        { value: 1, label: 'MODE B' }
+    ];
+
+    if (typeof label === 'string') {
+        originalLabel = label;
+        choices = [
+            { value: 0, label: 'MODE A' },
+            { value: 1, label: 'MODE B' }
+        ];
+    } else if (Array.isArray(label)) {
+        originalLabel = `Variant ${idx + 1}`;
+        choices = label.map((c, cIdx) => ({
+            value: cIdx,
+            label: typeof c === 'string' ? c : String(c)
+        }));
+    } else if (label && typeof label === 'object') {
+        originalLabel = label.label || '';
+        const opts = label.options || label.choices || [];
+        if (Array.isArray(opts)) {
+            choices = opts.map((c, cIdx) => {
+                if (typeof c === 'string') {
+                    return { value: cIdx, label: c };
+                } else if (Array.isArray(c) && c.length >= 2) {
+                    return { value: parseInt(c[1], 10), label: c[0] };
+                } else if (c && typeof c === 'object') {
+                    return { value: c.value !== undefined ? c.value : cIdx, label: c.label || String(c.value) };
+                }
+                return { value: cIdx, label: String(c) };
+            });
+        }
+    }
+    return { labelName, originalLabel, choices };
+};
+
 export function DeviceSlot({ 
     dev, 
     idx, 
@@ -57,7 +96,10 @@ export function DeviceSlot({
                 keymapJson: dev.keymapJson,
                 keyStyle: dev.keyStyle,
                 theme: dev.theme,
-                displayMode: dev.displayMode
+                displayMode: dev.displayMode,
+                encoderStyles: dev.encoderStyles,
+                layoutOptions: dev.layoutOptions,
+                separation: dev.separation
             };
             const compressed = window.LZString.compressToEncodedURIComponent(JSON.stringify(shareData));
             const shareUrl = window.location.origin + window.location.pathname + '?data=' + compressed;
@@ -231,6 +273,48 @@ export function DeviceSlot({
                         createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentStyle === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
                     ])))
                 ]);
+            }),
+            ...((dev.design && dev.design.layouts && dev.design.layouts.labels) || []).map((lbl, idx) => {
+                const { labelName, originalLabel, choices } = parseLayoutOption(lbl, idx);
+                const activeOptions = dev.layoutOptions || {};
+                const currentValue = activeOptions[idx] !== undefined ? activeOptions[idx] : 0;
+                
+                return createElement('div', { 
+                    key: 'layout-opt-sect-' + idx, 
+                    title: originalLabel ? `Original Label: ${originalLabel}` : null,
+                    className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') + (originalLabel ? ' cursor-help' : '')
+                }, [
+                    createElement('span', { 
+                        key: 't', 
+                        className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' 
+                    }, labelName + ':'),
+                    createElement('div', { key: 'btns', className: 'flex gap-4' }, choices.map(opt => createElement('label', { 
+                        key: opt.value, 
+                        className: 'flex items-center gap-1.5 cursor-pointer group' 
+                    }, [
+                        createElement('input', { 
+                            key: 'i', 
+                            type: 'radio', 
+                            name: 'layoutOption-' + idx + '-' + dev.id, 
+                            checked: currentValue === opt.value, 
+                            onChange: () => onUpdateDevice(dev.id, { 
+                                layoutOptions: {
+                                    ...activeOptions,
+                                    [idx]: opt.value
+                                } 
+                            }), 
+                            className: 'hidden' 
+                        }),
+                        createElement('div', { 
+                            key: 'v', 
+                            className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentValue === opt.value ? 'border-blue-500' : '') 
+                        }, currentValue === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null),
+                        createElement('span', { 
+                            key: 's', 
+                            className: 'text-[9px] font-bold ' + (currentValue === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' 
+                        }, opt.label)
+                    ])))
+                ]);
             })
         ]) : null,
 
@@ -278,7 +362,8 @@ export function DeviceSlot({
                     onMacroClick: (macroId) => onSetMacroModal({ deviceId: dev.id, macroId }),
                     keyStyle: dev.keyStyle || 'Windows',
                     separation: dev.separation || 'DISABLE',
-                    encoderStyles: dev.encoderStyles || {}
+                    encoderStyles: dev.encoderStyles || {},
+                    layoutOptions: dev.layoutOptions || {}
                 })
             )
         ]) : createElement('div', { key: 'empty-area', className: 'py-20 text-center opacity-20' }, [

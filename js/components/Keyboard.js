@@ -126,7 +126,7 @@ const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth
 
 import { parseKeyLabel } from '../utils/labelParser.js';
 
-export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, keyStyle = 'Windows', separation = 'DISABLE', encoderStyles = {} }) {
+export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, isExportMode = false, keyStyle = 'Windows', separation = 'DISABLE', encoderStyles = {}, layoutOptions = {} }) {
     const [codes, setCodes] = useState({});
     const containerRef = useRef(null);
     const [scale, setScale] = useState(1);
@@ -150,6 +150,10 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         return findSplitX(design);
     }, [design, isSeparationEnabled]);
 
+    const activeLayoutOptions = useMemo(() => {
+        return layoutOptions || {};
+    }, [layoutOptions]);
+
     const keys = useMemo(() => {
         if (!design || !design.layouts || !design.layouts.keymap) return [];
         const list = [];
@@ -165,17 +169,44 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     const encoderMatch = parts.find(p => /^e\d+$/.test(p.trim()));
                     const isEncoder = !!encoderMatch;
                     const encoderIndex = isEncoder ? parseInt(encoderMatch.replace('e', ''), 10) : null;
-                    list.push({ 
-                        id: item, 
-                        matrix: m ? [parseInt(m[1]), parseInt(m[2])] : null, 
-                        x: x * UNIT, 
-                        y: y * UNIT, 
-                        w: w * UNIT, 
-                        h: h * UNIT,
-                        isJIS: isJISKey,
-                        isEncoder,
-                        encoderIndex
-                    });
+                    
+                    let optionIdx = null;
+                    let optionVal = null;
+                    for (let i = 1; i < parts.length; i++) {
+                        const p = parts[i].trim();
+                        if (/^\d+,\d+$/.test(p)) {
+                            const [optIdx, optVal] = p.split(',').map(num => parseInt(num, 10));
+                            optionIdx = optIdx;
+                            optionVal = optVal;
+                            break;
+                        }
+                    }
+
+                    // Evaluate layout option condition during coordinate calculation
+                    // to determine if keycap should be visible, without skipping coordinate accumulation.
+                    let isVisible = true;
+                    if (optionIdx !== null && optionIdx !== undefined) {
+                        const selectedVal = activeLayoutOptions[optionIdx] !== undefined ? activeLayoutOptions[optionIdx] : 0;
+                        if (selectedVal !== optionVal) {
+                            isVisible = false;
+                        }
+                    }
+                    
+                    if (isVisible) {
+                        list.push({ 
+                            id: item, 
+                            matrix: m ? [parseInt(m[1]), parseInt(m[2])] : null, 
+                            x: x * UNIT, 
+                            y: y * UNIT, 
+                            w: w * UNIT, 
+                            h: h * UNIT,
+                            isJIS: isJISKey,
+                            isEncoder,
+                            encoderIndex,
+                            optionIdx,
+                            optionVal
+                        });
+                    }
                     x += w; w = 1; h = 1;
                     isJISKey = false;
                 } else {
@@ -209,10 +240,12 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         }
 
         return list;
-    }, [design, isSeparationEnabled, splitX]);
+    }, [design, isSeparationEnabled, splitX, activeLayoutOptions]);
 
-    const maxWidth = useMemo(() => keys.length ? Math.max(...keys.map(k => k.x + k.w), 0) + 40 : 0, [keys]);
-    const maxHeight = useMemo(() => keys.length ? Math.max(...keys.map(k => k.y + k.h), 0) + 40 : 0, [keys]);
+    const filteredKeys = keys;
+
+    const maxWidth = useMemo(() => filteredKeys.length ? Math.max(...filteredKeys.map(k => k.x + k.w), 0) + 40 : 0, [filteredKeys]);
+    const maxHeight = useMemo(() => filteredKeys.length ? Math.max(...filteredKeys.map(k => k.y + k.h), 0) + 40 : 0, [filteredKeys]);
 
     useEffect(() => {
         if (forcedScale !== null) {
@@ -248,13 +281,13 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
 
     const finalScale = forcedScale !== null ? forcedScale : scale;
 
-    if (keys.length === 0) return null;
+    if (filteredKeys.length === 0) return null;
 
     // --- Styling Constants & Helpers ---
     
     const leftCaseStyle = useMemo(() => {
         if (!isSeparationEnabled || splitX === null) return null;
-        const leftKeys = keys.filter(k => (k.x + k.w / 2) < splitX);
+        const leftKeys = filteredKeys.filter(k => (k.x + k.w / 2) < splitX);
         if (leftKeys.length === 0) return null;
 
         const minX = Math.min(...leftKeys.map(k => k.x));
@@ -272,11 +305,11 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             borderRadius: '2rem',
             zIndex: 0
         };
-    }, [keys, isSeparationEnabled, splitX]);
+    }, [filteredKeys, isSeparationEnabled, splitX]);
 
     const rightCaseStyle = useMemo(() => {
         if (!isSeparationEnabled || splitX === null) return null;
-        const rightKeys = keys.filter(k => (k.x + k.w / 2) >= splitX);
+        const rightKeys = filteredKeys.filter(k => (k.x + k.w / 2) >= splitX);
         if (rightKeys.length === 0) return null;
 
         const minX = Math.min(...rightKeys.map(k => k.x));
@@ -294,7 +327,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             borderRadius: '2rem',
             zIndex: 0
         };
-    }, [keys, isSeparationEnabled, splitX]);
+    }, [filteredKeys, isSeparationEnabled, splitX]);
 
     const getKbdContainerClass = () => {
         const base = "kbd-container relative transition-all duration-200";
@@ -513,7 +546,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                             ? "bg-gradient-to-br from-slate-400/40 to-slate-600/40 border-slate-500/40 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]"
                             : "bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 border-slate-400/80 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.18),_inset_0_2px_4px_rgba(255,255,255,0.55),_inset_0_-2px_4px_rgba(0,0,0,0.15)]"))
                 }),
-                ...keys.map((k, i) => {
+                ...filteredKeys.map((k, i) => {
                     const mK = k.matrix ? `${k.matrix[0]},${k.matrix[1]}` : null;
                     const val = mK ? codes[mK] : null;
                     
