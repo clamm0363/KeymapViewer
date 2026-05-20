@@ -1037,10 +1037,12 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     // ① Base Modifier: color-matched icon/text
                                     (() => {
                                         const textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
+                                        const combinedScale = targetScale * textScale * 0.9;
+                                        const effectiveFontSize = 22 * combinedScale;
                                         return createElement('div', {
                                             className: "key-content flex-1 flex items-center justify-center w-full h-full",
                                             style: {
-                                                paddingLeft: '6px', // offset from left accent bar
+                                                paddingLeft: '6px',
                                                 overflow: 'visible',
                                                 position: 'relative'
                                             }
@@ -1052,8 +1054,6 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                     justifyContent: 'center',
                                                     width: '100%',
                                                     height: '100%',
-                                                    transform: `scale(${targetScale * textScale * 0.9})`,
-                                                    transformOrigin: 'center center',
                                                     padding: '2px',
                                                     boxSizing: 'border-box'
                                                 }
@@ -1063,6 +1063,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                     style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
                                                         color: getModColor(modKeys[0], isLight),
                                                         transform: 'none',
+                                                        fontSize: effectiveFontSize + 'px',
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
@@ -1140,6 +1141,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                             },
                                 (() => {
                                     const textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
+                                    const combinedScale = targetScale * textScale * 0.9;
                                     return createElement('div', {
                                         style: {
                                             display: 'flex',
@@ -1147,29 +1149,25 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                             justifyContent: 'center',
                                             width: '100%',
                                             height: '100%',
-                                            transform: `scale(${targetScale * textScale * 0.9})`,
-                                            transformOrigin: 'center center',
                                             padding: '2px',
                                             boxSizing: 'border-box'
                                         }
                                     },
-                                        // SVG rendering attempt for compatible icons
+                                        // SVG or Text rendering
                                         (() => {
-                                            // --- デバッグ用ログ（自白剤） ---
                                             const modeCheck = (displayMode === 'Fluent');
                                             const svgCheck = isSVGAvailable(displayRaw);
-                                            
-                                            console.log(`[SVG判定] ${displayRaw} | ModeOK: ${modeCheck} | SvgOK: ${svgCheck}`);
 
-                                            // Try to use SVG if available for this key
+                                            // SVG icon rendering: create SVG at effective size directly
                                             if (modeCheck && svgCheck) {
-                                                const svgEl = createSVGElement(displayRaw, { size: 24, color: isLight ? '#1e293b' : '#fff' });
+                                                const effectiveSvgSize = Math.max(8, Math.round(24 * combinedScale));
+                                                const svgEl = createSVGElement(displayRaw, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
                                                 if (svgEl) {
                                                     return createElement('div', {
                                                         key: 'svg-render',
                                                         style: {
-                                                            width: '24px',
-                                                            height: '24px',
+                                                            width: effectiveSvgSize + 'px',
+                                                            height: effectiveSvgSize + 'px',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center'
@@ -1179,11 +1177,13 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                 }
                                             }
                                             
-                                            // Fallback to WebFont text rendering
+                                            // Text rendering: use effective fontSize directly (no CSS transform)
+                                            const effectiveFontSize = 22 * combinedScale;
                                             return createElement('div', {
                                                 className: "legend-text",
                                                 style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
                                                     transform: 'none',
+                                                    fontSize: effectiveFontSize + 'px',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
