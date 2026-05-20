@@ -153,6 +153,11 @@ export function App() {
                     await new Promise(r => requestAnimationFrame(r));
                     await new Promise(r => requestAnimationFrame(r));
 
+                    // html2canvasが透明(opacity: 0)として描画してしまうのを防ぐため、一時的に1に変更
+                    if (exportRef.current) {
+                        exportRef.current.style.opacity = '1';
+                    }
+
                     const canvas = await html2canvas(exportRef.current, { 
                         backgroundColor: exportSettings.background === 'Transparent' ? null : (exportSettings.background === 'Light' ? '#f1f5f9' : '#020617'),
                         scale: 2,
@@ -160,6 +165,11 @@ export function App() {
                         useCORS: true,
                         allowTaint: true
                     });
+
+                    // キャプチャ完了後、直ちに透明度を0に戻す
+                    if (exportRef.current) {
+                        exportRef.current.style.opacity = '0';
+                    }
 
                     const link = document.createElement('a');
                     link.download = `${dev.name || 'Keymap'}_export.png`;
