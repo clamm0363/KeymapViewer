@@ -6,6 +6,7 @@ legacy/
 
 # Raw source JSON (mapped versions are used)
 json/
+json_mapped/
 
 # OS generated
 Thumbs.db
