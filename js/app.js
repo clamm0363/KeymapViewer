@@ -305,9 +305,8 @@ export function App() {
     };
 
     const isLightApp = appTheme === 'light';
-
     return createElement('div', {
-        className: (isLightApp ? 'app-light' : 'app-dark') + ' min-h-screen min-w-full w-fit p-6 md:p-8 flex flex-col transition-colors duration-300'
+        className: (isLightApp ? 'app-light' : 'app-dark') + ' min-h-screen min-w-full w-fit px-6 pb-6 md:px-8 md:pb-8 flex flex-col transition-colors duration-300'
     }, [
         createElement(Header, {
             key: 'header',

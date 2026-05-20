@@ -1,7 +1,7 @@
 const { createElement } = React;
 
 export function Header({ isLightApp, layoutMode, deviceCount, onShowHelp, onShowLinks, onAddSlot, onSetLayoutMode, onSetAppTheme, appTheme }) {
-    return createElement('header', { key: 'header', className: 'flex flex-col md:flex-row justify-between items-center mb-12 gap-6 w-full' }, [
+    return createElement('header', { key: 'header', className: 'sticky top-0 z-50 flex flex-col md:flex-row justify-between items-center gap-6 w-full py-4 md:py-6 mb-12 border-b backdrop-blur-md transition-all duration-300 ' + (isLightApp ? 'bg-slate-50/80 border-slate-200/50' : 'bg-slate-950/80 border-slate-900/50') }, [
         createElement('div', { key: 'logo', className: 'flex items-center gap-6', onClick: () => window.location.reload(), style: { cursor: 'pointer' } }, [
             createElement('div', { key: 'kv-box', className: 'bg-blue-600 w-14 h-14 rounded-3xl flex items-center justify-center shadow-2xl font-black text-white text-2xl tracking-tighter' }, 'KV'),
             createElement('div', { key: 'title-box' }, [
