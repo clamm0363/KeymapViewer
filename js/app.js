@@ -163,7 +163,25 @@ export function App() {
                         scale: 2,
                         logging: false,
                         useCORS: true,
-                        allowTaint: true
+                        allowTaint: true,
+                        onclone: (clonedDoc) => {
+                            // html2canvas はフレックスボックスの align-items:center によるテキスト
+                            // 垂直センタリングを正しくレンダリングできないバグがある。
+                            // クローン DOM 上でのみ、テキストを line-height ベースのセンタリングに変換する。
+                            // ブラウザ上の表示には一切影響しない。
+                            const legendTexts = clonedDoc.querySelectorAll('.legend-text');
+                            legendTexts.forEach(el => {
+                                const h = el.offsetHeight || el.clientHeight;
+                                if (h > 0) {
+                                    el.style.display = 'block';
+                                    el.style.lineHeight = h + 'px';
+                                    el.style.height = h + 'px';
+                                    el.style.maxHeight = 'none';
+                                    el.style.overflow = 'visible';
+                                    el.style.textAlign = 'center';
+                                }
+                            });
+                        }
                     });
 
                     // キャプチャ完了後、直ちに透明度を0に戻す
