@@ -643,7 +643,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             style: {
                 width: `${maxWidth}px`,
                 height: `${maxHeight}px`,
-                transform: `scale(${finalScale})`,
+                transform: finalScale === 1 ? 'none' : `scale(${finalScale})`,
                 transformOrigin: 'center center',
                 flexShrink: 0
             }
@@ -1071,7 +1071,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                         maxHeight: 'none',
                                                         ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
                                                     })
-                                                }, finalDisplayText)
+                                                }, finalDisplayText ? createElement('span', null, finalDisplayText) : null)
                                             )
                                         );
                                     })()
@@ -1191,7 +1191,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                     maxHeight: 'none',
                                                     ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
                                                 })
-                                            }, finalDisplayText);
+                                            }, finalDisplayText ? createElement('span', null, finalDisplayText) : null);
                                         })()
                                     );
                                 })()

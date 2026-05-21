@@ -144,57 +144,39 @@ export function App() {
                     setIsExporting(false);
                     return;
                 }
-
                 try {
-                    // Wait for fonts to be ready
+                    // Ensure fonts are loaded
                     if (document.fonts) await document.fonts.ready;
-                    
-                    // Double-tick to ensure React has rendered the export-container to the DOM
+                    // Double‑tick to ensure the export container is rendered
                     await new Promise(r => requestAnimationFrame(r));
                     await new Promise(r => requestAnimationFrame(r));
-
-                    // html2canvasが透明(opacity: 0)として描画してしまうのを防ぐため、一時的に1に変更
+                    // Make export container visible for html2canvas
                     if (exportRef.current) {
                         exportRef.current.style.opacity = '1';
                     }
-
-                    const canvas = await html2canvas(exportRef.current, { 
+                    // Capture using html2canvas
+                    const canvas = await html2canvas(exportRef.current, {
                         backgroundColor: exportSettings.background === 'Transparent' ? null : (exportSettings.background === 'Light' ? '#f1f5f9' : '#020617'),
                         scale: 2,
                         logging: false,
                         useCORS: true,
                         allowTaint: true,
                         onclone: (clonedDoc) => {
-                            // html2canvas はフレックスボックスの align-items:center によるテキスト
-                            // 垂直センタリングを正しくレンダリングできないバグがある。
-                            // クローン DOM 上でのみ、テキストを line-height ベースのセンタリングに変換する。
-                            // ブラウザ上の表示には一切影響しない。
-                            const legendTexts = clonedDoc.querySelectorAll('.legend-text');
-                            legendTexts.forEach(el => {
-                                const h = el.offsetHeight || el.clientHeight;
-                                if (h > 0) {
-                                    el.style.display = 'block';
-                                    el.style.lineHeight = h + 'px';
-                                    el.style.height = h + 'px';
-                                    el.style.maxHeight = 'none';
-                                    el.style.overflow = 'visible';
-                                    el.style.textAlign = 'center';
-                                }
-                            });
+                            const innerDivs = clonedDoc.querySelectorAll('.keyboard-inner');
+                            innerDivs.forEach(div => { div.style.transform = 'none'; });
                         }
                     });
-
-                    // キャプチャ完了後、直ちに透明度を0に戻す
+                    // Reset opacity after capture
                     if (exportRef.current) {
                         exportRef.current.style.opacity = '0';
                     }
-
+                    // Download the image
                     const link = document.createElement('a');
                     link.download = `${dev.name || 'Keymap'}_export.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
-                } catch(e) { 
-                    console.error('Export failed:', e); 
+                } catch (e) {
+                    console.error('Export failed:', e);
                     alert('画像の書き出しに失敗しました。');
                 } finally {
                     setIsExporting(false);

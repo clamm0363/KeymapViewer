@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500&display=swap" rel="stylesheet">
+<style>
+.legend-text { white-space: normal; overflow: hidden; word-break: normal; overflow-wrap: anywhere; width: 100%; text-align: center; display: block; font-family: 'Outfit', sans-serif; font-weight: 400; line-height: 1; max-height: 2.2em; }
+.key-cap { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; overflow: hidden; }
+</style>
+</head>
+<body style="background:#020617;color:white;font-family:'Outfit',sans-serif;padding:20px;">
+<h2>Test with Tailwind CSS loaded</h2>
+<div id="test-area">
+
+<h3 style="color:#94a3b8;">C. With Tailwind classes (exact component structure)</h3>
+<div style="display:flex;gap:10px;margin-bottom:20px;">
+
+  <!-- Simulating keyboard-container → keyboard-inner → kbd-container → key-cap structure -->
+  <div class="relative overflow-hidden flex items-center justify-center" style="width:fit-content;height:fit-content;padding:10px;">
+    <div class="relative" style="width:120px;height:60px;transform:scale(1);transform-origin:center center;flex-shrink:0;">
+      <!-- key 1: Q -->
+      <div class="key-cap group" style="left:0;top:0;width:50px;height:50px;position:absolute;border-radius:6px;border:3px solid #475569;background:#1e293b;overflow:hidden;display:flex;flex-direction:column;">
+        <div class="key-content flex-1 flex items-center justify-center w-full h-full" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:visible;z-index:2;">
+          <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:2px;box-sizing:border-box;">
+            <div class="legend-text" style="color:#fff;font-weight:400;font-family:'Outfit',sans-serif;font-size:19.8px;line-height:1;transform:none;display:flex;align-items:center;justify-content:center;text-align:center;text-transform:uppercase;letter-spacing:-0.02em;width:100%;overflow:visible;white-space:nowrap;height:100%;max-height:none;">Q</div>
+          </div>
+        </div>
+      </div>
+      <!-- key 2: HOME -->
+      <div class="key-cap group" style="left:56px;top:0;width:50px;height:50px;position:absolute;border-radius:6px;border:3px solid #475569;background:#1e293b;overflow:hidden;display:flex;flex-direction:column;">
+        <div class="key-content flex-1 flex items-center justify-center w-full h-full" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:visible;z-index:2;">
+          <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:2px;box-sizing:border-box;">
+            <div class="legend-text" style="color:#fff;font-weight:400;font-family:'Outfit',sans-serif;font-size:13.2px;line-height:1;transform:none;display:flex;align-items:center;justify-content:center;text-align:center;text-transform:uppercase;letter-spacing:-0.02em;width:100%;overflow:visible;white-space:nowrap;height:100%;max-height:none;">HOME</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="color:#94a3b8;">D. Same but NO Tailwind classes on key-content</h3>
+<div style="display:flex;gap:10px;margin-bottom:20px;">
+  <div style="position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;width:fit-content;height:fit-content;padding:10px;">
+    <div style="position:relative;width:120px;height:60px;transform:scale(1);transform-origin:center center;flex-shrink:0;">
+      <!-- key 1: Q -->
+      <div class="key-cap group" style="left:0;top:0;width:50px;height:50px;position:absolute;border-radius:6px;border:3px solid #475569;background:#1e293b;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:visible;z-index:2;">
+          <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:2px;box-sizing:border-box;">
+            <div style="color:#fff;font-weight:400;font-family:'Outfit',sans-serif;font-size:19.8px;line-height:1;transform:none;display:flex;align-items:center;justify-content:center;text-align:center;text-transform:uppercase;letter-spacing:-0.02em;width:100%;overflow:visible;white-space:nowrap;height:100%;max-height:none;">Q</div>
+          </div>
+        </div>
+      </div>
+      <!-- key 2: HOME -->
+      <div class="key-cap group" style="left:56px;top:0;width:50px;height:50px;position:absolute;border-radius:6px;border:3px solid #475569;background:#1e293b;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:visible;z-index:2;">
+          <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:2px;box-sizing:border-box;">
+            <div style="color:#fff;font-weight:400;font-family:'Outfit',sans-serif;font-size:13.2px;line-height:1;transform:none;display:flex;align-items:center;justify-content:center;text-align:center;text-transform:uppercase;letter-spacing:-0.02em;width:100%;overflow:visible;white-space:nowrap;height:100%;max-height:none;">HOME</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="color:#94a3b8;">E. Simulated export container (position:fixed, opacity toggled)</h3>
+<div id="export-sim" style="position:fixed;top:0;left:0;width:fit-content;height:fit-content;padding:40px;background:#020617;opacity:1;z-index:9999;">
+  <div class="relative overflow-hidden flex items-center justify-center" style="width:100%;height:fit-content;">
+    <div class="relative" style="width:120px;height:60px;transform:scale(1);transform-origin:center center;flex-shrink:0;">
+      <div class="key-cap group" style="left:0;top:0;width:50px;height:50px;position:absolute;border-radius:6px;border:3px solid #475569;background:#1e293b;overflow:hidden;display:flex;flex-direction:column;">
+        <div class="key-content flex-1 flex items-center justify-center w-full h-full" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:visible;z-index:2;">
+          <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:2px;box-sizing:border-box;">
+            <div class="legend-text" style="color:#fff;font-weight:400;font-family:'Outfit',sans-serif;font-size:19.8px;line-height:1;transform:none;display:flex;align-items:center;justify-content:center;text-align:center;text-transform:uppercase;letter-spacing:-0.02em;width:100%;overflow:visible;white-space:nowrap;height:100%;max-height:none;">Q</div>
+          </div>
+        </div>
+      </div>
+      <div class="key-cap group" style="left:56px;top:0;width:50px;height:50px;position:absolute;border-radius:6px;border:3px solid #475569;background:#1e293b;overflow:hidden;display:flex;flex-direction:column;">
+        <div class="key-content flex-1 flex items-center justify-center w-full h-full" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:visible;z-index:2;">
+          <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:2px;box-sizing:border-box;">
+            <div class="legend-text" style="color:#fff;font-weight:400;font-family:'Outfit',sans-serif;font-size:13.2px;line-height:1;transform:none;display:flex;align-items:center;justify-content:center;text-align:center;text-transform:uppercase;letter-spacing:-0.02em;width:100%;overflow:visible;white-space:nowrap;height:100%;max-height:none;">HOME</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<button onclick="doExportTestArea()" style="padding:10px 20px;cursor:pointer;font-size:16px;">Export Test Area (C+D)</button>
+<button onclick="doExportFixed()" style="padding:10px 20px;cursor:pointer;font-size:16px;">Export Fixed Container (E)</button>
+<div id="result"></div>
+
+<script>
+async function doExportTestArea() {
+  if (document.fonts) await document.fonts.ready;
+  await new Promise(r => requestAnimationFrame(r));
+  await new Promise(r => requestAnimationFrame(r));
+  const el = document.getElementById('test-area');
+  const canvas = await html2canvas(el, { backgroundColor: '#020617', scale: 2, logging: false, useCORS: true, allowTaint: true });
+  showResult(canvas, 'Test Area (C+D):');
+}
+async function doExportFixed() {
+  if (document.fonts) await document.fonts.ready;
+  await new Promise(r => requestAnimationFrame(r));
+  await new Promise(r => requestAnimationFrame(r));
+  const el = document.getElementById('export-sim');
+  el.style.opacity = '1';
+  const canvas = await html2canvas(el, { backgroundColor: '#020617', scale: 2, logging: false, useCORS: true, allowTaint: true });
+  el.style.opacity = '0';
+  showResult(canvas, 'Fixed Container (E):');
+}
+function showResult(canvas, label) {
+  const img = document.createElement('img');
+  img.src = canvas.toDataURL('image/png');
+  img.style.maxWidth = '100%';
+  img.style.border = '2px solid #3b82f6';
+  img.style.marginTop = '10px';
+  const result = document.getElementById('result');
+  result.innerHTML = `<h3>${label}</h3>`;
+  result.appendChild(img);
+}
+</script>
+</body>
+</html>
