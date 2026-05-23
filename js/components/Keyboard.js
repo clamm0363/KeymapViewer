@@ -108,7 +108,7 @@ const getKeyCategory = (kCode) => {
         upper.includes('MAGIC_') || 
         ['KC_AG_TOGG', 'AG_TOGG', 'KC_CG_TOGG', 'CG_TOGG'].includes(upper)
     ) {
-        return 'MAG';
+        return 'MAGIC';
     }
     
     return null;
@@ -910,11 +910,18 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     let manualWrap = false;
                     
                     // 特殊記号での自動折り返し試行
-                    if (centerText.length > 5 && (centerText.includes('_') || centerText.includes('-'))) {
-                        const splitIdx = Math.max(centerText.lastIndexOf('_'), centerText.lastIndexOf('-'));
-                        if (splitIdx > 1 && splitIdx < centerText.length - 2) {
-                            finalDisplayText = centerText.substring(0, splitIdx) + '\n' + centerText.substring(splitIdx);
+                    if (centerText.length > 5 && (centerText.includes('_') || centerText.includes('-') || centerText.includes(' / '))) {
+                        if (centerText.includes(' / ')) {
+                            // スラッシュの前後で分割し、スラッシュを消去して2行にする
+                            const parts = centerText.split(' / ');
+                            finalDisplayText = parts[0] + '\n' + parts[1];
                             manualWrap = true;
+                        } else {
+                            const splitIdx = Math.max(centerText.lastIndexOf('_'), centerText.lastIndexOf('-'));
+                            if (splitIdx > 1 && splitIdx < centerText.length - 2) {
+                                finalDisplayText = centerText.substring(0, splitIdx) + '\n' + centerText.substring(splitIdx);
+                                manualWrap = true;
+                            }
                         }
                     }
 
@@ -923,6 +930,11 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     
                     // スケール計算: visualWeightに基づき、かつ1u(56px)基準で調整
                     let visualWeightForScale = centerText.length;
+                    if (manualWrap) {
+                        // 改行されている場合は、1行あたりの最大文字数を基準にする
+                        const lines = finalDisplayText.split('\n');
+                        visualWeightForScale = Math.max(...lines.map(l => l.length));
+                    }
                     if (isFluentCenter) {
                         visualWeightForScale = 1.2;
                     } else if (isModKey && modType !== 'base') {
@@ -1289,7 +1301,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                         letterSpacing: '0.06em', 
                                                         lineHeight: '1',
                                                         textTransform: 'uppercase',
-                                                        transform: 'scale(0.55)', // 6.5px ➔ 6.0px 相当に微調整してさらにスッキリと
+                                                        transform: 'scale(0.46)', // スワップ系テキスト全体の均一スッキリ化のために0.55 ➔ 0.46に縮小して美しい余白を確保 // 6.5px ➔ 6.0px 相当に微調整してさらにスッキリと
                                                         transformOrigin: 'bottom center',
                                                         display: 'inline-block',
                                                         whiteSpace: 'nowrap'
@@ -1423,14 +1435,37 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                         maxHeight: 'none',
                                                         ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
                                                      })
-                                                 }, finalDisplayText ? createElement('span', {
-                                                     style: needsScaleBypass ? {
-                                                         transform: `scale(${effectiveFontSize / 16})`,
-                                                         transformOrigin: 'center center',
-                                                         display: 'inline-block',
-                                                         whiteSpace: 'nowrap'
-                                                     } : null
-                                                 }, finalDisplayText) : null);
+                                                 }, finalDisplayText ? (
+                                                     finalDisplayText.includes('\n') ? (
+                                                         createElement('div', {
+                                                             style: {
+                                                                 display: 'flex',
+                                                                 flexDirection: 'column',
+                                                                 alignItems: 'center',
+                                                                 justifyContent: 'center',
+                                                                 lineHeight: '1.15',
+                                                                 width: '100%',
+                                                                 height: '100%'
+                                                             }
+                                                         },
+                                                             finalDisplayText.split('\n').map((line, idx) => (
+                                                                 createElement('span', {
+                                                                     key: idx,
+                                                                     style: { display: 'block', whiteSpace: 'nowrap' }
+                                                                 }, line)
+                                                             ))
+                                                         )
+                                                     ) : (
+                                                         createElement('span', {
+                                                             style: needsScaleBypass ? {
+                                                                 transform: `scale(${effectiveFontSize / 16})`,
+                                                                 transformOrigin: 'center center',
+                                                                 display: 'inline-block',
+                                                                 whiteSpace: 'nowrap'
+                                                             } : null
+                                                         }, finalDisplayText)
+                                                     )
+                                                 ) : null);
                                             })(),
                                             // ② 右下カテゴリバッジ (TEXTモード時のみ、かつカテゴリが存在する場合に描画)
                                             keyCategory && (displayMode !== 'Fluent') && createElement('div', {
@@ -1438,7 +1473,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                 style: {
                                                     position: 'absolute',
                                                     right: '3px',
-                                                    bottom: '-1px',
+                                                    bottom: '-4.5px', // パディングやフレックスの干渉をねじ伏せ、キートップの下端ギリギリに密着させるため -1px ➔ -4.5px に調整
                                                     zIndex: 10,
                                                     pointerEvents: 'none',
                                                     userSelect: 'none'
