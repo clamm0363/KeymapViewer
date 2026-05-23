@@ -59,10 +59,10 @@ export const KeymapDictionary = {
     "KC_MEDIA_STOP":       { text: "STOP", fluent: "\uF72B" }, // stop_24 (四角)
     "KC_MEDIA_NEXT_TRACK": { text: "NEXT", fluent: "\uF56A" }, // next_24
     "KC_MEDIA_PREV_TRACK": { text: "PREV", fluent: "\uF629" }, // previous_24
-    "KC_MEDIA_FAST_FORWARD": { text: "FF",   fluent: "\uF3FF" }, // fast_forward_24
-    "KC_MEDIA_REWIND":     { text: "RW",   fluent: "\uF675" }, // rewind_24
-    "KC_MEDIA_EJECT":      { text: "EJCT", fluent: "\uE0BE" }, // arrow_eject_20
-    "KC_MEDIA_SELECT":     { text: "MEDA", fluent: "\uE852" }, // music_note_1_24
+    "KC_MEDIA_FAST_FORWARD": { text: "FWD",  fluent: "\uF3FF" }, // fast_forward_24
+    "KC_MEDIA_REWIND":     { text: "RWD",  fluent: "\uF675" }, // rewind_24
+    "KC_MEDIA_EJECT":      { text: "EJECT", fluent: "\uE0BE" }, // arrow_eject_20
+    "KC_MEDIA_SELECT":     { text: "SELECT", fluent: "\uF55A" }, // movies_and_tv_24
 
     // WWW 操作
     "KC_WWW_SEARCH":    { text: "SRCH", fluent: "\uF690" }, // search_24

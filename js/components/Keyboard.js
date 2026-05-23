@@ -100,7 +100,14 @@ const getTextScale = (displayText, keyWidth = 1, isFluentIcon = false) => {
                 } else if (keyWidth >= 1.25) {
                     textScale = 0.70;
                 } else {
-                    textScale = 0.55;
+                    // 1uキーキャップでの文字数ごとの微細な最適化（枠への接近を防ぎつつ調和を最大化）
+                    if (len === 5) {
+                        textScale = 0.62; // EJECT(5文字)は3-4文字キーと完璧に揃う美しい0.62スケールを維持
+                    } else if (len === 6) {
+                        textScale = 0.58; // SELECT(6文字)は枠スレスレになるのを防ぎ、美しい余白を保つため0.58スケールに微調整
+                    } else {
+                        textScale = 0.50; // 7文字以上は安全に0.50スケール
+                    }
                 }
             }
         }
@@ -890,11 +897,16 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     let canWrap = manualWrap;
 
                     if (estimatedPxWidth > availableWidth) {
-                        targetScale = availableWidth / estimatedPxWidth;
-                        // 極端に小さくなる場合は折り返しを検討
-                        if (!manualWrap && targetScale < 0.7 && centerText.length > 6) {
-                            canWrap = true;
-                            targetScale = Math.max(0.75, targetScale * 1.2); 
+                        // 6文字以下のキー(EJECT/SELECTなど)は1u幅に物理的に収まるため自動縮小をスキップし、手動の均一スケール(0.60)に委ねる
+                        if (centerText.length <= 6) {
+                            targetScale = 1.0;
+                        } else {
+                            targetScale = availableWidth / estimatedPxWidth;
+                            // 極端に小さくなる場合は折り返しを検討
+                            if (!manualWrap && targetScale < 0.7 && centerText.length > 6) {
+                                canWrap = true;
+                                targetScale = Math.max(0.75, targetScale * 1.2); 
+                            }
                         }
                     }
 
