@@ -261,7 +261,7 @@ export const KeymapDictionary = {
     "MAGIC_TOGGLE_ALT_GUI":           { text: "ALT / WIN", macText: "ALT / CMD", fluent: "\uF18E" }, // arrow_swap_24
     "MAGIC_TOGGLE_BACKSLASH_BACKSPACE":{ text: "\\ / BS",    fluent: "\uF18E" }, // arrow_swap_24
     "MAGIC_TOGGLE_GRAVE_ESC":         { text: "GRV / ESC",  fluent: "\uF18E" }, // arrow_swap_24
-    "MAGIC_TOGGLE_GUI":               { text: "WIN LCK",   macText: "CMD LCK",   fluent: "\uE788" }, // lock_closed_24
+    "MAGIC_TOGGLE_GUI":               { text: "W-LCK",   macText: "C-LCK",   fluent: "\uE788" }, // lock_closed_24
     "MAGIC_TOGGLE_NKRO":              { text: "NKRO",      fluent: "\uE6C6" }, // keyboard_24
 
     "ic_fluent_arrow_swap_24_regular": { text: "SWAP", fluent: "\uF18E" }, // arrow_swap_24_regular
