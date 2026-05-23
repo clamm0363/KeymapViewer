@@ -1293,7 +1293,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                     style: {
                                                         position: 'absolute',
                                                         right: '3px',
-                                                        bottom: '2px',
+                                                        bottom: '-1px',
                                                         zIndex: 2,
                                                         pointerEvents: 'none',
                                                         userSelect: 'none'
