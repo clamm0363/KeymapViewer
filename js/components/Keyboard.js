@@ -684,6 +684,29 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         isModKey, modType, modLabel, modKeys, baseLabel, baseIsFluent
                     } = parsed;
 
+                    // RGB制御キー用の判定とマッピング定義
+                    const cleanRawForRGB = fullRaw ? fullRaw.toUpperCase() : '';
+                    const displayRawForRGB = (val && typeof val === 'string' && val.toUpperCase().startsWith('KC_'))
+                        ? val.toUpperCase()
+                        : (cleanRawForRGB.startsWith('KC_') ? cleanRawForRGB : 'KC_' + cleanRawForRGB);
+                    const isRGBKey = displayRawForRGB.startsWith('KC_RGB_');
+                    const rgbLabels = {
+                        "KC_RGB_TOG": "TOG",
+                        "KC_RGB_MOD": "MODE+",
+                        "KC_RGB_RMOD": "MODE-",
+                        "KC_RGB_HUI": "HUE+",
+                        "KC_RGB_HUD": "HUE-",
+                        "KC_RGB_SAI": "SAT+",
+                        "KC_RGB_SAD": "SAT-",
+                        "KC_RGB_VAI": "VAL+",
+                        "KC_RGB_VAD": "VAL-",
+                        "KC_RGB_SPI": "SPD+",
+                        "KC_RGB_SPD": "SPD-"
+                    };
+                    const isFluentMode = (displayMode === 'Fluent');
+                    const isRGBFluent = isRGBKey && isFluentMode && isSVGAvailable(displayRawForRGB);
+                    const rgbLabel = rgbLabels[displayRawForRGB] || '';
+
                     // 1uなどの小さなキー（w < 1.25）において、長いテキストを動的に短縮する
                     const is1u = (k.w || 56) / 56 < 1.25;
                     const shortenLabel = (label) => {
@@ -1141,62 +1164,128 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     zIndex: 2
                                 }
                             },
-                                (() => {
-                                    const textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
-                                    const combinedScale = targetScale * textScale * 0.9;
-                                    return createElement('div', {
-                                        style: {
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            width: '100%',
-                                            height: '100%',
-                                            padding: '2px',
-                                            boxSizing: 'border-box'
-                                        }
-                                    },
-                                        // SVG or Text rendering
-                                        (() => {
-                                            const modeCheck = (displayMode === 'Fluent');
-                                            const svgCheck = isSVGAvailable(displayRaw);
-
-                                            // SVG icon rendering: create SVG at effective size directly
-                                            if (modeCheck && svgCheck) {
-                                                const effectiveSvgSize = Math.max(8, Math.round(24 * combinedScale));
-                                                const svgEl = createSVGElement(displayRaw, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
-                                                if (svgEl) {
-                                                    return createElement('div', {
-                                                        key: 'svg-render',
-                                                        style: {
-                                                            width: effectiveSvgSize + 'px',
-                                                            height: effectiveSvgSize + 'px',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center'
-                                                        },
-                                                        dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
-                                                    });
-                                                }
+                                isRGBFluent ? (
+                                    // 🌟 RGB制御キー用の選択肢A（帯なしスプリット）レイアウト 🌟
+                                    (() => {
+                                        const effectiveSvgSize = 20;
+                                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
+                                        
+                                        return createElement('div', {
+                                            style: {
+                                                position: 'relative',
+                                                width: '100%',
+                                                height: '100%',
+                                                boxSizing: 'border-box'
                                             }
-                                            
-                                            // Text rendering: use effective fontSize directly (no CSS transform)
-                                            const effectiveFontSize = 22 * combinedScale;
-                                            return createElement('div', {
-                                                className: "legend-text",
-                                                style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
-                                                    transform: 'none',
-                                                    fontSize: effectiveFontSize + 'px',
+                                        }, [
+                                            // ① アイコン領域: キートップの完全な「物理的中心（Y=50%）」にセンタリング配置
+                                            svgEl && createElement('div', {
+                                                key: 'rgb-svg-render',
+                                                style: {
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    height: '100%',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    height: '100%',
-                                                    maxHeight: 'none',
-                                                    ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
-                                                })
-                                            }, finalDisplayText ? createElement('span', null, finalDisplayText) : null);
-                                        })()
-                                    );
-                                })()
+                                                    zIndex: 1
+                                                },
+                                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+                                            }),
+                                            // ② テキスト領域: キートップの最下部（bottom: 0.5px）に絶対配置
+                                            createElement('div', {
+                                                key: 'rgb-text-label',
+                                                style: {
+                                                    position: 'absolute',
+                                                    bottom: '0.5px', // 限界まで底辺に寄せる（角丸やボーダーと干渉しないスレスレ）
+                                                    left: 0,
+                                                    width: '100%',
+                                                    display: 'flex',
+                                                    justifyContent: 'center',
+                                                    zIndex: 2,
+                                                    pointerEvents: 'none',
+                                                    userSelect: 'none'
+                                                }
+                                            }, 
+                                                createElement('span', {
+                                                    style: {
+                                                        fontSize: '11px', // 最小フォント制限回避
+                                                        fontWeight: '500', 
+                                                        color: isLight ? '#1e293b' : '#ffffff', // 通常のキーと同じくっきりとした文字色
+                                                        fontFamily: '"Outfit", sans-serif',
+                                                        letterSpacing: '0.06em', 
+                                                        lineHeight: '1',
+                                                        textTransform: 'uppercase',
+                                                        transform: 'scale(0.55)', // 6.5px ➔ 6.0px 相当に微調整してさらにスッキリと
+                                                        transformOrigin: 'bottom center',
+                                                        display: 'inline-block',
+                                                        whiteSpace: 'nowrap'
+                                                    }
+                                                }, rgbLabel)
+                                            )
+                                        ]);
+                                    })()
+                                ) : (
+                                    // 通常のキーレンダリング
+                                    (() => {
+                                        const textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
+                                        const combinedScale = targetScale * textScale * 0.9;
+                                        return createElement('div', {
+                                            style: {
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                width: '100%',
+                                                height: '100%',
+                                                padding: '2px',
+                                                boxSizing: 'border-box'
+                                            }
+                                        },
+                                            // SVG or Text rendering
+                                            (() => {
+                                                const modeCheck = (displayMode === 'Fluent');
+                                                const svgCheck = isSVGAvailable(displayRaw);
+
+                                                // SVG icon rendering: create SVG at effective size directly
+                                                if (modeCheck && svgCheck) {
+                                                    const effectiveSvgSize = Math.max(8, Math.round(24 * combinedScale));
+                                                    const svgEl = createSVGElement(displayRaw, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
+                                                    if (svgEl) {
+                                                        return createElement('div', {
+                                                            key: 'svg-render',
+                                                            style: {
+                                                                width: effectiveSvgSize + 'px',
+                                                                height: effectiveSvgSize + 'px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center'
+                                                            },
+                                                            dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+                                                        });
+                                                    }
+                                                }
+                                                
+                                                // Text rendering: use effective fontSize directly (no CSS transform)
+                                                const effectiveFontSize = 22 * combinedScale;
+                                                return createElement('div', {
+                                                    className: "legend-text",
+                                                    style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
+                                                        transform: 'none',
+                                                        fontSize: effectiveFontSize + 'px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        height: '100%',
+                                                        maxHeight: 'none',
+                                                        ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
+                                                    })
+                                                }, finalDisplayText ? createElement('span', null, finalDisplayText) : null);
+                                            })()
+                                        );
+                                    })()
+                                )
                             )
                         )
                     );

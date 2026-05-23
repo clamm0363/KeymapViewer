@@ -52,8 +52,16 @@ get_fallback_from_keymap() {
 }
 
 # Find SVG file in FluentUI repository
+# Find SVG file in FluentUI repository
 find_svg_path() {
   local icon_name="$1"
+
+  # Determine if regular or filled style is requested via suffix
+  local style="filled"
+  if [[ "$icon_name" == *"_regular" ]]; then
+    style="regular"
+    icon_name="${icon_name%_regular}"
+  fi
 
   # Try different search patterns
   local search_patterns=(
@@ -63,7 +71,18 @@ find_svg_path() {
   )
 
   for pattern in "${search_patterns[@]}"; do
-    local result=$(find "$FLUENT_REPO" -type f -name "*${pattern}*24_filled.svg" 2>/dev/null | head -1)
+    local result=$(find "$FLUENT_REPO" -type f -name "*${pattern}*24_${style}.svg" 2>/dev/null | head -1)
+    if [[ -n "$result" ]]; then
+      echo "$result"
+      return 0
+    fi
+  done
+
+  # Fallback to alternate style if the requested one is not found
+  local alt_style="filled"
+  [[ "$style" == "filled" ]] && alt_style="regular"
+  for pattern in "${search_patterns[@]}"; do
+    local result=$(find "$FLUENT_REPO" -type f -name "*${pattern}*24_${alt_style}.svg" 2>/dev/null | head -1)
     if [[ -n "$result" ]]; then
       echo "$result"
       return 0
@@ -81,8 +100,14 @@ extract_svg_content() {
     return 1
   fi
 
-  # Read SVG and escape for JSON
-  cat "$svg_path" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | tr '\n' ' '
+  # Read SVG, replace hardcoded colors with currentColor for Dark mode support, and escape for JSON
+  cat "$svg_path" | \
+    sed 's/fill="#212121"/fill="currentColor"/g' | \
+    sed 's/fill="#2c2c2c"/fill="currentColor"/g' | \
+    sed 's/fill="#2C2C2C"/fill="currentColor"/g' | \
+    sed 's/\\/\\\\/g' | \
+    sed 's/"/\\"/g' | \
+    tr '\n' ' '
 }
 
 # Determine category from keycode

@@ -208,17 +208,17 @@ export const KeymapDictionary = {
     "KC_INT2": { text: "KANA", fluent: "\uE986" },
 
     // RGB Backlight Controls
-    "KC_RGB_TOG": { text: "RGB_TG", fluent: "\uF4D7" },
-    "KC_RGB_MOD": { text: "RGB_MOD", fluent: "\uEB34" },
-    "KC_RGB_RMOD": { text: "RGB_RMD", fluent: "\uF191" },
-    "KC_RGB_HUI": { text: "HUE+", fluent: "\uF2F6" },
-    "KC_RGB_HUD": { text: "HUE-", fluent: "\uF2F6" },
-    "KC_RGB_SAI": { text: "SAT+", fluent: "\uF596" },
-    "KC_RGB_SAD": { text: "SAT-", fluent: "\uF596" },
-    "KC_RGB_VAI": { text: "BRT+", fluent: "\uE1F8" },
-    "KC_RGB_VAD": { text: "BRT-", fluent: "\uE1FE" },
-    "KC_RGB_SPI": { text: "SPD+", fluent: "\uF827" },
-    "KC_RGB_SPD": { text: "SPD-", fluent: "\uF827" },
+    "KC_RGB_TOG": { text: "RGB_TG", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_MOD": { text: "RGB_MOD", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_RMOD": { text: "RGB_RMD", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_HUI": { text: "HUE+", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_HUD": { text: "HUE-", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_SAI": { text: "SAT+", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_SAD": { text: "SAT-", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_VAI": { text: "BRT+", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_VAD": { text: "BRT-", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_SPI": { text: "SPD+", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_SPD": { text: "SPD-", fluent: "\uF2F6" }, // color_24_regular
 
     // Bluetooth & Wireless
     "KC_OUT_AUTO": { text: "OUT_AUTO", fluent: "\uF6AA" },
@@ -252,6 +252,9 @@ export const KeymapDictionary = {
     "KC_DM_REC2": { text: "REC 2", fluent: "\uF662" },
     "KC_DM_PLY1": { text: "PLAY 1", fluent: "\uF606" },
     "KC_DM_PLY2": { text: "PLAY 2", fluent: "\uF606" },
-    "KC_DM_RSTP": { text: "STOP", fluent: "\uF75B" }
+    "KC_DM_RSTP": { text: "STOP", fluent: "\uF75B" },
+
+    // 透過キー
+    "KC_TRNS": { text: "▽", fluent: "\u{F02F9}" } // triangle_down_24_regular
   }
 };
