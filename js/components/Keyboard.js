@@ -1292,8 +1292,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                     key: 'rgb-corner-label',
                                                     style: {
                                                         position: 'absolute',
-                                                        right: '6px',
-                                                        bottom: '4px',
+                                                        right: '3px',
+                                                        bottom: '2px',
                                                         zIndex: 2,
                                                         pointerEvents: 'none',
                                                         userSelect: 'none'
@@ -1309,7 +1309,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                             letterSpacing: '0.05em', 
                                                             lineHeight: '1',
                                                             textTransform: 'uppercase',
-                                                            transform: 'scale(0.6)', // 15px ➔ 9px 相当に縮小してシャープに表示
+                                                            transform: 'scale(0.5)', // 15px ➔ 7.5px 相当に縮小してさらに右下に寄せる
                                                             transformOrigin: 'bottom right',
                                                             display: 'inline-block',
                                                             whiteSpace: 'nowrap'
