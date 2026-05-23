@@ -73,9 +73,9 @@ const getKeyCategory = (kCode) => {
     if (!kCode) return null;
     const upper = kCode.toUpperCase();
     if (upper.startsWith('KC_RGB_')) return 'RGB';
-    if (upper.startsWith('KC_AUDIO_') || upper.startsWith('KC_KB_VOLUME_') || upper === 'KC_KB_MUTE') return 'SND';
-    if (upper.startsWith('KC_MEDIA_')) return 'MED';
-    if (upper.startsWith('KC_MS_') || upper.startsWith('KC_BTN') || upper.startsWith('KC_WH_')) return 'MS';
+    if (upper.startsWith('KC_AUDIO_') || upper.startsWith('KC_KB_VOLUME_') || upper === 'KC_KB_MUTE') return 'SOUND';
+    if (upper.startsWith('KC_MEDIA_')) return 'MEDIA';
+    if (upper.startsWith('KC_MS_') || upper.startsWith('KC_BTN') || upper.startsWith('KC_WH_')) return 'MOUSE';
     return null;
 };
 
