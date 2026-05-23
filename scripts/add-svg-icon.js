@@ -30,12 +30,27 @@ if (keyCodes.length === 0) {
   process.exit(1);
 }
 
+// Input validation to prevent Path Traversal and ReDoS
+for (const keyCode of keyCodes) {
+  if (typeof keyCode !== 'string' || !/^[A-Za-z0-9_]+$/.test(keyCode)) {
+    console.error(`❌ Invalid KEYCODE format: "${keyCode}". Only alphanumeric characters and underscores are allowed.`);
+    process.exit(1);
+  }
+}
+
 /**
  * Extract icon name from keymap-dictionary.js for given keycode
  */
 function getIconNameFromKeymap(keyCode) {
+  if (typeof keyCode !== 'string' || !/^[A-Za-z0-9_]+$/.test(keyCode)) {
+    throw new Error('Invalid keyCode format');
+  }
   try {
-    const content = fs.readFileSync(KEYMAP_DICT, 'utf8');
+    const safePath = path.normalize(KEYMAP_DICT);
+    if (!safePath.startsWith(PROJECT_ROOT)) {
+      throw new Error('Path traversal detected');
+    }
+    const content = fs.readFileSync(safePath, 'utf8');
     const regex = new RegExp(`"${keyCode}":\\s*{[^}]*fluent:[^,]*},\\s*//\\s*([^\\n]+)`, 's');
     const match = content.match(regex);
     if (match && match[1]) {
@@ -51,8 +66,15 @@ function getIconNameFromKeymap(keyCode) {
  * Get Unicode fallback value from keymap-dictionary.js
  */
 function getFallbackFromKeymap(keyCode) {
+  if (typeof keyCode !== 'string' || !/^[A-Za-z0-9_]+$/.test(keyCode)) {
+    throw new Error('Invalid keyCode format');
+  }
   try {
-    const content = fs.readFileSync(KEYMAP_DICT, 'utf8');
+    const safePath = path.normalize(KEYMAP_DICT);
+    if (!safePath.startsWith(PROJECT_ROOT)) {
+      throw new Error('Path traversal detected');
+    }
+    const content = fs.readFileSync(safePath, 'utf8');
     const regex = new RegExp(`"${keyCode}":\\s*{[^}]*fluent:\\s*"([^"]+)"`);
     const match = content.match(regex);
     if (match && match[1]) {
@@ -86,7 +108,11 @@ function findSVGPath(iconName) {
 
   function searchRecursive(dir, pattern, styleToSearch) {
     try {
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      const safeDir = path.normalize(dir);
+      if (!safeDir.startsWith(PROJECT_ROOT)) {
+        return null;
+      }
+      const entries = fs.readdirSync(safeDir, { withFileTypes: true });
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
@@ -123,7 +149,11 @@ function findSVGPath(iconName) {
  */
 function extractSVGContent(svgPath) {
   try {
-    const content = fs.readFileSync(svgPath, 'utf8');
+    const safePath = path.normalize(svgPath);
+    if (!safePath.startsWith(PROJECT_ROOT)) {
+      throw new Error('Path traversal detected');
+    }
+    const content = fs.readFileSync(safePath, 'utf8');
     // Extract only the SVG element
     const svgMatch = content.match(/<svg[^>]*>[\s\S]*?<\/svg>/);
     if (svgMatch) {
@@ -188,7 +218,11 @@ function formatIconCode(keyCode, icon) {
  */
 function addIconToFile(keyCode, iconCode) {
   try {
-    let content = fs.readFileSync(SVG_ICONS, 'utf8');
+    const safePath = path.normalize(SVG_ICONS);
+    if (!safePath.startsWith(PROJECT_ROOT)) {
+      throw new Error('Path traversal detected');
+    }
+    let content = fs.readFileSync(safePath, 'utf8');
 
     // Find insertion point: before the closing brace of SVG_ICONS
     const insertPoint = content.lastIndexOf('};');
@@ -205,7 +239,7 @@ function addIconToFile(keyCode, iconCode) {
     content = content.substring(0, insertPoint) + newEntry + content.substring(insertPoint);
 
     if (!dryRun) {
-      fs.writeFileSync(SVG_ICONS, content, 'utf8');
+      fs.writeFileSync(safePath, content, 'utf8');
     }
     return true;
   } catch (err) {

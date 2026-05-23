@@ -713,13 +713,25 @@ export const SVG_ICONS = {
 };
 
 /**
+ * Safely retrieve icon from SVG_ICONS preventing prototype pollution
+ * @param {string} key - Key from SVG_ICONS
+ * @returns {object|null} - Icon object or null
+ */
+function getSafeIcon(key) {
+  if (typeof key !== 'string' || key === '__proto__' || key === 'constructor' || key === 'prototype') {
+    return null;
+  }
+  return Object.prototype.hasOwnProperty.call(SVG_ICONS, key) ? SVG_ICONS[key] : null;
+}
+
+/**
  * Render SVG icon as DOM element
  * @param {string} iconKey - Key from SVG_ICONS
  * @param {object} options - { size: 24, color: 'currentColor' }
  * @returns {SVGElement|null} - SVG element or null on error
  */
 export function createSVGElement(iconKey, options = {}) {
-  const icon = SVG_ICONS[iconKey];
+  const icon = getSafeIcon(iconKey);
   if (!icon || !icon.svg) {
     console.debug(`[SVG] Icon not found: ${iconKey}`);
     return null;
@@ -757,7 +769,7 @@ export function createSVGElement(iconKey, options = {}) {
  * @returns {boolean} - true if SVG can be rendered
  */
 export function isSVGAvailable(iconKey) {
-  const icon = SVG_ICONS[iconKey];
+  const icon = getSafeIcon(iconKey);
   return icon && icon.svg && icon.svg.length > 0;
 }
 
@@ -767,7 +779,7 @@ export function isSVGAvailable(iconKey) {
  * @returns {string|null} - Unicode code point or null
  */
 export function getSVGFallback(iconKey) {
-  const icon = SVG_ICONS[iconKey];
+  const icon = getSafeIcon(iconKey);
   return icon?.fallback || null;
 }
 
@@ -777,7 +789,7 @@ export function getSVGFallback(iconKey) {
  * @returns {boolean} - true if WebFont is mandatory
  */
 export function isWebFontOnly(iconKey) {
-  const icon = SVG_ICONS[iconKey];
+  const icon = getSafeIcon(iconKey);
   return icon?.useWebFontOnly === true;
 }
 
@@ -787,18 +799,21 @@ export function isWebFontOnly(iconKey) {
  * @returns {string|null} - Category name or null
  */
 export function getSVGCategory(iconKey) {
-  const icon = SVG_ICONS[iconKey];
+  const icon = getSafeIcon(iconKey);
   return icon?.category || null;
 }
 
 // Export list of all SVG icon keys for debugging
 export function listSVGIcons() {
-  return Object.keys(SVG_ICONS).map(key => ({
-    key,
-    category: SVG_ICONS[key].category,
-    hasSVG: !!SVG_ICONS[key].svg,
-    fallback: SVG_ICONS[key].fallback
-  }));
+  return Object.keys(SVG_ICONS).map(key => {
+    const icon = getSafeIcon(key);
+    return {
+      key,
+      category: icon ? icon.category : null,
+      hasSVG: !!(icon && icon.svg),
+      fallback: icon ? icon.fallback : null
+    };
+  });
 }
 
 // Debug helper: log all available SVG icons to console
