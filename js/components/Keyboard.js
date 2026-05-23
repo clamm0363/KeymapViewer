@@ -1378,7 +1378,9 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                 ) : (
                                     // 通常のキーレンダリング
                                     (() => {
-                                        const textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
+                                        const textScale = manualWrap 
+                                             ? 0.62 
+                                             : getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
                                         const combinedScale = targetScale * textScale * 0.9;
                                         
                                         // カテゴリバッジの取得 (RGB, SND, MED, MS etc.)
@@ -1445,7 +1447,9 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                                  justifyContent: 'center',
                                                                  lineHeight: '1.15',
                                                                  width: '100%',
-                                                                 height: '100%'
+                                                                 height: '100%',
+                                                                 transform: needsScaleBypass ? `scale(${effectiveFontSize / 16})` : 'none',
+                                                                 transformOrigin: 'center center'
                                                              }
                                                          },
                                                              finalDisplayText.split('\n').map((line, idx) => (
