@@ -68,20 +68,31 @@ function getFallbackFromKeymap(keyCode) {
  * Find SVG file path in FluentUI repository (recursive directory search)
  */
 function findSVGPath(iconName) {
+  let style = 'regular'; // default style is regular (outline)
+  let cleanIconName = iconName;
+
+  if (iconName.endsWith('_filled')) {
+    style = 'filled';
+    cleanIconName = iconName.substring(0, iconName.length - 7);
+  } else if (iconName.endsWith('_regular')) {
+    style = 'regular';
+    cleanIconName = iconName.substring(0, iconName.length - 8);
+  }
+
   const searchPatterns = [
-    iconName.replace(/_24$/, '').replace(/_20$/, ''),
-    iconName
+    cleanIconName.replace(/_24$/, '').replace(/_20$/, ''),
+    cleanIconName
   ];
 
-  function searchRecursive(dir, pattern) {
+  function searchRecursive(dir, pattern, styleToSearch) {
     try {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-          const result = searchRecursive(fullPath, pattern);
+          const result = searchRecursive(fullPath, pattern, styleToSearch);
           if (result) return result;
-        } else if (entry.name.includes(pattern) && entry.name.includes('24_filled.svg')) {
+        } else if (entry.name.includes(pattern) && entry.name.includes(`24_${styleToSearch}.svg`)) {
           return fullPath;
         }
       }
@@ -91,8 +102,16 @@ function findSVGPath(iconName) {
     return null;
   }
 
+  // Try the preferred/requested style first
   for (const pattern of searchPatterns) {
-    const result = searchRecursive('/tmp/fluentui-system-icons/assets', pattern);
+    const result = searchRecursive(FLUENT_REPO, pattern, style);
+    if (result) return result;
+  }
+
+  // Fallback to alternate style
+  const altStyle = style === 'regular' ? 'filled' : 'regular';
+  for (const pattern of searchPatterns) {
+    const result = searchRecursive(FLUENT_REPO, pattern, altStyle);
     if (result) return result;
   }
 
@@ -178,10 +197,10 @@ function addIconToFile(keyCode, iconCode) {
     }
 
     // Add comma to previous entry if needed
-    const beforeInsert = content.substring(Math.max(0, insertPoint - 50), insertPoint);
-    const needsComma = !beforeInsert.includes(',\n');
+    const beforeInsertStr = content.substring(0, insertPoint).trim();
+    const needsComma = beforeInsertStr.endsWith('}');
 
-    const newEntry = `${needsComma ? ',' : ''}\n\n  ${keyCode}: ${iconCode.substring(2)}\n`;
+    const newEntry = `${needsComma ? ',' : ''}\n\n${iconCode}\n`;
 
     content = content.substring(0, insertPoint) + newEntry + content.substring(insertPoint);
 

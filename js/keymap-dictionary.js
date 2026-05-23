@@ -255,14 +255,18 @@ export const KeymapDictionary = {
     "KC_DM_RSTP": { text: "STOP", fluent: "\uF75B" },
 
     // QMK Magic Keys (ハードウェアレベルのキー配置・機能入れ替え)
-    "MAGIC_TOGGLE_CONTROL_CAPS_LOCK": { text: "CTL / CPS", fluent: "\uF18E" },
-    "MAGIC_TOGGLE_ESCAPE_CAPS_LOCK":  { text: "ESC / CPS", fluent: "\uF18E" },
-    "MAGIC_TOGGLE_CTL_GUI":           { text: "CTL / WIN", macText: "CTL / CMD", fluent: "\uF18E" },
-    "MAGIC_TOGGLE_ALT_GUI":           { text: "ALT / WIN", macText: "ALT / CMD", fluent: "\uF18E" },
-    "MAGIC_TOGGLE_BACKSLASH_BACKSPACE":{ text: "\\ / BS",    fluent: "\uF18E" },
-    "MAGIC_TOGGLE_GRAVE_ESC":         { text: "GRV / ESC",  fluent: "\uF18E" },
-    "MAGIC_TOGGLE_GUI":               { text: "WIN LCK",   macText: "CMD LCK",   fluent: "\uE788" },
-    "MAGIC_TOGGLE_NKRO":              { text: "NKRO",      fluent: "\uE6C6" },
+    "MAGIC_TOGGLE_CONTROL_CAPS_LOCK": { text: "CTL / CPS", fluent: "\uF18E" }, // arrow_swap_24
+    "MAGIC_TOGGLE_ESCAPE_CAPS_LOCK":  { text: "ESC / CPS", fluent: "\uF18E" }, // arrow_swap_24
+    "MAGIC_TOGGLE_CTL_GUI":           { text: "CTL / WIN", macText: "CTL / CMD", fluent: "\uF18E" }, // arrow_swap_24
+    "MAGIC_TOGGLE_ALT_GUI":           { text: "ALT / WIN", macText: "ALT / CMD", fluent: "\uF18E" }, // arrow_swap_24
+    "MAGIC_TOGGLE_BACKSLASH_BACKSPACE":{ text: "\\ / BS",    fluent: "\uF18E" }, // arrow_swap_24
+    "MAGIC_TOGGLE_GRAVE_ESC":         { text: "GRV / ESC",  fluent: "\uF18E" }, // arrow_swap_24
+    "MAGIC_TOGGLE_GUI":               { text: "WIN LCK",   macText: "CMD LCK",   fluent: "\uE788" }, // lock_closed_24
+    "MAGIC_TOGGLE_NKRO":              { text: "NKRO",      fluent: "\uE6C6" }, // keyboard_24
+
+    "ic_fluent_arrow_swap_24_regular": { text: "SWAP", fluent: "\uF18E" }, // arrow_swap_24_regular
+    "ic_fluent_lock_closed_24_regular": { text: "LOCK", fluent: "\uE788" }, // lock_closed_24_regular
+    "ic_fluent_keyboard_24_regular": { text: "KEYB", fluent: "\uE6C6" }, // keyboard_24_regular
 
     // 透過キー
     "KC_TRNS": { text: "▽", fluent: "\u{F02F9}" } // triangle_down_24_regular

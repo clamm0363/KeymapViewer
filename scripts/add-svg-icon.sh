@@ -15,7 +15,7 @@ set -o pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 KEYMAP_DICT="$PROJECT_ROOT/js/keymap-dictionary.js"
 SVG_ICONS="$PROJECT_ROOT/js/svg-icons.js"
-FLUENT_REPO="/tmp/fluentui-system-icons/assets"
+FLUENT_REPO="$PROJECT_ROOT/fluentui-system-icons/assets"
 
 # Parse CLI arguments
 DRY_RUN=0
@@ -52,13 +52,15 @@ get_fallback_from_keymap() {
 }
 
 # Find SVG file in FluentUI repository
-# Find SVG file in FluentUI repository
 find_svg_path() {
   local icon_name="$1"
 
   # Determine if regular or filled style is requested via suffix
-  local style="filled"
-  if [[ "$icon_name" == *"_regular" ]]; then
+  local style="regular"
+  if [[ "$icon_name" == *"_filled" ]]; then
+    style="filled"
+    icon_name="${icon_name%_filled}"
+  elif [[ "$icon_name" == *"_regular" ]]; then
     style="regular"
     icon_name="${icon_name%_regular}"
   fi
