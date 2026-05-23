@@ -1064,6 +1064,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                         const textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
                                         const combinedScale = targetScale * textScale * 0.9;
                                         const effectiveFontSize = 22 * combinedScale;
+                                        const needsScaleBypass = effectiveFontSize < 14;
                                         return createElement('div', {
                                             className: "key-content flex-1 flex items-center justify-center w-full h-full",
                                             style: {
@@ -1088,7 +1089,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                     style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
                                                         color: getModColor(modKeys[0], isLight),
                                                         transform: 'none',
-                                                        fontSize: effectiveFontSize + 'px',
+                                                        fontSize: needsScaleBypass ? '16px' : (effectiveFontSize + 'px'),
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
@@ -1096,7 +1097,14 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                         maxHeight: 'none',
                                                         ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
                                                     })
-                                                }, finalDisplayText ? createElement('span', null, finalDisplayText) : null)
+                                                }, finalDisplayText ? createElement('span', {
+                                                    style: needsScaleBypass ? {
+                                                        transform: `scale(${effectiveFontSize / 16})`,
+                                                        transformOrigin: 'center center',
+                                                        display: 'inline-block',
+                                                        whiteSpace: 'nowrap'
+                                                     } : null
+                                                }, finalDisplayText) : null)
                                             )
                                         );
                                     })()
@@ -1269,19 +1277,27 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                 
                                                 // Text rendering: use effective fontSize directly (no CSS transform)
                                                 const effectiveFontSize = 22 * combinedScale;
+                                                const needsScaleBypass = effectiveFontSize < 14;
                                                 return createElement('div', {
                                                     className: "legend-text",
                                                     style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
                                                         transform: 'none',
-                                                        fontSize: effectiveFontSize + 'px',
+                                                        fontSize: needsScaleBypass ? '16px' : (effectiveFontSize + 'px'),
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
                                                         height: '100%',
                                                         maxHeight: 'none',
                                                         ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
-                                                    })
-                                                }, finalDisplayText ? createElement('span', null, finalDisplayText) : null);
+                                                     })
+                                                 }, finalDisplayText ? createElement('span', {
+                                                     style: needsScaleBypass ? {
+                                                         transform: `scale(${effectiveFontSize / 16})`,
+                                                         transformOrigin: 'center center',
+                                                         display: 'inline-block',
+                                                         whiteSpace: 'nowrap'
+                                                     } : null
+                                                 }, finalDisplayText) : null);
                                             })()
                                         );
                                     })()
