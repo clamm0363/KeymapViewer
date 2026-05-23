@@ -968,25 +968,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                 zIndex: 20
                             }
                         }),
-                        isRGBKey && !isFluentMode && createElement('div', {
-                            key: 'rgb-corner-label',
-                            style: {
-                                position: 'absolute',
-                                right: '6px',
-                                bottom: '5px',
-                                fontSize: '10px',
-                                fontWeight: '500',
-                                fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
-                                color: isLight ? '#64748b' : '#94a3b8',
-                                opacity: 0.7,
-                                lineHeight: '1',
-                                letterSpacing: '0.05em',
-                                textTransform: 'uppercase',
-                                pointerEvents: 'none',
-                                userSelect: 'none',
-                                zIndex: 10
-                            }
-                        }, "RGB"),
+
                         isLayerKey ? (
                             createElement('div', { className: "key-layer-container", style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column' } },
                                 layerNum2 ? (
@@ -1191,68 +1173,151 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                     zIndex: 2
                                 }
                             },
-                                isRGBFluent ? (
-                                    // 🌟 RGB制御キー用の選択肢A（帯なしスプリット）レイアウト 🌟
+                                isRGBKey ? (
+                                    // 🌟 RGB制御キー用専用レイアウト (Fluent/Text 両モード対応) 🌟
                                     (() => {
-                                        const effectiveSvgSize = 20;
-                                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
-                                        
-                                        return createElement('div', {
-                                            style: {
-                                                position: 'relative',
-                                                width: '100%',
-                                                height: '100%',
-                                                boxSizing: 'border-box'
-                                            }
-                                        }, [
-                                            // ① アイコン領域: キートップの完全な「物理的中心（Y=50%）」にセンタリング配置
-                                            svgEl && createElement('div', {
-                                                key: 'rgb-svg-render',
+                                        if (displayMode === 'Fluent' && isSVGAvailable(displayRawForRGB)) {
+                                            // Fluentモード: アイコン + 下部テキスト
+                                            const effectiveSvgSize = 20;
+                                            const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
+                                            return createElement('div', {
                                                 style: {
-                                                    position: 'absolute',
-                                                    top: 0,
-                                                    left: 0,
+                                                    position: 'relative',
                                                     width: '100%',
                                                     height: '100%',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    zIndex: 1
-                                                },
-                                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
-                                            }),
-                                            // ② テキスト領域: キートップの最下部（bottom: 0.5px）に絶対配置
-                                            createElement('div', {
-                                                key: 'rgb-text-label',
-                                                style: {
-                                                    position: 'absolute',
-                                                    bottom: '0.5px', // 限界まで底辺に寄せる（角丸やボーダーと干渉しないスレスレ）
-                                                    left: 0,
-                                                    width: '100%',
-                                                    display: 'flex',
-                                                    justifyContent: 'center',
-                                                    zIndex: 2,
-                                                    pointerEvents: 'none',
-                                                    userSelect: 'none'
+                                                    boxSizing: 'border-box'
                                                 }
-                                            }, 
-                                                createElement('span', {
+                                            }, [
+                                                // ① アイコン領域
+                                                svgEl && createElement('div', {
+                                                    key: 'rgb-svg-render',
                                                     style: {
-                                                        fontSize: '11px', // 最小フォント制限回避
-                                                        fontWeight: '500', 
-                                                        color: isLight ? '#1e293b' : '#ffffff', // 通常のキーと同じくっきりとした文字色
-                                                        fontFamily: '"Outfit", sans-serif',
-                                                        letterSpacing: '0.06em', 
-                                                        lineHeight: '1',
-                                                        textTransform: 'uppercase',
-                                                        transform: 'scale(0.55)', // 6.5px ➔ 6.0px 相当に微調整してさらにスッキリと
-                                                        transformOrigin: 'bottom center',
-                                                        display: 'inline-block',
-                                                        whiteSpace: 'nowrap'
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        zIndex: 1
+                                                    },
+                                                    dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+                                                }),
+                                                // ② 下部テキストラベル
+                                                createElement('div', {
+                                                    key: 'rgb-text-label',
+                                                    style: {
+                                                        position: 'absolute',
+                                                        bottom: '0.5px',
+                                                        left: 0,
+                                                        width: '100%',
+                                                        display: 'flex',
+                                                        justifyContent: 'center',
+                                                        zIndex: 2,
+                                                        pointerEvents: 'none',
+                                                        userSelect: 'none'
                                                     }
-                                                }, rgbLabel)
-                                            )
-                                        ]);
+                                                }, 
+                                                    createElement('span', {
+                                                        style: {
+                                                            fontSize: '11px',
+                                                            fontWeight: '500', 
+                                                            color: isLight ? '#1e293b' : '#ffffff',
+                                                            fontFamily: '"Outfit", sans-serif',
+                                                            letterSpacing: '0.06em', 
+                                                            lineHeight: '1',
+                                                            textTransform: 'uppercase',
+                                                            transform: 'scale(0.55)',
+                                                            transformOrigin: 'bottom center',
+                                                            display: 'inline-block',
+                                                            whiteSpace: 'nowrap'
+                                                        }
+                                                    }, rgbLabel)
+                                                )
+                                            ]);
+                                        } else {
+                                            // Textモード: 中央メインテキスト + 右下 "RGB" バッジ
+                                            const textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
+                                            const combinedScale = targetScale * textScale * 0.9;
+                                            const effectiveFontSize = 22 * combinedScale;
+                                            const needsScaleBypass = effectiveFontSize < 14;
+
+                                            return createElement('div', {
+                                                style: {
+                                                    position: 'relative',
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    boxSizing: 'border-box'
+                                                }
+                                            }, [
+                                                // ① メインテキスト（中央に完璧配置）
+                                                createElement('div', {
+                                                    key: 'rgb-text-main',
+                                                    style: {
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        zIndex: 1
+                                                    }
+                                                }, 
+                                                    createElement('div', {
+                                                        className: "legend-text",
+                                                        style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
+                                                            transform: 'none',
+                                                            fontSize: needsScaleBypass ? '16px' : (effectiveFontSize + 'px'),
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            height: '100%',
+                                                            maxHeight: 'none',
+                                                            ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
+                                                        })
+                                                    }, finalDisplayText ? createElement('span', {
+                                                        style: needsScaleBypass ? {
+                                                            transform: `scale(${effectiveFontSize / 16})`,
+                                                            transformOrigin: 'center center',
+                                                            display: 'inline-block',
+                                                            whiteSpace: 'nowrap'
+                                                        } : null
+                                                    }, finalDisplayText) : null)
+                                                ),
+                                                // ② 右下 "RGB" バッジ（最小フォントサイズ制限を回避）
+                                                createElement('div', {
+                                                    key: 'rgb-corner-label',
+                                                    style: {
+                                                        position: 'absolute',
+                                                        right: '6px',
+                                                        bottom: '4px',
+                                                        zIndex: 2,
+                                                        pointerEvents: 'none',
+                                                        userSelect: 'none'
+                                                    }
+                                                }, 
+                                                    createElement('span', {
+                                                        style: {
+                                                            fontSize: '15px', // 最小制限を回避する安全なサイズ
+                                                            fontWeight: '500', 
+                                                            color: isLight ? '#64748b' : '#94a3b8',
+                                                            opacity: 0.7,
+                                                            fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
+                                                            letterSpacing: '0.05em', 
+                                                            lineHeight: '1',
+                                                            textTransform: 'uppercase',
+                                                            transform: 'scale(0.6)', // 15px ➔ 9px 相当に縮小してシャープに表示
+                                                            transformOrigin: 'bottom right',
+                                                            display: 'inline-block',
+                                                            whiteSpace: 'nowrap'
+                                                        }
+                                                    }, "RGB")
+                                                )
+                                            ]);
+                                        }
                                     })()
                                 ) : (
                                     // 通常のキーレンダリング
