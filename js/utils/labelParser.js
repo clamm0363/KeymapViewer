@@ -120,7 +120,7 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
 
         const keyEntry = dict.keys[cleanCode] || dict.keys[rawCode];
         if (keyEntry) {
-            return displayMode === 'Fluent' && keyEntry.fluent ? keyEntry.fluent : (keyEntry.text || kCode.replace('KC_', ''));
+            return displayMode === 'Fluent' && keyEntry.fluent ? keyEntry.fluent : ((keyStyle === 'Mac' ? (keyEntry.macText || keyEntry.text) : keyEntry.text) || kCode.replace('KC_', ''));
         }
         return null;
     };

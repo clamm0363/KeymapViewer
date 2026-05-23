@@ -73,11 +73,47 @@ const getKeyCategory = (kCode) => {
     if (!kCode) return null;
     const upper = kCode.toUpperCase();
     if (upper.startsWith('KC_RGB_')) return 'RGB';
-    if (upper.startsWith('KC_AUDIO_') || upper.startsWith('KC_KB_VOLUME_') || upper === 'KC_KB_MUTE') return 'SOUND';
-    if (upper.startsWith('KC_MEDIA_')) return 'MEDIA';
-    if (upper.startsWith('KC_MS_') || upper.startsWith('KC_BTN') || upper.startsWith('KC_WH_')) return 'MOUSE';
+    
+    // SOUND category
+    if (
+        upper.startsWith('KC_AUDIO_') || 
+        upper.startsWith('KC_KB_VOLUME_') || 
+        upper === 'KC_KB_MUTE' ||
+        upper === 'KC_MUTE' ||
+        upper === 'KC_VOLU' ||
+        upper === 'KC_VOLD'
+    ) {
+        return 'SOUND';
+    }
+    
+    // MEDIA category
+    if (
+        upper.startsWith('KC_MEDIA_') ||
+        ['KC_MNXT', 'KC_MPRV', 'KC_MSTP', 'KC_MPLY', 'KC_MSEL', 'KC_EJCT', 'KC_MFFD', 'KC_MRWD', 'KC_MEDIA_PLAY'].includes(upper)
+    ) {
+        return 'MEDIA';
+    }
+    
+    // MOUSE category
+    if (
+        upper.startsWith('KC_MS_') || 
+        upper.startsWith('KC_BTN') || 
+        upper.startsWith('KC_WH_')
+    ) {
+        return 'MOUSE';
+    }
+
+    // MAGIC category
+    if (
+        upper.includes('MAGIC_') || 
+        ['KC_AG_TOGG', 'AG_TOGG', 'KC_CG_TOGG', 'CG_TOGG'].includes(upper)
+    ) {
+        return 'MAG';
+    }
+    
     return null;
 };
+
 
 // Calculate text scale based on character length and key width to maintain physical harmony
 const getTextScale = (displayText, keyWidth = 1, isFluentIcon = false) => {
@@ -725,6 +761,9 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                     const isRGBFluent = isRGBKey && isFluentMode && isSVGAvailable(displayRawForRGB);
                     const rgbLabel = rgbLabels[displayRawForRGB] || '';
 
+                    const isMagicKey = displayRawForRGB.includes('MAGIC_TOGGLE_') || ['KC_AG_TOGG', 'AG_TOGG', 'KC_CG_TOGG', 'CG_TOGG'].includes(displayRawForRGB);
+                    const isMagicFluent = isMagicKey && isFluentMode && isSVGAvailable(displayRawForRGB);
+
                     // 1uなどの小さなキー（w < 1.25）において、長いテキストを動的に短縮する
                     const is1u = (k.w || 56) / 56 < 1.25;
                     const shortenLabel = (label) => {
@@ -1256,6 +1295,71 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                         whiteSpace: 'nowrap'
                                                     }
                                                 }, rgbLabel)
+                                            )
+                                        ]);
+                                    })()
+                                ) : isMagicFluent ? (
+                                    // 🌟 MAGIC_TOGGLE_キー用の帯なしスプリットレイアウト 🌟
+                                    (() => {
+                                        const effectiveSvgSize = 20;
+                                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
+                                        const parsedText = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases);
+                                        const magicLabel = parsedText.displayText;
+                                        
+                                        return createElement('div', {
+                                            style: {
+                                                position: 'relative',
+                                                width: '100%',
+                                                height: '100%',
+                                                boxSizing: 'border-box'
+                                            }
+                                        }, [
+                                            // ① アイコン領域
+                                            svgEl && createElement('div', {
+                                                key: 'magic-svg-render',
+                                                style: {
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    zIndex: 1
+                                                },
+                                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+                                            }),
+                                            // ② テキスト領域: キートップの最下部（bottom: 0.5px）に絶対配置
+                                            createElement('div', {
+                                                key: 'magic-text-label',
+                                                style: {
+                                                    position: 'absolute',
+                                                    bottom: '0.5px',
+                                                    left: 0,
+                                                    width: '100%',
+                                                    display: 'flex',
+                                                    justifyContent: 'center',
+                                                    zIndex: 2,
+                                                    pointerEvents: 'none',
+                                                    userSelect: 'none'
+                                                }
+                                            }, 
+                                                createElement('span', {
+                                                    style: {
+                                                        fontSize: '11px',
+                                                        fontWeight: '500', 
+                                                        color: isLight ? '#1e293b' : '#ffffff',
+                                                        fontFamily: '"Outfit", sans-serif',
+                                                        letterSpacing: '0.06em', 
+                                                        lineHeight: '1',
+                                                        textTransform: 'uppercase',
+                                                        transform: 'scale(0.55)',
+                                                        transformOrigin: 'bottom center',
+                                                        display: 'inline-block',
+                                                        whiteSpace: 'nowrap'
+                                                    }
+                                                }, magicLabel)
                                             )
                                         ]);
                                     })()

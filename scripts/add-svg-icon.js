@@ -17,7 +17,7 @@ const { execSync } = require('child_process');
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const KEYMAP_DICT = path.join(PROJECT_ROOT, 'js', 'keymap-dictionary.js');
 const SVG_ICONS = path.join(PROJECT_ROOT, 'js', 'svg-icons.js');
-const FLUENT_REPO = '/tmp/fluentui-system-icons/assets';
+const FLUENT_REPO = path.join(PROJECT_ROOT, 'fluentui-system-icons', 'assets');
 
 // Parse CLI arguments
 const args = process.argv.slice(2);

@@ -254,7 +254,68 @@ export const KeymapDictionary = {
     "KC_DM_PLY2": { text: "PLAY 2", fluent: "\uF606" },
     "KC_DM_RSTP": { text: "STOP", fluent: "\uF75B" },
 
+    // QMK Magic Keys (ハードウェアレベルのキー配置・機能入れ替え)
+    "MAGIC_TOGGLE_CONTROL_CAPS_LOCK": { text: "CTL / CPS", fluent: "\uF18E" },
+    "MAGIC_TOGGLE_ESCAPE_CAPS_LOCK":  { text: "ESC / CPS", fluent: "\uF18E" },
+    "MAGIC_TOGGLE_CTL_GUI":           { text: "CTL / WIN", macText: "CTL / CMD", fluent: "\uF18E" },
+    "MAGIC_TOGGLE_ALT_GUI":           { text: "ALT / WIN", macText: "ALT / CMD", fluent: "\uF18E" },
+    "MAGIC_TOGGLE_BACKSLASH_BACKSPACE":{ text: "\\ / BS",    fluent: "\uF18E" },
+    "MAGIC_TOGGLE_GRAVE_ESC":         { text: "GRV / ESC",  fluent: "\uF18E" },
+    "MAGIC_TOGGLE_GUI":               { text: "WIN LCK",   macText: "CMD LCK",   fluent: "\uE788" },
+    "MAGIC_TOGGLE_NKRO":              { text: "NKRO",      fluent: "\uE6C6" },
+
     // 透過キー
     "KC_TRNS": { text: "▽", fluent: "\u{F02F9}" } // triangle_down_24_regular
   }
 };
+
+// QMKのショートキーコード（エイリアス）を正規のキーコードからプログラムで複製
+const aliasPairs = [
+  ['KC_MUTE', 'KC_AUDIO_MUTE'],
+  ['KC_VOLU', 'KC_AUDIO_VOL_UP'],
+  ['KC_VOLD', 'KC_AUDIO_VOL_DOWN'],
+  ['KC_MNXT', 'KC_MEDIA_NEXT_TRACK'],
+  ['KC_MPRV', 'KC_MEDIA_PREV_TRACK'],
+  ['KC_MSTP', 'KC_MEDIA_STOP'],
+  ['KC_MPLY', 'KC_MEDIA_PLAY_PAUSE'],
+  ['KC_MSEL', 'KC_MEDIA_SELECT'],
+  ['KC_EJCT', 'KC_MEDIA_EJECT'],
+  ['KC_MFFD', 'KC_MEDIA_FAST_FORWARD'],
+  ['KC_MRWD', 'KC_MEDIA_REWIND'],
+  ['KC_MYCM', 'KC_MY_COMPUTER'],
+  ['KC_WSCH', 'KC_WWW_SEARCH'],
+  ['KC_WHOM', 'KC_WWW_HOME'],
+  ['KC_WBAK', 'KC_WWW_BACK'],
+  ['KC_WFWD', 'KC_WWW_FORWARD'],
+  ['KC_WSTP', 'KC_WWW_STOP'],
+  ['KC_WREF', 'KC_WWW_REFRESH'],
+  ['KC_WFAV', 'KC_WWW_FAVORITES'],
+  ['KC_PWR',  'KC_SYSTEM_POWER'],
+  ['KC_SLEP', 'KC_SYSTEM_SLEEP'],
+  ['KC_WAKE', 'KC_SYSTEM_WAKE'],
+  ['KC_BRIU', 'KC_KB_BRIGHTNESS_UP'],
+  ['KC_BRID', 'KC_KB_BRIGHTNESS_DOWN'],
+  ['KC_CPNL', 'KC_CONTROL_PANEL'],
+  ['KC_ASST', 'KC_ASSISTANT'],
+  ['KC_MCTL', 'KC_MISSION_CONTROL'],
+  ['KC_LPAD', 'KC_LAUNCHPAD'],
+  ['KC_MAGIC_TOGGLE_CONTROL_CAPS_LOCK', 'MAGIC_TOGGLE_CONTROL_CAPS_LOCK'],
+  ['KC_MAGIC_TOGGLE_ESCAPE_CAPS_LOCK',  'MAGIC_TOGGLE_ESCAPE_CAPS_LOCK'],
+  ['KC_MAGIC_TOGGLE_CTL_GUI',           'MAGIC_TOGGLE_CTL_GUI'],
+  ['KC_MAGIC_TOGGLE_ALT_GUI',           'MAGIC_TOGGLE_ALT_GUI'],
+  ['KC_MAGIC_TOGGLE_BACKSLASH_BACKSPACE','MAGIC_TOGGLE_BACKSLASH_BACKSPACE'],
+  ['KC_MAGIC_TOGGLE_GRAVE_ESC',         'MAGIC_TOGGLE_GRAVE_ESC'],
+  ['KC_MAGIC_TOGGLE_GUI',               'MAGIC_TOGGLE_GUI'],
+  ['KC_MAGIC_TOGGLE_NKRO',              'MAGIC_TOGGLE_NKRO'],
+  ['CG_TOGG',                           'MAGIC_TOGGLE_CTL_GUI'],
+  ['KC_CG_TOGG',                        'MAGIC_TOGGLE_CTL_GUI'],
+  ['AG_TOGG',                           'MAGIC_TOGGLE_ALT_GUI'],
+  ['KC_AG_TOGG',                        'MAGIC_TOGGLE_ALT_GUI']
+];
+
+aliasPairs.forEach(([shortKey, longKey]) => {
+  if (KeymapDictionary.keys[longKey]) {
+    KeymapDictionary.keys[shortKey] = KeymapDictionary.keys[longKey];
+  }
+});
+
