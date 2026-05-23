@@ -1445,7 +1445,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                                                  flexDirection: 'column',
                                                                  alignItems: 'center',
                                                                  justifyContent: 'center',
-                                                                 lineHeight: '1.15',
+                                                                 lineHeight: '0.95',
                                                                  width: '100%',
                                                                  height: '100%',
                                                                  transform: needsScaleBypass ? `scale(${effectiveFontSize / 16})` : 'none',
