@@ -56,7 +56,6 @@
             height: 100%;
             width: 100%;
             overflow: hidden;
-            /* 親の overflow: hidden により適切にクリップされるため個別の指定は不要 */
         }
         .key-layer-main {
             flex: 1;
@@ -85,13 +84,11 @@
         }
         .key-layer-footer span {
             display: inline-block;
-            font-size: 12px;
+            font-size: 8px;
             font-weight: 500;
             letter-spacing: 0.1em;
             text-transform: uppercase;
-            font-family: 'Outfit', sans-serif;
-            transform: scale(0.67);
-            transform-origin: center;
+            font-family: 'Outfit', 'Arial', 'Helvetica', sans-serif;
             line-height: 1;
             pointer-events: none;
         }

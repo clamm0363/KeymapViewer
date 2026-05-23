@@ -135,7 +135,7 @@ export function App() {
         } catch (e) { console.warn('Failed to save state:', e); }
     }, [devices, layoutMode, appTheme]);
 
-    // Robust Export Logic
+    // Robust Export Logic (using html-to-image for accurate flexbox rendering)
     useEffect(() => {
         if (isExporting && exportRef.current) {
             const runExport = async () => {
@@ -145,26 +145,24 @@ export function App() {
                     return;
                 }
                 try {
+                    // Dynamically import html-to-image (ESM) – only loaded when export is triggered
+                    const { toPng } = await import('https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/+esm');
+
                     // Ensure fonts are loaded
                     if (document.fonts) await document.fonts.ready;
                     // Double‑tick to ensure the export container is rendered
                     await new Promise(r => requestAnimationFrame(r));
                     await new Promise(r => requestAnimationFrame(r));
-                    // Make export container visible for html2canvas
+                    // Make export container visible for capture
                     if (exportRef.current) {
                         exportRef.current.style.opacity = '1';
                     }
-                    // Capture using html2canvas
-                    const canvas = await html2canvas(exportRef.current, {
-                        backgroundColor: exportSettings.background === 'Transparent' ? null : (exportSettings.background === 'Light' ? '#f1f5f9' : '#020617'),
-                        scale: 2,
-                        logging: false,
-                        useCORS: true,
-                        allowTaint: true,
-                        onclone: (clonedDoc) => {
-                            const innerDivs = clonedDoc.querySelectorAll('.keyboard-inner');
-                            innerDivs.forEach(div => { div.style.transform = 'none'; });
-                        }
+                    // Capture using html-to-image (foreignObject-based, faithful to browser rendering)
+                    const bgColor = exportSettings.background === 'Transparent' ? null : (exportSettings.background === 'Light' ? '#f1f5f9' : '#020617');
+                    const dataUrl = await toPng(exportRef.current, {
+                        pixelRatio: 2,
+                        backgroundColor: bgColor,
+                        cacheBust: true
                     });
                     // Reset opacity after capture
                     if (exportRef.current) {
@@ -173,11 +171,15 @@ export function App() {
                     // Download the image
                     const link = document.createElement('a');
                     link.download = `${dev.name || 'Keymap'}_export.png`;
-                    link.href = canvas.toDataURL('image/png');
+                    link.href = dataUrl;
                     link.click();
                 } catch (e) {
                     console.error('Export failed:', e);
                     alert('画像の書き出しに失敗しました。');
+                    // Reset opacity on error too
+                    if (exportRef.current) {
+                        exportRef.current.style.opacity = '0';
+                    }
                 } finally {
                     setIsExporting(false);
                     setExportModalDevId(null);

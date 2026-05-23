@@ -8,29 +8,29 @@ import { findSplitX } from '../utils/helpers.js';
 // Shared footer skeleton and text styling utilities for visual consistency across all keytypes
 const getFooterContainerStyle = (isLight, isAppDark) => ({
     marginTop: 'auto',
-    width: 'calc(100% + 8px)',
-    marginLeft: '-4px',
-    marginRight: '-4px',
-    marginBottom: '-4px',
+    width: '100%',
     height: '18px',
     display: 'flex',
     zIndex: 10,
     overflow: 'hidden',
-    borderBottomLeftRadius: '4px',
-    borderBottomRightRadius: '4px',
+    borderBottomLeftRadius: '3px',
+    borderBottomRightRadius: '3px',
     borderTop: `2px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#475569' : '#334155')}`
 });
 
-const getFooterTextStyle = (scale = 0.72, translateY = 0, fontSize = '14px') => ({
-    fontSize,
-    fontWeight: '500',
-    fontFamily: '"Outfit", sans-serif',
-    letterSpacing: '0.05em',
-    lineHeight: '1',
-    transform: `scale(${scale}) translateY(${translateY}px)`,
-    transformOrigin: 'center center',
-    whiteSpace: 'nowrap'
-});
+const getFooterTextStyle = (scale = 0.72, translateY = 0, fontSize = '14px') => {
+    const baseFontSize = parseFloat(fontSize);
+    const computedSize = Math.round(baseFontSize * scale * 100) / 100;
+    return {
+        fontSize: `${computedSize}px`,
+        fontWeight: '500',
+        fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
+        letterSpacing: '0.05em',
+        lineHeight: '1',
+        transform: translateY !== 0 ? `translateY(${translateY}px)` : 'none',
+        whiteSpace: 'nowrap'
+    };
+};
 
 // Shared layout and offset styling utilities for offset-legend keycaps (e.g., LT, FN_MO13)
 const getOffsetContainerStyle = () => ({
@@ -39,32 +39,32 @@ const getOffsetContainerStyle = () => ({
     width: '100%'
 });
 
-const getOffsetPrimaryStyle = (isLight, isFluent = false, customFontSize = null) => ({
-    position: 'absolute',
-    left: '6px',
-    bottom: '3.5px',
-    fontSize: customFontSize || (isFluent ? '26px' : '22px'),
-    fontWeight: '400',
-    fontFamily: isFluent 
-        ? FLUENT_FONT_STACK.primary
-        : FLUENT_FONT_STACK.fallback,
-    color: isLight ? '#1e293b' : '#fff',
-    transform: 'scale(0.75)',
-    transformOrigin: 'left bottom',
-    lineHeight: '1'
-});
+const getOffsetPrimaryStyle = (isLight, isFluent = false, customFontSize = null) => {
+    const baseFontSize = parseFloat(customFontSize || (isFluent ? '26' : '22'));
+    const computedSize = Math.round(baseFontSize * 0.75 * 100) / 100;
+    return {
+        position: 'absolute',
+        left: '6px',
+        bottom: '3.5px',
+        fontSize: `${computedSize}px`,
+        fontWeight: '400',
+        fontFamily: isFluent 
+            ? FLUENT_FONT_STACK.primary
+            : FLUENT_FONT_STACK.fallback,
+        color: isLight ? '#1e293b' : '#fff',
+        lineHeight: '1'
+    };
+};
 
 const getOffsetSecondaryStyle = (isLight) => ({
     position: 'absolute',
     right: '6px',
     top: '3px',
-    fontSize: '16px',
+    fontSize: '12px',
     fontWeight: '400',
-    fontFamily: '"Outfit", sans-serif',
+    fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
     color: isLight ? '#64748b' : '#94a3b8',
     opacity: 0.8,
-    transform: 'scale(0.75)',
-    transformOrigin: 'right top',
     lineHeight: '1'
 });
 
@@ -101,6 +101,9 @@ const getTextScale = (displayText, keyWidth = 1, isFluentIcon = false) => {
 const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth = 1, customOverrides = {}) => {
     // 1uキーキャップ基準で、文字数（長さ）に応じて完全に均一な縮小率を適用し、表示崩れを防ぐ
     const textScale = getTextScale(displayText, keyWidth, isFluentIcon);
+    const baseFontSize = 22;
+    // Use direct fontSize instead of transform:scale() for accurate centering in all rendering contexts
+    const computedFontSize = isFluentIcon ? baseFontSize : Math.round(baseFontSize * textScale * 100) / 100;
 
     const baseStyle = {
         color: isLight ? '#1e293b' : '#fff',
@@ -108,10 +111,9 @@ const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth
         fontFamily: isFluentIcon 
             ? (displayText === '\uE986' ? FLUENT_FONT_STACK.jpKana : FLUENT_FONT_STACK.primary)
             : FLUENT_FONT_STACK.fallback,
-        fontSize: '22px',
+        fontSize: `${computedFontSize}px`,
         lineHeight: '1',
-        transform: isFluentIcon ? 'translateY(1.5px)' : `scale(${textScale})`,
-        transformOrigin: 'center center',
+        transform: isFluentIcon ? 'translateY(1.5px)' : 'none',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -587,7 +589,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
             backgroundColor: isLight ? '#ffffff' : (isAppDark ? 'rgba(15, 23, 42, 0.6)' : '#1e293b'),
             boxShadow: isLight ? '0 4px 6px -1px rgb(0 0 0 / 0.1)' : '0 20px 25px -5px rgb(0 0 0 / 0.1)',
             overflow: 'hidden',
-             display: 'flex',
+            display: 'flex',
             flexDirection: 'column',
             transition: 'all 0.075s ease'
         };
@@ -981,7 +983,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                         className: "key-layer-main",
                                         style: getMainLegendStyle(isLight, `L${layerNum}`, false, (k.w || 56) / 56, {
                                             flex: 1,
-                                            transform: 'scale(0.9)',
+                                            fontSize: '20px',
                                             marginTop: '6px'
                                         })
                                     }, `L${layerNum}`)
