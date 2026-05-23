@@ -755,6 +755,28 @@ export function createSVGElement(iconKey, options = {}) {
     svgElement.style.color = color;
     svgElement.style.display = 'block';
     svgElement.style.overflow = 'visible';
+
+    // Normalize hardcoded colors in all child nodes to currentColor to support theme styling
+    const allElements = svgElement.getElementsByTagName('*');
+    for (let i = 0; i < allElements.length; i++) {
+      const el = allElements[i];
+      
+      const fill = el.getAttribute('fill');
+      if (fill && fill !== 'none' && fill !== 'currentColor' && fill.startsWith('#')) {
+        el.setAttribute('fill', 'currentColor');
+      }
+      const stroke = el.getAttribute('stroke');
+      if (stroke && stroke !== 'none' && stroke !== 'currentColor' && stroke.startsWith('#')) {
+        el.setAttribute('stroke', 'currentColor');
+      }
+
+      if (el.style.fill && el.style.fill.startsWith('#')) {
+        el.style.fill = 'currentColor';
+      }
+      if (el.style.stroke && el.style.stroke.startsWith('#')) {
+        el.style.stroke = 'currentColor';
+      }
+    }
     
     return svgElement.cloneNode(true);
   } catch (error) {
