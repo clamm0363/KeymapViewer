@@ -208,9 +208,9 @@ export const KeymapDictionary = {
     "KC_INT2": { text: "KANA", fluent: "\uE986" },
 
     // RGB Backlight Controls
-    "KC_RGB_TOG": { text: "RGB_TG", fluent: "\uF2F6" }, // color_24_regular
-    "KC_RGB_MOD": { text: "RGB_MOD", fluent: "\uF2F6" }, // color_24_regular
-    "KC_RGB_RMOD": { text: "RGB_RMD", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_TOG": { text: "TOG", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_MOD": { text: "MODE+", fluent: "\uF2F6" }, // color_24_regular
+    "KC_RGB_RMOD": { text: "MODE-", fluent: "\uF2F6" }, // color_24_regular
     "KC_RGB_HUI": { text: "HUE+", fluent: "\uF2F6" }, // color_24_regular
     "KC_RGB_HUD": { text: "HUE-", fluent: "\uF2F6" }, // color_24_regular
     "KC_RGB_SAI": { text: "SAT+", fluent: "\uF2F6" }, // color_24_regular

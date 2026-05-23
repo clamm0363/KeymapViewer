@@ -698,8 +698,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         "KC_RGB_HUD": "HUE-",
                         "KC_RGB_SAI": "SAT+",
                         "KC_RGB_SAD": "SAT-",
-                        "KC_RGB_VAI": "VAL+",
-                        "KC_RGB_VAD": "VAL-",
+                        "KC_RGB_VAI": "BRT+",
+                        "KC_RGB_VAD": "BRT-",
                         "KC_RGB_SPI": "SPD+",
                         "KC_RGB_SPD": "SPD-"
                     };
