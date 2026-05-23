@@ -968,6 +968,25 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                                 zIndex: 20
                             }
                         }),
+                        isRGBKey && !isFluentMode && createElement('div', {
+                            key: 'rgb-corner-label',
+                            style: {
+                                position: 'absolute',
+                                right: '6px',
+                                bottom: '5px',
+                                fontSize: '10px',
+                                fontWeight: '500',
+                                fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
+                                color: isLight ? '#64748b' : '#94a3b8',
+                                opacity: 0.7,
+                                lineHeight: '1',
+                                letterSpacing: '0.05em',
+                                textTransform: 'uppercase',
+                                pointerEvents: 'none',
+                                userSelect: 'none',
+                                zIndex: 10
+                            }
+                        }, "RGB"),
                         isLayerKey ? (
                             createElement('div', { className: "key-layer-container", style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column' } },
                                 layerNum2 ? (
