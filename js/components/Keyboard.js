@@ -78,7 +78,7 @@ const getTextScale = (displayText, keyWidth = 1, isFluentIcon = false) => {
         } else {
             const len = displayText.length;
             if (len === 3) {
-                textScale = keyWidth >= 1.25 ? 0.85 : 0.70;
+                textScale = keyWidth >= 1.25 ? 0.85 : 0.62;
             }
             else if (len === 4) {
                 textScale = keyWidth >= 1.25 ? 0.85 : 0.62;
@@ -872,8 +872,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         visualWeightForScale += 0.5;
                     }
 
-                    // 同一の文字数のキーが一律で同じ縮小率となるよう、1文字あたりの幅を均一に11.0pxとして計算
-                    const charWidthMultiplier = 11.0;
+                    // 同一の文字数のキーが一律で同じ縮小率となるよう、1文字あたりの幅を均一に10.5pxとして計算
+                    const charWidthMultiplier = 10.5;
                     const estimatedPxWidth = visualWeightForScale * charWidthMultiplier; 
                     let targetScale = 1.0;
                     let canWrap = manualWrap;
