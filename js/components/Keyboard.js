@@ -81,7 +81,7 @@ const getTextScale = (displayText, keyWidth = 1, isFluentIcon = false) => {
                 textScale = keyWidth >= 1.25 ? 0.85 : 0.70;
             }
             else if (len === 4) {
-                textScale = keyWidth >= 1.25 ? 0.85 : 0.70;
+                textScale = keyWidth >= 1.25 ? 0.85 : 0.62;
             }
             else if (len >= 5) {
                 if (keyWidth >= 2.0) {

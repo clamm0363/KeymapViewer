@@ -136,29 +136,34 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
         displayText = `${modStr}${complex.symbol}${baseStr}`;
         if (hasFluentMod || hasFluentBase) isFluentIcon = true;
     } else {
-        const dictLabel = getDictLabel(raw);
-        if (dictLabel) {
-            displayText = dictLabel;
-            const cleanCode = raw.startsWith('KC_') ? raw : `KC_${raw}`;
-            const rawCode = raw.startsWith('KC_') ? raw.replace('KC_', '') : raw;
-            const entry = dict.modifiers[cleanCode] || dict.modifiers[rawCode] || dict.keys[cleanCode] || dict.keys[rawCode];
-            if (displayMode === 'Fluent' && entry) {
-                if (entry.isFluent === true || (entry.fluent)) {
-                    isFluentIcon = true;
-                } else if (entry.isFluent === 'auto') {
-                    // Unicode fallback detection: identifies Fluent icon code points by PUA range (0xE000+)
-                    // Note for SVG migration: This charCodeAt check should be replaced with explicit isFluent flags
-                    // or SVG ID references when migrating away from WebFont rendering
-                    isFluentIcon = (displayText.length === 1 && displayText.charCodeAt(0) >= 0xE000);
-                }
-            }
-        } else if (displayMode === 'Fluent' && FLUENT_MAP[raw]) {
-            displayText = FLUENT_MAP[raw];
-            isFluentIcon = true;
-        } else if (/^\d+,\d+$/.test(displayText)) {
+        const cleanRawForNo = raw.startsWith('KC_') ? raw : `KC_${raw}`;
+        if (displayMode === 'Fluent' && (cleanRawForNo === 'KC_NO' || cleanRawForNo === 'KC_NONE' || raw === 'None')) {
             displayText = "";
         } else {
-            displayText = SYMBOL_MAP[raw] || raw;
+            const dictLabel = getDictLabel(raw);
+            if (dictLabel) {
+                displayText = dictLabel;
+                const cleanCode = raw.startsWith('KC_') ? raw : `KC_${raw}`;
+                const rawCode = raw.startsWith('KC_') ? raw.replace('KC_', '') : raw;
+                const entry = dict.modifiers[cleanCode] || dict.modifiers[rawCode] || dict.keys[cleanCode] || dict.keys[rawCode];
+                if (displayMode === 'Fluent' && entry) {
+                    if (entry.isFluent === true || (entry.fluent)) {
+                        isFluentIcon = true;
+                    } else if (entry.isFluent === 'auto') {
+                        // Unicode fallback detection: identifies Fluent icon code points by PUA range (0xE000+)
+                        // Note for SVG migration: This charCodeAt check should be replaced with explicit isFluent flags
+                        // or SVG ID references when migrating away from WebFont rendering
+                        isFluentIcon = (displayText.length === 1 && displayText.charCodeAt(0) >= 0xE000);
+                    }
+                }
+            } else if (displayMode === 'Fluent' && FLUENT_MAP[raw]) {
+                displayText = FLUENT_MAP[raw];
+                isFluentIcon = true;
+            } else if (/^\d+,\d+$/.test(displayText)) {
+                displayText = "";
+            } else {
+                displayText = SYMBOL_MAP[raw] || raw;
+            }
         }
     }
 
