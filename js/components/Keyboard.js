@@ -436,10 +436,10 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
 
         return {
             position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
+            top: '-3px', // ボーダー領域を完全に覆うために外側へ拡張
+            left: '-3px',
+            width: 'calc(100% + 6px)',
+            height: 'calc(100% + 6px)',
             background,
             zIndex: 0,
             pointerEvents: 'none'
@@ -458,10 +458,10 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         }
         return {
             position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
+            top: '-3px', // ボーダー領域を完全に覆うために外側へ拡張
+            left: '-3px',
+            width: 'calc(100% + 6px)',
+            height: 'calc(100% + 6px)',
             background,
             pointerEvents: 'none'
         };
