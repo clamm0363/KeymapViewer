@@ -221,22 +221,22 @@ export const KeymapDictionary = {
     "KC_RGB_SPD": { text: "SPD-", fluent: "\uF2F6" }, // color_24_regular
 
     // Bluetooth & Wireless
-    "KC_OUT_AUTO": { text: "OUT_AUTO", fluent: "\uF6AA" },
-    "KC_OUT_USB": { text: "OUT_USB", fluent: "\uF0BA1" },
-    "KC_OUT_BT": { text: "OUT_BT", fluent: "\uF1DF" },
-    "KC_OUT_2G4": { text: "OUT_2G4", fluent: "\uF6AA" },
+    "KC_OUT_AUTO": { text: "AUTO", fluent: "\uF6AA" },
+    "KC_OUT_USB": { text: "USB", fluent: "\uF0BA1" },
+    "KC_OUT_BT": { text: "BT", fluent: "\uF1DF" },
+    "KC_OUT_2G4": { text: "2.4G", fluent: "\uF6AA" },
     "KC_BT_SEL_0": { text: "BT 1", fluent: "\uF1DF" },
     "KC_BT_SEL_1": { text: "BT 2", fluent: "\uF1DF" },
     "KC_BT_SEL_2": { text: "BT 3", fluent: "\uF1DF" },
     "KC_BT_SEL_3": { text: "BT 4", fluent: "\uF1DF" },
     "KC_BT_SEL_4": { text: "BT 5", fluent: "\uF1DF" },
-    "KC_BT_CLR": { text: "BT_CLR", fluent: "\uF1E1" },
-    "KC_BT_CLR_ALL": { text: "BT_ALL", fluent: "\uF1E1" },
-    "KC_BT_TOGG": { text: "BT_TOG", fluent: "\uF1E1" },
-    "KC_BT_NXT": { text: "BT_NXT", fluent: "\uF1DF" },
-    "KC_BT_PRV": { text: "BT_PRV", fluent: "\uF1DF" },
-    "KC_BT_ON": { text: "BT_ON", fluent: "\uF1DF" },
-    "KC_BT_OFF": { text: "BT_OFF", fluent: "\uF1DF" },
+    "KC_BT_CLR": { text: "CLR", fluent: "\uF1E1" },
+    "KC_BT_CLR_ALL": { text: "CLR A", fluent: "\uF1E1" },
+    "KC_BT_TOGG": { text: "B-TOG", fluent: "\uF1E1" },
+    "KC_BT_NXT": { text: "BT >", fluent: "\uF1DF" },
+    "KC_BT_PRV": { text: "BT <", fluent: "\uF1DF" },
+    "KC_BT_ON": { text: "BT ON", fluent: "\uF1DF" },
+    "KC_BT_OFF": { text: "BT OFF", fluent: "\uF1DF" },
 
     // Mouse Keys
     "KC_MS_U": { text: "MS_UP", fluent: "\uF19C" },
