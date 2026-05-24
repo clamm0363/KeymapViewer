@@ -602,9 +602,10 @@ export function Keycap({
     let finalDisplayText = centerText;
     let manualWrap = false;
     
-    if (centerText.length > 5 && (centerText.includes('_') || centerText.includes('-') || centerText.includes(' / '))) {
-        if (centerText.includes(' / ')) {
-            const parts = centerText.split(' / ');
+    const hasSlash = /[\s\u2009\u200a]*\/[\s\u2009\u200a]*/.test(centerText);
+    if (centerText.length > 5 && (centerText.includes('_') || centerText.includes('-') || hasSlash)) {
+        if (hasSlash) {
+            const parts = centerText.split(/[\s\u2009\u200a]*\/[\s\u2009\u200a]*/);
             finalDisplayText = parts[0] + '\n' + parts[1];
             manualWrap = true;
         } else {
