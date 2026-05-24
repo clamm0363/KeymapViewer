@@ -257,9 +257,9 @@ export const KeymapDictionary = {
     "KC_ACL2": { text: "ACL2", fluent: "\uF445" }, // gauge_24_regular
 
     // Bootloader & Utility
-    "KC_RESET": { text: "BOOT", fluent: "\uF8C1" },
-    "KC_QK_BOOT": { text: "BOOT", fluent: "\uF8C1" },
-    "KC_EE_CLR": { text: "EE_CLR", fluent: "\uF34D" },
+    "KC_RESET": { text: "BOOT", fluent: "\uF8C1" }, // rocket_24
+    "KC_QK_BOOT": { text: "BOOT", fluent: "\uF8C1" }, // rocket_24
+    "KC_EE_CLR": { text: "EE_CLR", fluent: "\uF34D" }, // eraser_24
     "KC_DEBUG": { text: "DEBUG", fluent: "\uE207" },
 
     // Advanced Logic & Macros
