@@ -107,7 +107,9 @@ const getKeyCategory = (kCode) => {
     if (
         upper.startsWith('KC_MS_') || 
         upper.startsWith('KC_BTN') || 
-        upper.startsWith('KC_WH_')
+        upper.startsWith('KC_WH_') ||
+        upper.startsWith('KC_ACL') ||
+        ['MS_U', 'MS_D', 'MS_L', 'MS_R', 'BTN1', 'BTN2', 'BTN3', 'BTN4', 'BTN5', 'WH_U', 'WH_D', 'WH_L', 'WH_R', 'ACL0', 'ACL1', 'ACL2'].some(prefix => upper.startsWith(prefix))
     ) {
         return 'MOUSE';
     }
@@ -458,6 +460,49 @@ export function Keycap({
                           wirelessLabels[displayRawForRGB] !== undefined;
     const isWirelessFluent = isWirelessKey && isFluentMode && isSVGAvailable(displayRawForRGB);
     const wirelessLabel = wirelessLabels[displayRawForRGB] || '';
+
+    const mouseLabels = {
+        "KC_MS_U": "MS UP",
+        "KC_MS_D": "MS DN",
+        "KC_MS_L": "MS LT",
+        "KC_MS_R": "MS RT",
+        "KC_BTN1": "LCLK",
+        "KC_BTN2": "RCLK",
+        "KC_BTN3": "MCLK",
+        "KC_BTN4": "BTN4",
+        "KC_BTN5": "BTN5",
+        "KC_WH_U": "WHL U",
+        "KC_WH_D": "WHL D",
+        "KC_WH_L": "WHL L",
+        "KC_WH_R": "WHL R",
+        "KC_ACL0": "ACL0",
+        "KC_ACL1": "ACL1",
+        "KC_ACL2": "ACL2",
+        "MS_U": "MS UP",
+        "MS_D": "MS DN",
+        "MS_L": "MS LT",
+        "MS_R": "MS RT",
+        "BTN1": "LCLK",
+        "BTN2": "RCLK",
+        "BTN3": "MCLK",
+        "BTN4": "BTN4",
+        "BTN5": "BTN5",
+        "WH_U": "WHL U",
+        "WH_D": "WHL D",
+        "WH_L": "WHL L",
+        "WH_R": "WHL R",
+        "ACL0": "ACL0",
+        "ACL1": "ACL1",
+        "ACL2": "ACL2"
+    };
+    const isMouseKey = displayRawForRGB.startsWith('KC_MS_') || 
+                       displayRawForRGB.startsWith('KC_BTN') ||
+                       displayRawForRGB.startsWith('KC_WH_') ||
+                       displayRawForRGB.startsWith('KC_ACL') ||
+                       ['MS_', 'BTN', 'WH_', 'ACL'].some(prefix => displayRawForRGB.startsWith(prefix)) ||
+                       mouseLabels[displayRawForRGB] !== undefined;
+    const isMouseFluent = isMouseKey && isFluentMode && isSVGAvailable(displayRawForRGB);
+    const mouseLabel = mouseLabels[displayRawForRGB] || '';
 
     const is1u = (k.w || 56) / 56 < 1.25;
     const shortenLabel = (label) => {
@@ -815,7 +860,7 @@ export function Keycap({
                 modType === 'base' ? (
                     (() => {
                         let textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
-                        if (isWirelessKey) {
+                        if (isWirelessKey || isMouseKey) {
                             textScale = 0.62;
                         }
                         const combinedScale = targetScale * textScale * 0.9;
@@ -1109,12 +1154,72 @@ export function Keycap({
                             )
                         ]);
                     })()
+                ) : isMouseFluent ? (
+                    (() => {
+                        const effectiveSvgSize = 20;
+                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
+                        
+                        return createElement('div', {
+                            style: {
+                                position: 'relative',
+                                width: '100%',
+                                height: '100%',
+                                boxSizing: 'border-box'
+                            }
+                        }, [
+                            svgEl && createElement('div', {
+                                key: 'mouse-svg-render',
+                                style: {
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    zIndex: 1
+                                },
+                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+                            }),
+                            createElement('div', {
+                                key: 'mouse-text-label',
+                                style: {
+                                    position: 'absolute',
+                                    bottom: '1.5px',
+                                    left: 0,
+                                    width: '100%',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    zIndex: 2,
+                                    pointerEvents: 'none',
+                                    userSelect: 'none'
+                                }
+                            }, 
+                                createElement('span', {
+                                    style: {
+                                        fontSize: '11px',
+                                        fontWeight: '500', 
+                                        color: isLight ? '#1e293b' : '#ffffff',
+                                        fontFamily: '"Outfit", sans-serif',
+                                        letterSpacing: '0.06em', 
+                                        lineHeight: '1',
+                                        textTransform: 'uppercase',
+                                        transform: 'scale(0.55)',
+                                        transformOrigin: 'bottom center',
+                                        display: 'inline-block',
+                                        whiteSpace: 'nowrap'
+                                    }
+                                }, mouseLabel)
+                            )
+                        ]);
+                    })()
                 ) : (
                     (() => {
                         let textScale = manualWrap 
                              ? 0.62 
                              : getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
-                        if (isWirelessKey) {
+                        if (isWirelessKey || isMouseKey) {
                             textScale = 0.62;
                         }
                         const combinedScale = targetScale * textScale * 0.9;

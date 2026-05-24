@@ -239,15 +239,22 @@ export const KeymapDictionary = {
     "KC_BT_OFF": { text: "BT OFF", fluent: "\uF1DF" },
 
     // Mouse Keys
-    "KC_MS_U": { text: "MS_UP", fluent: "\uF19C" },
-    "KC_MS_D": { text: "MS_DN", fluent: "\uF149" },
-    "KC_MS_L": { text: "MS_LT", fluent: "\uF15C" },
-    "KC_MS_R": { text: "MS_RT", fluent: "\uF182" },
-    "KC_BTN1": { text: "LCLK", fluent: "\uE446" },
-    "KC_BTN2": { text: "RCLK", fluent: "\uE449" },
-    "KC_BTN3": { text: "MCLK", fluent: "\uE444" },
-    "KC_WH_U": { text: "WHL_UP", fluent: "\uF5F9" },
-    "KC_WH_D": { text: "WHL_DN", fluent: "\uF5F9" },
+    "KC_MS_U": { text: "MS UP", fluent: "\uF19C" }, // arrow_circle_up_24_regular
+    "KC_MS_D": { text: "MS DN", fluent: "\uF149" }, // arrow_circle_down_24_regular
+    "KC_MS_L": { text: "MS LT", fluent: "\uF15C" }, // arrow_circle_left_24_regular
+    "KC_MS_R": { text: "MS RT", fluent: "\uF182" }, // arrow_circle_right_24_regular
+    "KC_BTN1": { text: "LCLK", fluent: "\uE446" }, // cursor_click_24_regular
+    "KC_BTN2": { text: "RCLK", fluent: "\uE449" }, // cursor_click_24_regular
+    "KC_BTN3": { text: "MCLK", fluent: "\uE444" }, // cursor_click_24_regular
+    "KC_BTN4": { text: "BTN4", fluent: "\uE446" }, // cursor_click_24_regular
+    "KC_BTN5": { text: "BTN5", fluent: "\uE446" }, // cursor_click_24_regular
+    "KC_WH_U": { text: "WHL U", fluent: "\uF2CA" }, // chevron_double_up_24_regular
+    "KC_WH_D": { text: "WHL D", fluent: "\uF2C7" }, // chevron_double_down_24_regular
+    "KC_WH_L": { text: "WHL L", fluent: "\uF2C8" }, // chevron_double_left_24_regular
+    "KC_WH_R": { text: "WHL R", fluent: "\uF2C9" }, // chevron_double_right_24_regular
+    "KC_ACL0": { text: "ACL0", fluent: "\uF445" }, // gauge_24_regular
+    "KC_ACL1": { text: "ACL1", fluent: "\uF445" }, // gauge_24_regular
+    "KC_ACL2": { text: "ACL2", fluent: "\uF445" }, // gauge_24_regular
 
     // Bootloader & Utility
     "KC_RESET": { text: "BOOT", fluent: "\uF8C1" },
@@ -348,7 +355,40 @@ const aliasPairs = [
   ['BT_SEL1',                           'KC_BT_SEL_1'],
   ['BT_SEL2',                           'KC_BT_SEL_2'],
   ['BT_SEL3',                           'KC_BT_SEL_3'],
-  ['BT_SEL4',                           'KC_BT_SEL_4']
+  ['BT_SEL4',                           'KC_BT_SEL_4'],
+  // Mouse aliases mapping
+  ['MS_U',                              'KC_MS_U'],
+  ['MS_D',                              'KC_MS_D'],
+  ['MS_L',                              'KC_MS_L'],
+  ['MS_R',                              'KC_MS_R'],
+  ['MS_UP',                             'KC_MS_U'],
+  ['MS_DN',                             'KC_MS_D'],
+  ['MS_LT',                             'KC_MS_L'],
+  ['MS_RT',                             'KC_MS_R'],
+  ['MOVE_UP',                           'KC_MS_U'],
+  ['MOVE_DOWN',                         'KC_MS_D'],
+  ['MOVE_LEFT',                         'KC_MS_L'],
+  ['MOVE_RIGHT',                        'KC_MS_R'],
+  ['BTN1',                              'KC_BTN1'],
+  ['BTN2',                              'KC_BTN2'],
+  ['BTN3',                              'KC_BTN3'],
+  ['BTN4',                              'KC_BTN4'],
+  ['BTN5',                              'KC_BTN5'],
+  ['WH_U',                              'KC_WH_U'],
+  ['WH_D',                              'KC_WH_D'],
+  ['WH_L',                              'KC_WH_L'],
+  ['WH_R',                              'KC_WH_R'],
+  ['WHL_UP',                            'KC_WH_U'],
+  ['WHL_DN',                            'KC_WH_D'],
+  ['WHL_LT',                            'KC_WH_L'],
+  ['WHL_RT',                            'KC_WH_R'],
+  ['SCROLL_UP',                         'KC_WH_U'],
+  ['SCROLL_DOWN',                       'KC_WH_D'],
+  ['SCROLL_LEFT',                       'KC_WH_L'],
+  ['SCROLL_RIGHT',                      'KC_WH_R'],
+  ['ACL0',                              'KC_ACL0'],
+  ['ACL1',                              'KC_ACL1'],
+  ['ACL2',                              'KC_ACL2']
 ];
 
 aliasPairs.forEach(([shortKey, longKey]) => {
