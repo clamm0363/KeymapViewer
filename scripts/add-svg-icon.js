@@ -119,7 +119,7 @@ function findSVGPath(iconName) {
     cleanIconName
   ];
 
-  function searchRecursive(dir, pattern, styleToSearch) {
+  function searchRecursive(dir, pattern, styleToSearch, exactOnly = false) {
     try {
       const safeDir = path.normalize(dir);
       if (!safeDir.startsWith(PROJECT_ROOT)) {
@@ -129,10 +129,22 @@ function findSVGPath(iconName) {
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-          const result = searchRecursive(fullPath, pattern, styleToSearch);
+          const result = searchRecursive(fullPath, pattern, styleToSearch, exactOnly);
           if (result) return result;
-        } else if (entry.name.includes(pattern) && entry.name.includes(`24_${styleToSearch}.svg`)) {
-          return fullPath;
+        } else {
+          if (exactOnly) {
+            // Check for exact matching filename, e.g. ic_fluent_search_24_regular.svg or ic_fluent_search_20_regular.svg
+            const expectedName24 = `ic_fluent_${pattern}_24_${styleToSearch}.svg`;
+            const expectedName20 = `ic_fluent_${pattern}_20_${styleToSearch}.svg`;
+            if (entry.name === expectedName24 || entry.name === expectedName20) {
+              return fullPath;
+            }
+          } else {
+            // Substring fallback matching
+            if (entry.name.includes(pattern) && (entry.name.includes(`24_${styleToSearch}.svg`) || entry.name.includes(`20_${styleToSearch}.svg`))) {
+              return fullPath;
+            }
+          }
         }
       }
     } catch (err) {
@@ -141,16 +153,28 @@ function findSVGPath(iconName) {
     return null;
   }
 
-  // Try the preferred/requested style first
+  // 1. Try EXACT match with preferred style first
   for (const pattern of searchPatterns) {
-    const result = searchRecursive(FLUENT_REPO, pattern, style);
+    const result = searchRecursive(FLUENT_REPO, pattern, style, true);
     if (result) return result;
   }
 
-  // Fallback to alternate style
+  // 2. Try EXACT match with alternate style
   const altStyle = style === 'regular' ? 'filled' : 'regular';
   for (const pattern of searchPatterns) {
-    const result = searchRecursive(FLUENT_REPO, pattern, altStyle);
+    const result = searchRecursive(FLUENT_REPO, pattern, altStyle, true);
+    if (result) return result;
+  }
+
+  // 3. Fallback to broad SUBSTRING match with preferred style
+  for (const pattern of searchPatterns) {
+    const result = searchRecursive(FLUENT_REPO, pattern, style, false);
+    if (result) return result;
+  }
+
+  // 4. Fallback to broad SUBSTRING match with alternate style
+  for (const pattern of searchPatterns) {
+    const result = searchRecursive(FLUENT_REPO, pattern, altStyle, false);
     if (result) return result;
   }
 

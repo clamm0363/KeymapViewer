@@ -102,6 +102,14 @@ const getKeyCategory = (kCode) => {
     ) {
         return 'MEDIA';
     }
+
+    // WEB category
+    if (
+        upper.startsWith('KC_WWW_') ||
+        ['KC_WBAK', 'KC_WFWD', 'KC_WREF', 'KC_WSTP', 'KC_WFAV', 'KC_WHOM', 'KC_WSRC'].some(prefix => upper.startsWith(prefix))
+    ) {
+        return 'WEB';
+    }
     
     // MOUSE category
     if (
@@ -503,6 +511,28 @@ export function Keycap({
                        mouseLabels[displayRawForRGB] !== undefined;
     const isMouseFluent = isMouseKey && isFluentMode && isSVGAvailable(displayRawForRGB);
     const mouseLabel = mouseLabels[displayRawForRGB] || '';
+
+    const webLabels = {
+        "KC_WWW_HOME": "HOME",
+        "KC_WWW_SEARCH": "SRCH",
+        "KC_WWW_FAVORITES": "FAV",
+        "KC_WWW_REFRESH": "RLOD",
+        "KC_WWW_BACK": "BACK",
+        "KC_WWW_FORWARD": "FWD",
+        "KC_WWW_STOP": "STOP",
+        "WHOM": "HOME",
+        "WSRC": "SRCH",
+        "WFAV": "FAV",
+        "WREF": "RLOD",
+        "WBAK": "BACK",
+        "WFWD": "FWD",
+        "WSTP": "STOP"
+    };
+    const isWebKey = displayRawForRGB.startsWith('KC_WWW_') ||
+                      ['KC_WBAK', 'KC_WFWD', 'KC_WREF', 'KC_WSTP', 'KC_WFAV', 'KC_WHOM', 'KC_WSRC'].some(prefix => displayRawForRGB.startsWith(prefix)) ||
+                      webLabels[displayRawForRGB] !== undefined;
+    const isWebFluent = isWebKey && isFluentMode && isSVGAvailable(displayRawForRGB);
+    const webLabel = webLabels[displayRawForRGB] || '';
 
     const is1u = (k.w || 56) / 56 < 1.25;
     const shortenLabel = (label) => {
@@ -1154,6 +1184,66 @@ export function Keycap({
                             )
                         ]);
                     })()
+                ) : isWebFluent ? (
+                    (() => {
+                        const effectiveSvgSize = 20;
+                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
+                        
+                        return createElement('div', {
+                            style: {
+                                position: 'relative',
+                                width: '100%',
+                                height: '100%',
+                                boxSizing: 'border-box'
+                            }
+                        }, [
+                            svgEl && createElement('div', {
+                                key: 'web-svg-render',
+                                style: {
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    zIndex: 1
+                                },
+                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+                            }),
+                            createElement('div', {
+                                key: 'web-text-label',
+                                style: {
+                                    position: 'absolute',
+                                    bottom: '1.5px',
+                                    left: 0,
+                                    width: '100%',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    zIndex: 2,
+                                    pointerEvents: 'none',
+                                    userSelect: 'none'
+                                }
+                            }, 
+                                createElement('span', {
+                                    style: {
+                                        fontSize: '11px',
+                                        fontWeight: '500', 
+                                        color: isLight ? '#1e293b' : '#ffffff',
+                                        fontFamily: '"Outfit", sans-serif',
+                                        letterSpacing: '0.06em', 
+                                        lineHeight: '1',
+                                        textTransform: 'uppercase',
+                                        transform: 'scale(0.55)',
+                                        transformOrigin: 'bottom center',
+                                        display: 'inline-block',
+                                        whiteSpace: 'nowrap'
+                                    }
+                                }, webLabel)
+                            )
+                        ]);
+                    })()
                 ) : isMouseFluent ? (
                     (() => {
                         const effectiveSvgSize = 20;
@@ -1219,7 +1309,7 @@ export function Keycap({
                         let textScale = manualWrap 
                              ? 0.62 
                              : getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
-                        if (isWirelessKey || isMouseKey) {
+                        if (isWirelessKey || isMouseKey || isWebKey) {
                             textScale = 0.62;
                         }
                         const combinedScale = targetScale * textScale * 0.9;
