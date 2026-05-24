@@ -2,11 +2,11 @@
 
 ###############################################################################
 # SVG Icon Automation Script for KeymapViewer
-# Adds Fluent UI System Icons to svg-icons.js
+# Adds Fluent UI System Icons to modular category files under js/icons/
 #
 # Usage:
-#   bash add-svg-icon.sh KC_HELP KC_UNDO KC_CUT
-#   bash add-svg-icon.sh --dry-run KC_HELP
+#   bash scripts/add-svg-icon.sh KC_HELP KC_UNDO KC_CUT
+#   bash scripts/add-svg-icon.sh --dry-run KC_HELP
 ###############################################################################
 
 set -o pipefail
@@ -14,7 +14,7 @@ set -o pipefail
 # Configuration
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 KEYMAP_DICT="$PROJECT_ROOT/js/keymap-dictionary.js"
-SVG_ICONS="$PROJECT_ROOT/js/svg-icons.js"
+ICONS_DIR="$PROJECT_ROOT/js/icons"
 FLUENT_REPO="$PROJECT_ROOT/fluentui-system-icons/assets"
 
 # Parse CLI arguments
@@ -30,14 +30,38 @@ for arg in "$@"; do
 done
 
 if [[ ${#KEYCODES[@]} -eq 0 ]]; then
-  echo '❌ Usage: bash add-svg-icon.sh [--dry-run] KEYCODE [KEYCODE...]'
-  echo '   Example: bash add-svg-icon.sh KC_HELP KC_UNDO'
+  echo '❌ Usage: bash scripts/add-svg-icon.sh [--dry-run] KEYCODE [KEYCODE...]'
+  echo '   Example: bash scripts/add-svg-icon.sh KC_HELP KC_UNDO'
   exit 1
 fi
 
 ###############################################################################
 # Helper Functions
 ###############################################################################
+
+# Map category to target file
+category_to_file() {
+  local cat="$1"
+  case "$cat" in
+    system) echo "system.js" ;;
+    audio|media) echo "media.js" ;;
+    wireless) echo "wireless.js" ;;
+    mouse) echo "mouse.js" ;;
+    *) echo "utility.js" ;;
+  esac
+}
+
+# Map category to export object name
+category_to_export() {
+  local cat="$1"
+  case "$cat" in
+    system) echo "SYSTEM_ICONS" ;;
+    audio|media) echo "MEDIA_ICONS" ;;
+    wireless) echo "WIRELESS_ICONS" ;;
+    mouse) echo "MOUSE_ICONS" ;;
+    *) echo "UTILITY_ICONS" ;;
+  esac
+}
 
 # Extract icon name from keymap-dictionary.js
 get_icon_name_from_keymap() {
@@ -94,7 +118,7 @@ find_svg_path() {
   return 1
 }
 
-# Extract SVG content from file
+# Extract SVG content and standardize color styling
 extract_svg_content() {
   local svg_path="$1"
 
@@ -107,6 +131,9 @@ extract_svg_content() {
     sed 's/fill="#212121"/fill="currentColor"/g' | \
     sed 's/fill="#2c2c2c"/fill="currentColor"/g' | \
     sed 's/fill="#2C2C2C"/fill="currentColor"/g' | \
+    sed 's/stroke="#212121"/stroke="currentColor"/g' | \
+    sed 's/stroke="#2c2c2c"/stroke="currentColor"/g' | \
+    sed 's/stroke="#2C2C2C"/stroke="currentColor"/g' | \
     sed 's/\\/\\\\/g' | \
     sed 's/"/\\"/g' | \
     tr '\n' ' '
@@ -124,6 +151,8 @@ determine_category() {
     echo "web"
   elif [[ "$keycode" =~ KC_MS_ ]] || [[ "$keycode" =~ KC_BTN ]] || [[ "$keycode" =~ KC_WH_ ]]; then
     echo "mouse"
+  elif [[ "$keycode" =~ KC_BT_ ]] || [[ "$keycode" =~ KC_OUT_ ]]; then
+    echo "wireless"
   elif [[ "$keycode" =~ KC_RGB_ ]]; then
     echo "rgb"
   elif [[ "$keycode" =~ JP_ ]] || [[ "$keycode" =~ KC_JP_ ]]; then
@@ -160,30 +189,46 @@ format_icon_code() {
 EOF
 }
 
-# Add icon to svg-icons.js
+# Add icon to category file
 add_icon_to_file() {
   local keycode="$1"
   local icon_code="$2"
+  local category="$3"
 
-  # Find insertion point: before the closing brace of SVG_ICONS
-  local insert_pos=$(tac "$SVG_ICONS" | grep -n "^};" | head -1 | cut -d: -f1)
-  insert_pos=$(($(wc -l < "$SVG_ICONS") - insert_pos + 1))
+  local target_file=$(category_to_file "$category")
+  local target_export=$(category_to_export "$category")
+  local full_path="$ICONS_DIR/$target_file"
 
-  if [[ -z "$insert_pos" ]]; then
-    echo "  ❌ Could not find SVG_ICONS closing brace" >&2
+  if [[ ! -f "$full_path" ]]; then
+    echo "  ❌ Category file does not exist: $target_file" >&2
     return 1
   fi
 
-  # Check if we need a comma
+  # Check if keycode is already defined in the file
+  if grep -q "\<$keycode\>:" "$full_path"; then
+    echo "  ⚠ Keycode \"$keycode\" already defined in $target_file. Skipping write."
+    return 0
+  fi
+
+  # Find insertion point: before the closing brace of the main export block
+  local insert_pos=$(tac "$full_path" | grep -n "^};" | head -1 | cut -d: -f1)
+  insert_pos=$(($(wc -l < "$full_path") - insert_pos + 1))
+
+  if [[ -z "$insert_pos" ]]; then
+    echo "  ❌ Could not find $target_export closing brace" >&2
+    return 1
+  fi
+
+  # Check if we need a comma for the previous element
   local before_line=$((insert_pos - 1))
-  local last_char=$(sed -n "${before_line}p" "$SVG_ICONS" | tail -c 2)
+  local last_char=$(sed -n "${before_line}p" "$full_path" | tail -c 2)
   local needs_comma=0
   [[ "$last_char" != "," ]] && needs_comma=1
 
   # Create temporary file with the new entry
   local temp_file=$(mktemp)
 
-  head -n $((insert_pos - 1)) "$SVG_ICONS" > "$temp_file"
+  head -n $((insert_pos - 1)) "$full_path" > "$temp_file"
 
   if [[ $needs_comma -eq 1 ]]; then
     echo "," >> "$temp_file"
@@ -192,14 +237,27 @@ add_icon_to_file() {
   echo "$icon_code" >> "$temp_file"
   echo "" >> "$temp_file"
 
-  tail -n +$insert_pos "$SVG_ICONS" >> "$temp_file"
+  tail -n +$insert_pos "$full_path" >> "$temp_file"
 
   if [[ $DRY_RUN -eq 0 ]]; then
-    mv "$temp_file" "$SVG_ICONS"
+    # Auto-validate syntax with node before keeping
+    if hash node 2>/dev/null; then
+      if node --check "$temp_file" 2>/dev/null; then
+        mv "$temp_file" "$full_path"
+        echo "  ✓ Syntax check passed successfully for $target_file"
+      else
+        echo "  ❌ Syntax validation failed! Reverting changes..." >&2
+        rm "$temp_file"
+        return 1
+      fi
+    else
+      mv "$temp_file" "$full_path"
+    fi
   else
     rm "$temp_file"
   fi
 
+  echo "  ✅ Successfully added to js/icons/$target_file"
   return 0
 }
 
@@ -207,7 +265,7 @@ add_icon_to_file() {
 # Main Processing
 ###############################################################################
 
-echo "🚀 SVG Icon Automation Script"
+echo "🚀 SVG Icon Modular Automation Script"
 if [[ $DRY_RUN -eq 1 ]]; then
   echo "   [DRY RUN MODE - No changes will be made]"
 fi
@@ -260,14 +318,14 @@ for keycode in "${KEYCODES[@]}"; do
   category=$(determine_category "$keycode")
   icon_code=$(format_icon_code "$keycode" "$svg_content" "$fallback" "$category")
 
-  # Step 6: Add to svg-icons.js
-  if ! add_icon_to_file "$keycode" "$icon_code"; then
-    RESULTS+=("{\"keyCode\": \"$keycode\", \"success\": false, \"error\": \"Failed to add to svg-icons.js\"}")
+  # Step 6: Add to category file
+  if ! add_icon_to_file "$keycode" "$icon_code" "$category"; then
+    RESULTS+=("{\"keyCode\": \"$keycode\", \"success\": false, \"error\": \"Failed to add to category module\"}")
     continue
   fi
 
-  echo "  ✅ Successfully added to svg-icons.js"
-  RESULTS+=("{\"keyCode\": \"$keycode\", \"success\": true, \"iconName\": \"$icon_name\", \"category\": \"$category\", \"svgSize\": $svg_size}")
+  target_file=$(category_to_file "$category")
+  RESULTS+=("{\"keyCode\": \"$keycode\", \"success\": true, \"iconName\": \"$icon_name\", \"category\": \"$category\", \"targetFile\": \"$target_file\", \"svgSize\": $svg_size}")
 done
 
 # Print summary

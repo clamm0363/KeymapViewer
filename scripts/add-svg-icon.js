@@ -2,11 +2,11 @@
 
 /**
  * SVG Icon Automation Script
- * Adds Fluent UI System Icons to svg-icons.js
+ * Adds Fluent UI System Icons to modular category files under js/icons/
  *
  * Usage:
- *   node add-svg-icon.js KC_HELP KC_UNDO KC_CUT
- *   node add-svg-icon.js --dry-run KC_HELP
+ *   node scripts/add-svg-icon.js KC_HELP KC_UNDO KC_CUT
+ *   node scripts/add-svg-icon.js --dry-run KC_HELP
  */
 
 const fs = require('fs');
@@ -16,8 +16,21 @@ const { execSync } = require('child_process');
 // Configuration
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const KEYMAP_DICT = path.join(PROJECT_ROOT, 'js', 'keymap-dictionary.js');
-const SVG_ICONS = path.join(PROJECT_ROOT, 'js', 'svg-icons.js');
 const FLUENT_REPO = path.join(PROJECT_ROOT, 'fluentui-system-icons', 'assets');
+const ICONS_DIR = path.join(PROJECT_ROOT, 'js', 'icons');
+
+// Category-to-File mapping dictionary
+const CATEGORY_MAP = {
+  'system': { file: 'system.js', exportName: 'SYSTEM_ICONS' },
+  'audio': { file: 'media.js', exportName: 'MEDIA_ICONS' },
+  'media': { file: 'media.js', exportName: 'MEDIA_ICONS' },
+  'wireless': { file: 'wireless.js', exportName: 'WIRELESS_ICONS' },
+  'mouse': { file: 'mouse.js', exportName: 'MOUSE_ICONS' },
+  'web': { file: 'utility.js', exportName: 'UTILITY_ICONS' },
+  'rgb': { file: 'utility.js', exportName: 'UTILITY_ICONS' },
+  'jp-keys': { file: 'utility.js', exportName: 'UTILITY_ICONS' },
+  'utility': { file: 'utility.js', exportName: 'UTILITY_ICONS' }
+};
 
 // Parse CLI arguments
 const args = process.argv.slice(2);
@@ -25,8 +38,8 @@ const dryRun = args.includes('--dry-run');
 const keyCodes = args.filter(arg => !arg.startsWith('--'));
 
 if (keyCodes.length === 0) {
-  console.error('❌ Usage: node add-svg-icon.js [--dry-run] KEYCODE [KEYCODE...]');
-  console.error('   Example: node add-svg-icon.js KC_HELP KC_UNDO');
+  console.error('❌ Usage: node scripts/add-svg-icon.js [--dry-run] KEYCODE [KEYCODE...]');
+  console.error('   Example: node scripts/add-svg-icon.js KC_HELP KC_UNDO');
   process.exit(1);
 }
 
@@ -145,7 +158,7 @@ function findSVGPath(iconName) {
 }
 
 /**
- * Extract SVG content from file
+ * Extract SVG content from file and normalize color variables
  */
 function extractSVGContent(svgPath) {
   try {
@@ -153,11 +166,20 @@ function extractSVGContent(svgPath) {
     if (!safePath.startsWith(PROJECT_ROOT)) {
       throw new Error('Path traversal detected');
     }
-    const content = fs.readFileSync(safePath, 'utf8');
+    let content = fs.readFileSync(safePath, 'utf8');
+    
     // Extract only the SVG element
     const svgMatch = content.match(/<svg[^>]*>[\s\S]*?<\/svg>/);
     if (svgMatch) {
-      return svgMatch[0];
+      let cleanedSvg = svgMatch[0];
+      
+      // Standardize filled/stroke colors to support Light/Dark theme switching seamlessly
+      cleanedSvg = cleanedSvg
+        .replace(/fill="#(212121|2c2c2c|2C2C2C)"/g, 'fill="currentColor"')
+        .replace(/stroke="#(212121|2c2c2c|2C2C2C)"/g, 'stroke="currentColor"')
+        .trim();
+        
+      return cleanedSvg;
     }
   } catch (err) {
     console.error(`⚠️  Error reading SVG: ${err.message}`);
@@ -173,6 +195,7 @@ function determineCategory(keyCode) {
   if (keyCode.startsWith('KC_MEDIA_')) return 'media';
   if (keyCode.startsWith('KC_WWW_')) return 'web';
   if (keyCode.startsWith('KC_MS_') || keyCode.startsWith('KC_BTN') || keyCode.startsWith('KC_WH_')) return 'mouse';
+  if (keyCode.startsWith('KC_BT_') || keyCode.startsWith('KC_OUT_')) return 'wireless';
   if (keyCode.startsWith('KC_RGB_')) return 'rgb';
   if (keyCode.startsWith('JP_') || keyCode.startsWith('KC_JP_')) return 'jp-keys';
   if (keyCode.includes('BRIGHTNESS')) return 'system';
@@ -181,13 +204,12 @@ function determineCategory(keyCode) {
 }
 
 /**
- * Generate icon object for svg-icons.js
+ * Generate icon object
  */
-function generateIconObject(keyCode, svgContent, fallback) {
+function generateIconObject(keyCode, svgContent, fallback, category) {
   const id = keyCode.toLowerCase().replace(/_/g, '-') + '-icon';
-  const category = determineCategory(keyCode);
 
-  const icon = {
+  return {
     id,
     svg: svgContent,
     fallback,
@@ -195,8 +217,6 @@ function generateIconObject(keyCode, svgContent, fallback) {
     height: 24,
     category
   };
-
-  return icon;
 }
 
 /**
@@ -214,36 +234,63 @@ function formatIconCode(keyCode, icon) {
 }
 
 /**
- * Add icon entry to svg-icons.js
+ * Add icon entry to the corresponding category file in js/icons/
  */
-function addIconToFile(keyCode, iconCode) {
+function addIconToFile(keyCode, iconCode, category) {
+  const target = CATEGORY_MAP[category] || CATEGORY_MAP['utility'];
+  const targetFile = path.join(ICONS_DIR, target.file);
+
   try {
-    const safePath = path.normalize(SVG_ICONS);
+    const safePath = path.normalize(targetFile);
     if (!safePath.startsWith(PROJECT_ROOT)) {
       throw new Error('Path traversal detected');
     }
-    let content = fs.readFileSync(safePath, 'utf8');
-
-    // Find insertion point: before the closing brace of SVG_ICONS
-    const insertPoint = content.lastIndexOf('};');
-    if (insertPoint === -1) {
-      throw new Error('Could not find SVG_ICONS closing brace');
+    
+    if (!fs.existsSync(safePath)) {
+      throw new Error(`Category file does not exist: ${target.file}`);
     }
 
-    // Add comma to previous entry if needed
+    const originalContent = fs.readFileSync(safePath, 'utf8');
+    let content = originalContent;
+
+    // Check if keycode is already defined in the target file
+    const keyMatchRegex = new RegExp(`\\b${keyCode}\\s*:\\s*{`);
+    if (keyMatchRegex.test(content)) {
+      console.log(`  ⚠ Keycode "${keyCode}" already defined in ${target.file}. Skipping write.`);
+      return true;
+    }
+
+    // Find insertion point: before the closing brace of the main export object
+    const insertPoint = content.lastIndexOf('};');
+    if (insertPoint === -1) {
+      throw new Error(`Could not find closing brace of ${target.exportName} in ${target.file}`);
+    }
+
+    // Check if a comma is needed for the previous item
     const beforeInsertStr = content.substring(0, insertPoint).trim();
     const needsComma = beforeInsertStr.endsWith('}');
 
     const newEntry = `${needsComma ? ',' : ''}\n\n${iconCode}\n`;
-
     content = content.substring(0, insertPoint) + newEntry + content.substring(insertPoint);
 
     if (!dryRun) {
       fs.writeFileSync(safePath, content, 'utf8');
+      
+      // Auto-validate syntax
+      try {
+        execSync(`node --check "${safePath}"`, { stdio: 'ignore' });
+        console.log(`  ✓ Syntax check passed successfully for ${target.file}`);
+      } catch (err) {
+        console.error(`  ❌ Syntax validation failed after write! Reverting changes to ${target.file}...`);
+        fs.writeFileSync(safePath, originalContent, 'utf8');
+        return false;
+      }
     }
+    
+    console.log(`  ✅ Successfully added to js/icons/${target.file}`);
     return true;
   } catch (err) {
-    console.error(`❌ Error writing to svg-icons.js: ${err.message}`);
+    console.error(`❌ Error writing to category file: ${err.message}`);
     return false;
   }
 }
@@ -284,24 +331,25 @@ function processKeyCode(keyCode) {
     console.error(`  ❌ Failed to extract SVG content`);
     return { keyCode, success: false, error: 'SVG extraction failed' };
   }
-  console.log(`  ✓ SVG extracted (${svgContent.length} bytes)`);
+  console.log(`  ✓ SVG extracted and standardized (${svgContent.length} bytes)`);
 
-  // Step 5: Generate icon object
-  const icon = generateIconObject(keyCode, svgContent, fallback);
+  // Step 5: Generate and format icon object
+  const category = determineCategory(keyCode);
+  const icon = generateIconObject(keyCode, svgContent, fallback, category);
   const iconCode = formatIconCode(keyCode, icon);
 
-  // Step 6: Add to svg-icons.js
-  if (!addIconToFile(keyCode, iconCode)) {
-    return { keyCode, success: false, error: 'Failed to add to svg-icons.js' };
+  // Step 6: Add to category file
+  if (!addIconToFile(keyCode, iconCode, category)) {
+    return { keyCode, success: false, error: `Failed to add to category module` };
   }
 
-  console.log(`  ✅ Successfully added to svg-icons.js`);
   return {
     keyCode,
     success: true,
     iconName,
     fallback,
-    category: icon.category,
+    category,
+    targetFile: CATEGORY_MAP[category]?.file || 'utility.js',
     svgSize: svgContent.length
   };
 }
@@ -310,7 +358,7 @@ function processKeyCode(keyCode) {
  * Main entry point
  */
 function main() {
-  console.log('🚀 SVG Icon Automation Script');
+  console.log('🚀 SVG Icon Modular Automation Script');
   if (dryRun) {
     console.log('   [DRY RUN MODE - No changes will be made]');
   }
@@ -333,7 +381,7 @@ function main() {
     console.log('   (Dry run - no changes made)');
   }
 
-  // Output JSON for agent processing
+  // Output JSON
   console.log('\n📋 JSON Output:');
   console.log(JSON.stringify(results, null, 2));
 
