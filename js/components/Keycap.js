@@ -73,6 +73,16 @@ const getKeyCategory = (kCode) => {
     const upper = kCode.toUpperCase();
     if (upper.startsWith('KC_RGB_')) return 'RGB';
     
+    // WIRELESS category
+    if (
+        upper.startsWith('KC_BT_') || 
+        upper.startsWith('KC_OUT_') ||
+        upper.startsWith('BT_') ||
+        upper.startsWith('OUT_')
+    ) {
+        return 'WIRE';
+    }
+    
     // SOUND category
     if (
         upper.startsWith('KC_AUDIO_') || 
@@ -406,6 +416,48 @@ export function Keycap({
 
     const isMagicKey = displayRawForRGB.includes('MAGIC_TOGGLE_') || ['KC_AG_TOGG', 'AG_TOGG', 'KC_CG_TOGG', 'CG_TOGG'].includes(displayRawForRGB);
     const isMagicFluent = isMagicKey && isFluentMode && isSVGAvailable(displayRawForRGB);
+
+    const wirelessLabels = {
+        "KC_OUT_AUTO": "AUTO",
+        "KC_OUT_USB": "USB",
+        "KC_OUT_BT": "BT",
+        "KC_OUT_2G4": "2.4G",
+        "KC_BT_SEL_0": "BT 1",
+        "KC_BT_SEL_1": "BT 2",
+        "KC_BT_SEL_2": "BT 3",
+        "KC_BT_SEL_3": "BT 4",
+        "KC_BT_SEL_4": "BT 5",
+        "KC_BT_NXT": "NEXT",
+        "KC_BT_PRV": "PREV",
+        "KC_BT_CLR": "CLR",
+        "KC_BT_CLR_ALL": "CLR ALL",
+        "KC_BT_TOGG": "TOGG",
+        "KC_BT_ON": "ON",
+        "KC_BT_OFF": "OFF",
+        "OUT_AUTO": "AUTO",
+        "OUT_USB": "USB",
+        "OUT_BT": "BT",
+        "OUT_2G4": "2.4G",
+        "BT_SEL_0": "BT 1",
+        "BT_SEL_1": "BT 2",
+        "BT_SEL_2": "BT 3",
+        "BT_SEL_3": "BT 4",
+        "BT_SEL_4": "BT 5",
+        "BT_CLR": "CLR",
+        "BT_CLR_ALL": "CLR ALL",
+        "BT_TOGG": "TOGG",
+        "BT_NXT": "NEXT",
+        "BT_PRV": "PREV",
+        "BT_ON": "ON",
+        "BT_OFF": "OFF"
+    };
+    const isWirelessKey = displayRawForRGB.startsWith('KC_BT_') || 
+                          displayRawForRGB.startsWith('KC_OUT_') ||
+                          displayRawForRGB.startsWith('BT_') ||
+                          displayRawForRGB.startsWith('OUT_') ||
+                          wirelessLabels[displayRawForRGB] !== undefined;
+    const isWirelessFluent = isWirelessKey && isFluentMode && isSVGAvailable(displayRawForRGB);
+    const wirelessLabel = wirelessLabels[displayRawForRGB] || '';
 
     const is1u = (k.w || 56) / 56 < 1.25;
     const shortenLabel = (label) => {
@@ -990,6 +1042,66 @@ export function Keycap({
                                         whiteSpace: 'nowrap'
                                     }
                                 }, magicLabel)
+                            )
+                        ]);
+                    })()
+                ) : isWirelessFluent ? (
+                    (() => {
+                        const effectiveSvgSize = 20;
+                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
+                        
+                        return createElement('div', {
+                            style: {
+                                position: 'relative',
+                                width: '100%',
+                                height: '100%',
+                                boxSizing: 'border-box'
+                            }
+                        }, [
+                            svgEl && createElement('div', {
+                                key: 'wireless-svg-render',
+                                style: {
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    zIndex: 1
+                                },
+                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+                            }),
+                            createElement('div', {
+                                key: 'wireless-text-label',
+                                style: {
+                                    position: 'absolute',
+                                    bottom: '1.5px',
+                                    left: 0,
+                                    width: '100%',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    zIndex: 2,
+                                    pointerEvents: 'none',
+                                    userSelect: 'none'
+                                }
+                            }, 
+                                createElement('span', {
+                                    style: {
+                                        fontSize: '11px',
+                                        fontWeight: '500', 
+                                        color: isLight ? '#1e293b' : '#ffffff',
+                                        fontFamily: '"Outfit", sans-serif',
+                                        letterSpacing: '0.06em', 
+                                        lineHeight: '1',
+                                        textTransform: 'uppercase',
+                                        transform: 'scale(0.55)',
+                                        transformOrigin: 'bottom center',
+                                        display: 'inline-block',
+                                        whiteSpace: 'nowrap'
+                                    }
+                                }, wirelessLabel)
                             )
                         ]);
                     })()

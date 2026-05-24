@@ -224,10 +224,19 @@ export const KeymapDictionary = {
     "KC_OUT_AUTO": { text: "OUT_AUTO", fluent: "\uF6AA" },
     "KC_OUT_USB": { text: "OUT_USB", fluent: "\uF0BA1" },
     "KC_OUT_BT": { text: "OUT_BT", fluent: "\uF1DF" },
+    "KC_OUT_2G4": { text: "OUT_2G4", fluent: "\uF6AA" },
     "KC_BT_SEL_0": { text: "BT 1", fluent: "\uF1DF" },
     "KC_BT_SEL_1": { text: "BT 2", fluent: "\uF1DF" },
     "KC_BT_SEL_2": { text: "BT 3", fluent: "\uF1DF" },
+    "KC_BT_SEL_3": { text: "BT 4", fluent: "\uF1DF" },
+    "KC_BT_SEL_4": { text: "BT 5", fluent: "\uF1DF" },
     "KC_BT_CLR": { text: "BT_CLR", fluent: "\uF1E1" },
+    "KC_BT_CLR_ALL": { text: "BT_ALL", fluent: "\uF1E1" },
+    "KC_BT_TOGG": { text: "BT_TOG", fluent: "\uF1E1" },
+    "KC_BT_NXT": { text: "BT_NXT", fluent: "\uF1DF" },
+    "KC_BT_PRV": { text: "BT_PRV", fluent: "\uF1DF" },
+    "KC_BT_ON": { text: "BT_ON", fluent: "\uF1DF" },
+    "KC_BT_OFF": { text: "BT_OFF", fluent: "\uF1DF" },
 
     // Mouse Keys
     "KC_MS_U": { text: "MS_UP", fluent: "\uF19C" },
@@ -314,7 +323,32 @@ const aliasPairs = [
   ['CG_TOGG',                           'MAGIC_TOGGLE_CTL_GUI'],
   ['KC_CG_TOGG',                        'MAGIC_TOGGLE_CTL_GUI'],
   ['AG_TOGG',                           'MAGIC_TOGGLE_ALT_GUI'],
-  ['KC_AG_TOGG',                        'MAGIC_TOGGLE_ALT_GUI']
+  ['KC_AG_TOGG',                        'MAGIC_TOGGLE_ALT_GUI'],
+  // Wireless standard aliases mapping
+  ['OUT_AUTO',                          'KC_OUT_AUTO'],
+  ['OUT_USB',                           'KC_OUT_USB'],
+  ['OUT_BT',                            'KC_OUT_BT'],
+  ['OUT_2G4',                           'KC_OUT_2G4'],
+  ['BT_SEL_0',                          'KC_BT_SEL_0'],
+  ['BT_SEL_1',                          'KC_BT_SEL_1'],
+  ['BT_SEL_2',                          'KC_BT_SEL_2'],
+  ['BT_SEL_3',                          'KC_BT_SEL_3'],
+  ['BT_SEL_4',                          'KC_BT_SEL_4'],
+  ['BT_CLR',                            'KC_BT_CLR'],
+  ['BT_CLR_ALL',                        'KC_BT_CLR_ALL'],
+  ['BT_TOGG',                           'KC_BT_TOGG'],
+  ['BT_NXT',                            'KC_BT_NXT'],
+  ['BT_PRV',                            'KC_BT_PRV'],
+  ['BT_ON',                             'KC_BT_ON'],
+  ['BT_OFF',                            'KC_BT_OFF'],
+  // ZMK style wireless aliases fallback
+  ['OUT_TOG',                           'KC_OUT_AUTO'],
+  ['OUT_BLE',                           'KC_OUT_BT'],
+  ['BT_SEL0',                           'KC_BT_SEL_0'],
+  ['BT_SEL1',                           'KC_BT_SEL_1'],
+  ['BT_SEL2',                           'KC_BT_SEL_2'],
+  ['BT_SEL3',                           'KC_BT_SEL_3'],
+  ['BT_SEL4',                           'KC_BT_SEL_4']
 ];
 
 aliasPairs.forEach(([shortKey, longKey]) => {
