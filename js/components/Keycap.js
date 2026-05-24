@@ -813,7 +813,10 @@ export function Keycap({
             },
                 modType === 'base' ? (
                     (() => {
-                        const textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
+                        let textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
+                        if (isWirelessKey) {
+                            textScale = 0.62;
+                        }
                         const combinedScale = targetScale * textScale * 0.9;
                         const effectiveFontSize = 22 * combinedScale;
                         const needsScaleBypass = effectiveFontSize < 14;
@@ -1107,9 +1110,12 @@ export function Keycap({
                     })()
                 ) : (
                     (() => {
-                        const textScale = manualWrap 
+                        let textScale = manualWrap 
                              ? 0.62 
                              : getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
+                        if (isWirelessKey) {
+                            textScale = 0.62;
+                        }
                         const combinedScale = targetScale * textScale * 0.9;
                         
                         const keyCategory = getKeyCategory(displayRaw);
