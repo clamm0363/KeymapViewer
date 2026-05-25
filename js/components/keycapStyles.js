@@ -1,5 +1,13 @@
 import { FLUENT_FONT_STACK } from '../constants.js';
 
+const withAlpha = (hexColor, alpha) => {
+    if (typeof hexColor !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(hexColor)) {
+        return hexColor;
+    }
+    const normalized = Math.max(0, Math.min(255, alpha));
+    return `${hexColor}${normalized.toString(16).padStart(2, '0')}`;
+};
+
 export const getKeycapFrameStyle = ({ k, isLayerKey, encoderStyles, isLight, isAppDark }) => {
     const paddingOffset = 20;
     const lightBorder = isAppDark ? '#94a3b8' : '#cbd5e1';
@@ -139,6 +147,54 @@ export const getFooterContainerStyle = (isLight, isAppDark) => ({
     borderTop: `2px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#475569' : '#334155')}`
 });
 
+export const getTopTagContainerStyle = () => ({
+    position: 'absolute',
+    top: '-6px',
+    left: '3px',
+    zIndex: 12,
+    pointerEvents: 'none',
+    userSelect: 'none'
+});
+
+export const getTopTagStyle = (isLight, accentColor) => ({
+    display: 'inline-block',
+    color: accentColor,
+    fontSize: '11px',
+    fontWeight: '600',
+    fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
+    letterSpacing: '0.04em',
+    lineHeight: '1',
+    textTransform: 'uppercase',
+    fontVariantLigatures: 'none',
+    transform: 'scale(0.52)',
+    transformOrigin: 'top left',
+    whiteSpace: 'nowrap'
+});
+
+export const getBottomCaptionContainerStyle = () => ({
+    position: 'absolute',
+    right: '3px',
+    bottom: '-4.5px',
+    zIndex: 10,
+    pointerEvents: 'none',
+    userSelect: 'none'
+});
+
+export const getBottomCaptionStyle = (isLight, color = null) => ({
+    fontSize: '15px',
+    fontWeight: '500',
+    color: color || (isLight ? '#64748b' : '#94a3b8'),
+    opacity: 0.78,
+    fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
+    letterSpacing: '0.05em',
+    lineHeight: '1',
+    textTransform: 'uppercase',
+    transform: 'scale(0.52)',
+    transformOrigin: 'bottom right',
+    display: 'inline-block',
+    whiteSpace: 'nowrap'
+});
+
 export const getFooterTextStyle = (scale = 0.72, translateY = 0, fontSize = '14px') => {
     const baseFontSize = parseFloat(fontSize);
     const computedSize = Math.round(baseFontSize * scale * 100) / 100;
@@ -156,36 +212,107 @@ export const getFooterTextStyle = (scale = 0.72, translateY = 0, fontSize = '14p
 export const getOffsetContainerStyle = () => ({
     flex: 1,
     position: 'relative',
-    width: '100%'
+    width: '100%',
+    height: '100%',
+    transform: 'translate(1px, -3px)'
 });
 
 export const getOffsetPrimaryStyle = (isLight, isFluent = false, customFontSize = null) => {
-    const baseFontSize = parseFloat(customFontSize || (isFluent ? '26' : '22'));
-    const computedSize = Math.round(baseFontSize * 0.75 * 100) / 100;
+    const baseFontSize = parseFloat(customFontSize || (isFluent ? '24' : '22'));
+    const computedSize = Math.round(baseFontSize * (isFluent ? 0.78 : 0.66) * 100) / 100;
     return {
-        position: 'absolute',
-        left: '6px',
-        bottom: '3.5px',
         fontSize: `${computedSize}px`,
         fontWeight: '400',
         fontFamily: isFluent
             ? FLUENT_FONT_STACK.primary
             : FLUENT_FONT_STACK.fallback,
         color: isLight ? '#1e293b' : '#fff',
-        lineHeight: '1'
+        lineHeight: '1',
+        textAlign: 'left',
+        textTransform: 'uppercase',
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'flex-start',
+        whiteSpace: 'nowrap',
+        fontVariantLigatures: 'none'
     };
 };
 
+export const getOffsetPrimarySlotStyle = () => ({
+    position: 'absolute',
+    left: '7px',
+    bottom: '4px',
+    zIndex: 10,
+    pointerEvents: 'none',
+    userSelect: 'none',
+    display: 'flex',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
+    maxWidth: 'calc(100% - 24px)',
+    minHeight: '16px'
+});
+
+export const getOffsetPrimaryContentStyle = (isLight, isFluent = false, customFontSize = null) => ({
+    ...getOffsetPrimaryStyle(isLight, isFluent, customFontSize),
+    width: 'auto'
+});
+
 export const getOffsetSecondaryStyle = (isLight) => ({
     position: 'absolute',
-    right: '6px',
-    top: '3px',
-    fontSize: '12px',
-    fontWeight: '400',
+    right: '5px',
+    top: '13px',
+    maxWidth: 'calc(100% - 24px)',
+    fontSize: '10px',
+    fontWeight: '500',
     fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
     color: isLight ? '#64748b' : '#94a3b8',
-    opacity: 0.8,
-    lineHeight: '1'
+    opacity: 0.68,
+    lineHeight: '1',
+    textAlign: 'right',
+    textTransform: 'uppercase',
+    transform: 'scale(0.68)',
+    transformOrigin: 'top right',
+    whiteSpace: 'nowrap',
+    fontVariantLigatures: 'none'
+});
+
+export const getOffsetSecondarySlotStyle = () => ({
+    position: 'absolute',
+    right: '5px',
+    top: '14px',
+    zIndex: 10,
+    pointerEvents: 'none',
+    userSelect: 'none',
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+    minWidth: '14px',
+    minHeight: '10px'
+});
+
+export const getOffsetSecondaryContentStyle = (isLight, color, customFontSize = '10px') => ({
+    fontSize: customFontSize,
+    fontWeight: '500',
+    fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
+    color: color || (isLight ? '#64748b' : '#94a3b8'),
+    opacity: 0.82,
+    lineHeight: '1',
+    textAlign: 'right',
+    textTransform: 'uppercase',
+    display: 'inline-block',
+    whiteSpace: 'nowrap',
+    fontVariantLigatures: 'none',
+    transform: 'scale(0.64)',
+    transformOrigin: 'top right'
+});
+
+export const getOffsetSecondaryAccentStyle = (isLight, color, customFontSize = '10px') => ({
+    ...getOffsetSecondaryStyle(isLight),
+    top: '14px',
+    fontSize: customFontSize,
+    color,
+    transform: 'scale(0.64)',
+    opacity: 0.82
 });
 
 export const getTextScale = (displayText, keyWidth = 1, isFluentIcon = false) => {

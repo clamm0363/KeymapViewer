@@ -5,6 +5,7 @@ import { getKeyCategory } from './keycapIconUtils.js';
 import { getMainLegendStyle, getTextScale } from './keycapStyles.js';
 import {
     renderFluentIconWithBottomLabel,
+    renderBottomCaption,
     renderInlineFluentIcon
 } from './keycapRenderers.js';
 
@@ -166,33 +167,9 @@ export function renderStandardKeycap({
                 )
             ) : null);
         })(),
-        displayMode === 'Text' && keyCategory && createElement('div', {
-            key: 'cat-badge',
-            className: 'category-badge',
-            style: {
-                position: 'absolute',
-                right: '3px',
-                bottom: '-4.5px',
-                zIndex: 10,
-                pointerEvents: 'none',
-                userSelect: 'none'
-            }
-        },
-        createElement('span', {
-            style: {
-                fontSize: '15px',
-                fontWeight: '500',
-                color: isLight ? '#64748b' : '#94a3b8',
-                opacity: 0.7,
-                fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
-                letterSpacing: '0.05em',
-                lineHeight: '1',
-                textTransform: 'uppercase',
-                transform: 'scale(0.5)',
-                transformOrigin: 'bottom right',
-                display: 'inline-block',
-                whiteSpace: 'nowrap'
-            }
-        }, keyCategory))
+        displayMode === 'Text' && keyCategory ? renderBottomCaption({
+            label: keyCategory,
+            isLight
+        }) : null
     ]));
 }

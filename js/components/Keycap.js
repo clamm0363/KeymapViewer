@@ -252,7 +252,8 @@ export function Keycap({
                 tapLabel,
                 isLight,
                 isAppDark,
-                kWidth: (k.w || 56) / 56
+                kWidth: (k.w || 56) / 56,
+                targetScale
             })
         ) : isModKey ? (
             renderModKeycap({
@@ -269,6 +270,7 @@ export function Keycap({
                 canWrap,
                 baseLabel,
                 baseIsFluent,
+                keyStyle,
                 isAppDark,
                 modLabel
             })

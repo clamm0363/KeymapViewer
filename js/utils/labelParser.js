@@ -105,6 +105,28 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
     let isFluentIcon = false;
 
     const dict = KeymapDictionary || { modifiers: {}, keys: {} };
+    const macModifierSymbolMap = {
+        CTRL: '⌃',
+        SHIFT: '⇧',
+        SHFT: '⇧',
+        ALT: '⌥',
+        GUI: '⌘',
+        WIN: '⌘',
+        CMD: '⌘'
+    };
+    const formatModifierLabel = (modifierName) => {
+        const upperModifier = modifierName.toUpperCase();
+        if (keyStyle === 'Mac' && macModifierSymbolMap[upperModifier]) {
+            return macModifierSymbolMap[upperModifier];
+        }
+        if (upperModifier === 'GUI') {
+            return keyStyle === 'Mac' ? 'CMD' : 'WIN';
+        }
+        if (upperModifier === 'ALT') {
+            return keyStyle === 'Mac' ? 'OPT' : 'ALT';
+        }
+        return modifierName;
+    };
     
     // Pure dictionary lookup (no locale overrides)
     const getDictLabel = (kCode) => {
@@ -251,10 +273,10 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
             modLabel = 'HYPR';
         } else if (modKeys.length > 1) {
             const shortMap = keyStyle === 'Mac' ? {
-                'CTRL': 'C',
-                'SHIFT': 'S',
-                'SHFT': 'S',
-                'ALT': 'O',
+                'CTRL': '⌃',
+                'SHIFT': '⇧',
+                'SHFT': '⇧',
+                'ALT': '⌥',
                 'GUI': '⌘',
                 'WIN': '⌘',
                 'CMD': '⌘'
@@ -269,14 +291,7 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
             };
             modLabel = modKeys.map(k => shortMap[k.toUpperCase()] || k).join('+');
         } else {
-            const u = complex.mod.toUpperCase();
-            if (u === 'GUI') {
-                modLabel = keyStyle === 'Mac' ? 'CMD' : 'WIN';
-            } else if (u === 'ALT') {
-                modLabel = keyStyle === 'Mac' ? 'OPT' : 'ALT';
-            } else {
-                modLabel = complex.mod;
-            }
+            modLabel = formatModifierLabel(complex.mod);
         }
 
         const baseRaw = complex.base;
