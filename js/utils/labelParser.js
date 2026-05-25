@@ -1,6 +1,10 @@
 import { SYMBOL_MAP, FLUENT_MAP } from '../constants.js';
 import { getRawLabel } from './helpers.js';
-import { KeymapDictionary } from '../keymap-dictionary.js';
+import {
+    getModifierLabel,
+    KeymapDictionary,
+    normalizeModifierLabel
+} from '../keymap-dictionary.js';
 
 export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, isJIS = false) {
     const safeKeyId = keyId || '';
@@ -105,27 +109,12 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
     let isFluentIcon = false;
 
     const dict = KeymapDictionary || { modifiers: {}, keys: {} };
-    const macModifierSymbolMap = {
-        CTRL: '⌃',
-        SHIFT: '⇧',
-        SHFT: '⇧',
-        ALT: '⌥',
-        GUI: '⌘',
-        WIN: '⌘',
-        CMD: '⌘'
-    };
     const formatModifierLabel = (modifierName) => {
-        const upperModifier = modifierName.toUpperCase();
-        if (keyStyle === 'Mac' && macModifierSymbolMap[upperModifier]) {
-            return macModifierSymbolMap[upperModifier];
-        }
-        if (upperModifier === 'GUI') {
-            return keyStyle === 'Mac' ? 'CMD' : 'WIN';
-        }
-        if (upperModifier === 'ALT') {
-            return keyStyle === 'Mac' ? 'OPT' : 'ALT';
-        }
-        return modifierName;
+        return getModifierLabel(modifierName, {
+            keyStyle,
+            variant: 'default',
+            preferSymbol: keyStyle === 'Mac' && displayMode === 'Fluent'
+        });
     };
     
     // Pure dictionary lookup (no locale overrides)
@@ -252,8 +241,12 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
             'KC_LGUI': 'GUI', 'KC_RGUI': 'GUI',
             'KC_LCMD': 'GUI', 'KC_RCMD': 'GUI'
         };
-        modLabel = baseModMap[cleanRaw] || cleanRaw.replace('KC_', '');
-        modKeys = [modLabel];
+        const canonicalMod = normalizeModifierLabel(baseModMap[cleanRaw] || cleanRaw.replace('KC_', ''));
+        modLabel = getModifierLabel(canonicalMod, {
+            keyStyle,
+            variant: 'default'
+        });
+        modKeys = [canonicalMod];
     } else if (complex && (complex.type === 'mt' || complex.type === 'mod')) {
         isModKey = true;
         modType = complex.type === 'mt' ? 'tap' : 'direct';
@@ -272,24 +265,13 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
         } else if (cleanModStr === 'CTRL+ALT+SHFT+GUI' || cleanModStr === 'CTRL+ALT+SHIFT+GUI') {
             modLabel = 'HYPR';
         } else if (modKeys.length > 1) {
-            const shortMap = keyStyle === 'Mac' ? {
-                'CTRL': '⌃',
-                'SHIFT': '⇧',
-                'SHFT': '⇧',
-                'ALT': '⌥',
-                'GUI': '⌘',
-                'WIN': '⌘',
-                'CMD': '⌘'
-            } : {
-                'CTRL': 'C',
-                'SHIFT': 'S',
-                'SHFT': 'S',
-                'ALT': 'A',
-                'GUI': 'G',
-                'WIN': 'G',
-                'CMD': 'G'
-            };
-            modLabel = modKeys.map(k => shortMap[k.toUpperCase()] || k).join('+');
+            modLabel = keyStyle === 'Mac' && displayMode === 'Fluent'
+                ? modKeys.map(k => getModifierLabel(k, {
+                    keyStyle,
+                    variant: 'default',
+                    preferSymbol: true
+                })).join('+')
+                : modKeys.map(k => normalizeModifierLabel(k).charAt(0)).join('+');
         } else {
             modLabel = formatModifierLabel(complex.mod);
         }

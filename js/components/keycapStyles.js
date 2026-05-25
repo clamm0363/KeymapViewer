@@ -241,7 +241,7 @@ export const getOffsetPrimaryStyle = (isLight, isFluent = false, customFontSize 
 export const getOffsetPrimarySlotStyle = () => ({
     position: 'absolute',
     left: '7px',
-    bottom: '4px',
+    bottom: '5px',
     zIndex: 10,
     pointerEvents: 'none',
     userSelect: 'none',

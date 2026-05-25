@@ -1,6 +1,7 @@
 const { createElement } = React;
 
 import { createSVGElement } from '../svg-icons.js';
+import { abbreviateModifierCombo } from '../keymap-dictionary.js';
 import {
     getBottomCaptionContainerStyle,
     getBottomCaptionStyle,
@@ -134,11 +135,15 @@ export function renderModifierSupplement({
     isLight,
     color,
     keyStyle = 'Windows',
+    displayMode = 'Fluent',
     placement = 'bottom'
 }) {
     if (!label) return null;
+    const displayLabel = placement === 'offset'
+        ? abbreviateModifierCombo(label, { keyStyle, variant: 'short3' })
+        : label;
 
-    const shouldUseModifierSvg = keyStyle === 'Mac';
+    const shouldUseModifierSvg = keyStyle === 'Mac' && displayMode === 'Fluent';
     const normalizedModKey = shouldUseModifierSvg && Array.isArray(modKeys) && modKeys.length === 1
         ? MOD_ICON_KEY_MAP[modKeys[0].toUpperCase()]
         : null;
@@ -149,11 +154,11 @@ export function renderModifierSupplement({
                 style: getOffsetSecondarySlotStyle()
             }, createElement('span', {
                 style: getOffsetSecondaryContentStyle(isLight, color)
-            }, label));
+            }, displayLabel));
         }
 
         return renderBottomCaption({
-            label,
+            label: displayLabel,
             isLight,
             color
         });
@@ -172,8 +177,8 @@ export function renderModifierSupplement({
                 style: getOffsetSecondarySlotStyle()
             }, createElement('span', {
                 style: getOffsetSecondaryContentStyle(isLight, color)
-            }, label))
-            : renderBottomCaption({ label, isLight, color });
+            }, displayLabel))
+            : renderBottomCaption({ label: displayLabel, isLight, color });
     }
 
     const containerStyle = placement === 'offset'

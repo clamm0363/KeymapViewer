@@ -17,6 +17,7 @@ import {
 export function renderModKeycap({
     modType,
     finalDisplayText,
+    displayMode,
     kWidth,
     actuallyShowingSvg,
     isWirelessKey,
@@ -156,6 +157,7 @@ export function renderModKeycap({
                     isLight,
                     color: primaryModColor,
                     keyStyle,
+                    displayMode,
                     placement: 'offset'
                 })
             ])
@@ -198,7 +200,8 @@ export function renderModKeycap({
             label: modLabel,
             isLight,
             color: primaryModColor,
-            keyStyle
+            keyStyle,
+            displayMode
         })
     ]);
 }

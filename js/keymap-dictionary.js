@@ -1,5 +1,89 @@
 // js/keymap-dictionary.js
 
+const MODIFIER_LABEL_ALIASES = {
+  SHIFT: 'SHFT',
+  SHFT: 'SHFT',
+  CTRL: 'CTRL',
+  CTL: 'CTRL',
+  ALT: 'ALT',
+  OPT: 'ALT',
+  GUI: 'GUI',
+  WIN: 'GUI',
+  CMD: 'GUI',
+  MEH: 'MEH',
+  HYPR: 'HYPR',
+  HPR: 'HYPR'
+};
+
+export const MODIFIER_LABELS = {
+  CTRL: {
+    default: { Windows: 'CTRL', Mac: 'CTRL' },
+    short3: { Windows: 'CTL', Mac: 'CTL' },
+    short4: { Windows: 'CTRL', Mac: 'CTRL' },
+    symbol: '⌃'
+  },
+  SHFT: {
+    default: { Windows: 'SHFT', Mac: 'SHFT' },
+    short3: { Windows: 'SFT', Mac: 'SFT' },
+    short4: { Windows: 'SHFT', Mac: 'SHFT' },
+    symbol: '⇧'
+  },
+  ALT: {
+    default: { Windows: 'ALT', Mac: 'OPT' },
+    short3: { Windows: 'ALT', Mac: 'OPT' },
+    short4: { Windows: 'ALT', Mac: 'OPT' },
+    symbol: '⌥'
+  },
+  GUI: {
+    default: { Windows: 'WIN', Mac: 'CMD' },
+    short3: { Windows: 'WIN', Mac: 'CMD' },
+    short4: { Windows: 'WIN', Mac: 'CMD' },
+    symbol: '⌘'
+  },
+  MEH: {
+    default: { Windows: 'MEH', Mac: 'MEH' },
+    short3: { Windows: 'MEH', Mac: 'MEH' },
+    short4: { Windows: 'MEH', Mac: 'MEH' }
+  },
+  HYPR: {
+    default: { Windows: 'HYPR', Mac: 'HYPR' },
+    short3: { Windows: 'HPR', Mac: 'HPR' },
+    short4: { Windows: 'HYPR', Mac: 'HYPR' }
+  }
+};
+
+export function normalizeModifierLabel(label) {
+  if (!label) return '';
+  const normalized = String(label).trim().toUpperCase();
+  return MODIFIER_LABEL_ALIASES[normalized] || normalized;
+}
+
+export function getModifierLabel(label, {
+  keyStyle = 'Windows',
+  variant = 'default',
+  preferSymbol = false
+} = {}) {
+  const normalized = normalizeModifierLabel(label);
+  const entry = MODIFIER_LABELS[normalized];
+  if (!entry) return normalized;
+
+  if (preferSymbol && entry.symbol) {
+    return entry.symbol;
+  }
+
+  const styleKey = keyStyle === 'Mac' ? 'Mac' : 'Windows';
+  const variantEntry = entry[variant] || entry.default;
+  return variantEntry[styleKey] || variantEntry.Windows || normalized;
+}
+
+export function abbreviateModifierCombo(label, options = {}) {
+  if (!label) return '';
+  return String(label)
+    .split('+')
+    .map((token) => getModifierLabel(token, options))
+    .join('+');
+}
+
 // Microsoft Fluent System Icons (Open Source WebFont) に基づくマッピング
 export const KeymapDictionary = {
   modifiers: {

@@ -256,12 +256,13 @@ export function Keycap({
                 targetScale
             })
         ) : isModKey ? (
-            renderModKeycap({
-                modType,
-                finalDisplayText,
-                kWidth: (k.w || 56) / 56,
-                actuallyShowingSvg,
-                isWirelessKey,
+                renderModKeycap({
+                    modType,
+                    finalDisplayText,
+                    displayMode,
+                    kWidth: (k.w || 56) / 56,
+                    actuallyShowingSvg,
+                    isWirelessKey,
                 isMouseKey,
                 targetScale,
                 targetIconKey,
