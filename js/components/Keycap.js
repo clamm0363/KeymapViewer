@@ -894,6 +894,52 @@ export function Keycap({
                             textScale = 0.62;
                         }
                         const combinedScale = targetScale * textScale * 0.9;
+                        
+                        // Decision logic for displaying SVG icons on Shift or bottom-row modifiers
+                        const isShiftKey = ['KC_LSFT', 'KC_RSFT'].includes(displayRaw);
+                        const isBottomMod = ['KC_LCTL', 'KC_RCTL', 'KC_LALT', 'KC_RALT', 'KC_LGUI', 'KC_RGUI', 'KC_APP', 'KC_FN'].includes(displayRaw);
+                        const shouldShowSvgForBaseMod = isFluentMode && isSVGAvailable(displayRaw) && (
+                            isShiftKey || (isBottomMod && keyStyle === 'Mac')
+                        );
+
+                        if (shouldShowSvgForBaseMod) {
+                            const effectiveSvgSize = Math.max(8, Math.round(24 * combinedScale));
+                            const svgEl = createSVGElement(displayRaw, { size: effectiveSvgSize, color: getModColor(modKeys[0], isLight) });
+                            if (svgEl) {
+                                return createElement('div', {
+                                    className: "key-content flex-1 flex items-center justify-center w-full h-full",
+                                    style: {
+                                        paddingLeft: '6px',
+                                        overflow: 'visible',
+                                        position: 'relative'
+                                    }
+                                },
+                                    createElement('div', {
+                                        style: {
+                                            width: '100%',
+                                            height: '100%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            padding: '2px',
+                                            boxSizing: 'border-box'
+                                        }
+                                    },
+                                        createElement('div', {
+                                            style: {
+                                                width: effectiveSvgSize + 'px',
+                                                height: effectiveSvgSize + 'px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            },
+                                            dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+                                        })
+                                    )
+                                );
+                            }
+                        }
+
                         const effectiveFontSize = 22 * combinedScale;
                         const needsScaleBypass = effectiveFontSize < 14;
                         return createElement('div', {

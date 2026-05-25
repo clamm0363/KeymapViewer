@@ -36,8 +36,8 @@
     ],
     [
       "KC_WWW_HOME", "KC_WWW_SEARCH", "KC_WWW_FAVORITES", "KC_WWW_REFRESH",
-      "KC_WWW_BACK", "KC_WWW_FORWARD", "KC_WWW_STOP", "TRNS",
-      "TRNS", "TRNS", "TRNS", "TRNS",
+      "KC_WWW_BACK", "KC_WWW_FORWARD", "KC_WWW_STOP", "KC_DM_RSTP",
+      "KC_DM_REC1", "KC_DM_PLY1", "KC_DM_REC2", "KC_DM_PLY2",
       "TRNS", "TRNS", "TRNS", "TRNS"
     ],
     ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"]

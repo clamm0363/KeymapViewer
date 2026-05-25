@@ -4,6 +4,11 @@
 
 KeymapViewer is a web-based keyboard layout mapping and visualization tool. It displays keyboard configurations with key icons, supporting both WebFont and SVG rendering for a modern UI experience.
 
+## AI Agent Rules
+
+- **Implementation Plan Language**: Always create and update the `implementation_plan.md` artifact in **Japanese** (`日本語`). All descriptions, requirements, and checklists in the plan must be written in Japanese to align with the primary user.
+
+
 ## Current State
 
 **Phase**: SVG Migration Phase 2
