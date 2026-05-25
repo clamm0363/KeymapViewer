@@ -414,7 +414,16 @@ export function Keycap({
     const displayRawForRGB = (val && typeof val === 'string' && val.toUpperCase().startsWith('KC_'))
         ? val.toUpperCase()
         : (cleanRawForRGB.startsWith('KC_') ? cleanRawForRGB : 'KC_' + cleanRawForRGB);
-    const isRGBKey = displayRawForRGB.startsWith('KC_RGB_');
+
+    // Normalize shift and modifier keycodes locally to guarantee consistent rendering and bypass potential browser caching
+    let targetIconKey = displayRawForRGB;
+    if (['KC_LSHIFT', 'LSHIFT', 'LSFT'].includes(targetIconKey)) {
+        targetIconKey = 'KC_LSFT';
+    } else if (['KC_RSHIFT', 'RSHIFT', 'RSFT'].includes(targetIconKey)) {
+        targetIconKey = 'KC_RSFT';
+    }
+
+    const isRGBKey = targetIconKey.startsWith('KC_RGB_');
     const rgbLabels = {
         "KC_RGB_TOG": "TOG",
         "KC_RGB_MOD": "MODE+",
@@ -429,27 +438,27 @@ export function Keycap({
         "KC_RGB_SPD": "SPD-"
     };
     const isFluentMode = (displayMode === 'Fluent');
-    const isRGBFluent = isRGBKey && isFluentMode && isSVGAvailable(displayRawForRGB);
-    const rgbLabel = rgbLabels[displayRawForRGB] || '';
+    const isRGBFluent = isRGBKey && isFluentMode && isSVGAvailable(targetIconKey);
+    const rgbLabel = rgbLabels[targetIconKey] || '';
 
-    const isShiftKey = ['KC_LSFT', 'KC_RSFT', 'KC_LSHIFT', 'KC_RSHIFT', 'LSFT', 'RSFT', 'LSHIFT', 'RSHIFT'].includes(displayRawForRGB);
+    const isShiftKey = ['KC_LSFT', 'KC_RSFT'].includes(targetIconKey);
     const isBottomMod = [
         'KC_LCTL', 'KC_RCTL', 'KC_LALT', 'KC_RALT', 'KC_LGUI', 'KC_RGUI', 'KC_APP', 'KC_FN',
         'KC_LCTRL', 'KC_RCTRL', 'KC_LOPTION', 'KC_ROPTION', 'KC_LCMD', 'KC_RCMD',
         'LCTL', 'RCTL', 'LALT', 'RALT', 'LGUI', 'RGUI', 'APP', 'FN'
-    ].includes(displayRawForRGB);
+    ].includes(targetIconKey);
     const isBaseModSvg = isModKey && modType === 'base' && (
         isShiftKey || (isBottomMod && keyStyle === 'Mac')
     );
-    const actuallyShowingSvg = isFluentMode && isSVGAvailable(displayRawForRGB) && (
+    const actuallyShowingSvg = isFluentMode && isSVGAvailable(targetIconKey) && (
         (isModKey && modType === 'base') ? isBaseModSvg : true
     );
 
-    const isMagicKey = displayRawForRGB.includes('MAGIC_TOGGLE_') || ['KC_AG_TOGG', 'AG_TOGG', 'KC_CG_TOGG', 'CG_TOGG'].includes(displayRawForRGB);
-    const isMagicFluent = isMagicKey && isFluentMode && isSVGAvailable(displayRawForRGB);
+    const isMagicKey = targetIconKey.includes('MAGIC_TOGGLE_') || ['KC_AG_TOGG', 'AG_TOGG', 'KC_CG_TOGG', 'CG_TOGG'].includes(targetIconKey);
+    const isMagicFluent = isMagicKey && isFluentMode && isSVGAvailable(targetIconKey);
 
-    const isMacroKey = displayRawForRGB.startsWith('KC_DM_') || ['KC_DM_REC1', 'KC_DM_REC2', 'KC_DM_PLY1', 'KC_DM_PLY2', 'KC_DM_RSTP'].includes(displayRawForRGB);
-    const isMacroFluent = isMacroKey && isFluentMode && isSVGAvailable(displayRawForRGB);
+    const isMacroKey = targetIconKey.startsWith('KC_DM_') || ['KC_DM_REC1', 'KC_DM_REC2', 'KC_DM_PLY1', 'KC_DM_PLY2', 'KC_DM_RSTP'].includes(targetIconKey);
+    const isMacroFluent = isMacroKey && isFluentMode && isSVGAvailable(targetIconKey);
     
     const macroLabels = {
         "KC_DM_REC1": "REC1",
@@ -930,7 +939,7 @@ export function Keycap({
 
                         if (actuallyShowingSvg) {
                             const effectiveSvgSize = Math.max(8, Math.round(24 * combinedScale));
-                            const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: getModColor(modKeys[0], isLight) });
+                            const svgEl = createSVGElement(targetIconKey, { size: effectiveSvgSize, color: getModColor(modKeys[0], isLight) });
                             if (svgEl) {
                                 return createElement('div', {
                                     className: "key-content flex-1 flex items-center justify-center w-full h-full",
