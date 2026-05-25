@@ -50,6 +50,12 @@ export const ICON_ALIASES = {
   // Standard Keyboard Key Aliases
   'KC_PENT': 'KC_ENT',
   'KC_REDO': 'KC_AGAIN',
+  'KC_LSHIFT': 'KC_LSFT',
+  'KC_RSHIFT': 'KC_RSFT',
+  'LSHIFT': 'KC_LSFT',
+  'RSHIFT': 'KC_RSFT',
+  'LSFT': 'KC_LSFT',
+  'RSFT': 'KC_RSFT',
 
   // QMK Magic Controls (Mapped cleanly to arrow swap or keyboard icons)
   'KC_MAGIC_TOGGLE_CONTROL_CAPS_LOCK': 'ic_fluent_arrow_swap_24_regular',

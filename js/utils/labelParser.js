@@ -211,7 +211,10 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
     let baseIsFluent = false;
 
     const cleanRaw = raw.startsWith('KC_') ? raw : `KC_${raw}`;
-    const baseMods = ['KC_LSFT', 'KC_RSFT', 'KC_LCTL', 'KC_RCTL', 'KC_LALT', 'KC_RALT', 'KC_LGUI', 'KC_RGUI'];
+    const baseMods = [
+        'KC_LSFT', 'KC_RSFT', 'KC_LCTL', 'KC_RCTL', 'KC_LALT', 'KC_RALT', 'KC_LGUI', 'KC_RGUI',
+        'KC_LSHIFT', 'KC_RSHIFT', 'KC_LCTRL', 'KC_RCTRL', 'KC_LOPT', 'KC_ROPT', 'KC_LCMD', 'KC_RCMD'
+    ];
     const isBaseMod = baseMods.includes(cleanRaw);
 
     if (isBaseMod) {
@@ -219,9 +222,13 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
         modType = 'base';
         const baseModMap = {
             'KC_LSFT': 'SHFT', 'KC_RSFT': 'SHFT',
+            'KC_LSHIFT': 'SHFT', 'KC_RSHIFT': 'SHFT',
             'KC_LCTL': 'CTRL', 'KC_RCTL': 'CTRL',
+            'KC_LCTRL': 'CTRL', 'KC_RCTRL': 'CTRL',
             'KC_LALT': 'ALT', 'KC_RALT': 'ALT',
-            'KC_LGUI': 'GUI', 'KC_RGUI': 'GUI'
+            'KC_LOPT': 'ALT', 'KC_ROPT': 'ALT',
+            'KC_LGUI': 'GUI', 'KC_RGUI': 'GUI',
+            'KC_LCMD': 'GUI', 'KC_RCMD': 'GUI'
         };
         modLabel = baseModMap[cleanRaw] || cleanRaw.replace('KC_', '');
         modKeys = [modLabel];

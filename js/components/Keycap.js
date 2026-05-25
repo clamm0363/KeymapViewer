@@ -129,6 +129,14 @@ const getKeyCategory = (kCode) => {
     ) {
         return 'MAGIC';
     }
+
+    // MACRO category
+    if (
+        upper.startsWith('KC_DM_') ||
+        ['DM_REC', 'DM_PLY', 'DM_RSTP'].some(prefix => upper.includes(prefix))
+    ) {
+        return 'MACRO';
+    }
     
     return null;
 };
@@ -424,8 +432,33 @@ export function Keycap({
     const isRGBFluent = isRGBKey && isFluentMode && isSVGAvailable(displayRawForRGB);
     const rgbLabel = rgbLabels[displayRawForRGB] || '';
 
+    const isShiftKey = ['KC_LSFT', 'KC_RSFT', 'KC_LSHIFT', 'KC_RSHIFT', 'LSFT', 'RSFT', 'LSHIFT', 'RSHIFT'].includes(displayRawForRGB);
+    const isBottomMod = [
+        'KC_LCTL', 'KC_RCTL', 'KC_LALT', 'KC_RALT', 'KC_LGUI', 'KC_RGUI', 'KC_APP', 'KC_FN',
+        'KC_LCTRL', 'KC_RCTRL', 'KC_LOPTION', 'KC_ROPTION', 'KC_LCMD', 'KC_RCMD',
+        'LCTL', 'RCTL', 'LALT', 'RALT', 'LGUI', 'RGUI', 'APP', 'FN'
+    ].includes(displayRawForRGB);
+    const isBaseModSvg = isModKey && modType === 'base' && (
+        isShiftKey || (isBottomMod && keyStyle === 'Mac')
+    );
+    const actuallyShowingSvg = isFluentMode && isSVGAvailable(displayRawForRGB) && (
+        (isModKey && modType === 'base') ? isBaseModSvg : true
+    );
+
     const isMagicKey = displayRawForRGB.includes('MAGIC_TOGGLE_') || ['KC_AG_TOGG', 'AG_TOGG', 'KC_CG_TOGG', 'CG_TOGG'].includes(displayRawForRGB);
     const isMagicFluent = isMagicKey && isFluentMode && isSVGAvailable(displayRawForRGB);
+
+    const isMacroKey = displayRawForRGB.startsWith('KC_DM_') || ['KC_DM_REC1', 'KC_DM_REC2', 'KC_DM_PLY1', 'KC_DM_PLY2', 'KC_DM_RSTP'].includes(displayRawForRGB);
+    const isMacroFluent = isMacroKey && isFluentMode && isSVGAvailable(displayRawForRGB);
+    
+    const macroLabels = {
+        "KC_DM_REC1": "REC1",
+        "KC_DM_REC2": "REC2",
+        "KC_DM_PLY1": "PLY1",
+        "KC_DM_PLY2": "PLY2",
+        "KC_DM_RSTP": "RSTP"
+    };
+    const macroLabel = macroLabels[displayRawForRGB] || displayRawForRGB.replace('KC_DM_', '').replace('KC_', '');
 
     const wirelessLabels = {
         "KC_OUT_AUTO": "AUTO",
@@ -732,7 +765,7 @@ export function Keycap({
         ? val.toUpperCase()
         : (cleanRaw.startsWith('KC_') ? cleanRaw : 'KC_' + cleanRaw);
 
-    if (displayMode?.toLowerCase() === 'fluent' && isSVGAvailable(displayRaw)) {
+    if (actuallyShowingSvg) {
         targetScale = 1.11;
     }
 
@@ -889,22 +922,15 @@ export function Keycap({
             },
                 modType === 'base' ? (
                     (() => {
-                        let textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, isFluentIcon);
+                        let textScale = getTextScale(finalDisplayText, (k.w || 56) / 56, actuallyShowingSvg);
                         if (isWirelessKey || isMouseKey) {
                             textScale = 0.62;
                         }
                         const combinedScale = targetScale * textScale * 0.9;
-                        
-                        // Decision logic for displaying SVG icons on Shift or bottom-row modifiers
-                        const isShiftKey = ['KC_LSFT', 'KC_RSFT'].includes(displayRaw);
-                        const isBottomMod = ['KC_LCTL', 'KC_RCTL', 'KC_LALT', 'KC_RALT', 'KC_LGUI', 'KC_RGUI', 'KC_APP', 'KC_FN'].includes(displayRaw);
-                        const shouldShowSvgForBaseMod = isFluentMode && isSVGAvailable(displayRaw) && (
-                            isShiftKey || (isBottomMod && keyStyle === 'Mac')
-                        );
 
-                        if (shouldShowSvgForBaseMod) {
+                        if (actuallyShowingSvg) {
                             const effectiveSvgSize = Math.max(8, Math.round(24 * combinedScale));
-                            const svgEl = createSVGElement(displayRaw, { size: effectiveSvgSize, color: getModColor(modKeys[0], isLight) });
+                            const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: getModColor(modKeys[0], isLight) });
                             if (svgEl) {
                                 return createElement('div', {
                                     className: "key-content flex-1 flex items-center justify-center w-full h-full",
@@ -963,7 +989,7 @@ export function Keycap({
                             },
                                 createElement('div', {
                                     className: "legend-text",
-                                    style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
+                                    style: getMainLegendStyle(isLight, finalDisplayText, actuallyShowingSvg, (k.w || 56) / 56, {
                                         color: getModColor(modKeys[0], isLight),
                                         transform: 'none',
                                         fontSize: needsScaleBypass ? '16px' : (effectiveFontSize + 'px'),
@@ -1347,6 +1373,66 @@ export function Keycap({
                                         whiteSpace: 'nowrap'
                                     }
                                 }, mouseLabel)
+                            )
+                        ]);
+                    })()
+                ) : isMacroFluent ? (
+                    (() => {
+                        const effectiveSvgSize = 20;
+                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
+                        
+                        return createElement('div', {
+                            style: {
+                                position: 'relative',
+                                width: '100%',
+                                height: '100%',
+                                boxSizing: 'border-box'
+                            }
+                        }, [
+                            svgEl && createElement('div', {
+                                key: 'macro-svg-render',
+                                style: {
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    zIndex: 1
+                                },
+                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+                            }),
+                            createElement('div', {
+                                key: 'macro-text-label',
+                                style: {
+                                    position: 'absolute',
+                                    bottom: '1.5px',
+                                    left: 0,
+                                    width: '100%',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    zIndex: 2,
+                                    pointerEvents: 'none',
+                                    userSelect: 'none'
+                                }
+                            }, 
+                                createElement('span', {
+                                    style: {
+                                        fontSize: '11px',
+                                        fontWeight: '500', 
+                                        color: isLight ? '#1e293b' : '#ffffff',
+                                        fontFamily: '"Outfit", sans-serif',
+                                        letterSpacing: '0.06em', 
+                                        lineHeight: '1',
+                                        textTransform: 'uppercase',
+                                        transform: 'scale(0.55)',
+                                        transformOrigin: 'bottom center',
+                                        display: 'inline-block',
+                                        whiteSpace: 'nowrap'
+                                    }
+                                }, macroLabel)
                             )
                         ]);
                     })()
