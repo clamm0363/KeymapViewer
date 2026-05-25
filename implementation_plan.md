@@ -24,6 +24,9 @@
 - `keycapRenderers.js`: SVG を使う共通レンダラー
 - `keycapEncoder.js`: エンコーダ専用の tooltip / 見た目 / クリック処理
 - `keycapSections.js`: `Layer` / `Mod` / 通常キー表示の専用 renderer
+- `keycapLayerSection.js`: `Layer` 表示専用 renderer
+- `keycapModSection.js`: `Mod` 表示専用 renderer
+- `keycapStandardSection.js`: 通常キー表示専用 renderer
 - 本体コンポーネント内では「条件分岐」と「レイアウト組み立て」に集中させる。
 - 一度に大規模再設計はせず、まずは重複レンダリングの除去を優先する。
 
@@ -42,7 +45,13 @@
 - `js/components/keycapEncoder.js`
   - エンコーダ専用 UI を `Keycap.js` から分離する。
 - `js/components/keycapSections.js`
-  - `Layer` / `Mod` / 通常キー表示の分岐を `Keycap.js` から分離する。
+  - `Layer` / `Mod` / 通常キー表示 renderer のエクスポート窓口として使う。
+- `js/components/keycapLayerSection.js`
+  - `Layer` 表示の専用 renderer を保持する。
+- `js/components/keycapModSection.js`
+  - `Mod` 表示の専用 renderer を保持する。
+- `js/components/keycapStandardSection.js`
+  - 通常キー表示の専用 renderer を保持する。
 
 ## 実施済み
 
@@ -57,10 +66,11 @@
 - [x] キー外枠スタイル計算を `keycapStyles.js` へ移す。
 - [x] エンコーダ描画と tooltip 構築を `keycapEncoder.js` へ切り出す。
 - [x] `Layer` / `Mod` / 通常キー描画を `keycapSections.js` へ切り出す。
+- [x] `keycapSections.js` を `Layer` / `Mod` / `Standard` 単位の個別 renderer へ再分割する。
 
 ## これからやること
 
-- [ ] 分割後の helper 間依存が過剰になっていないかレビューする。
+- [ ] 分割後の helper 間依存が過剰になっていないか最終確認する。
 - [ ] 新規分割後のファイル群に対して構文チェックを実施する。
 - [ ] 差分をレビューし、挙動変更のリスクが高い箇所を洗い出す。
 
@@ -69,6 +79,7 @@
 - `Keycap.js` から重複した特殊 SVG 描画ブロックが除去されている。
 - `Keycap.js` からエンコーダ専用処理が分離されている。
 - `Keycap.js` から `Layer` / `Mod` / 通常キー描画分岐が分離されている。
+- `keycapSections.js` が大きな実装本体ではなく、薄いエクスポート窓口になっている。
 - 抽出した helper ファイルが責務ごとに分かれ、`Keycap.js` の見通しが改善している。
 - 少なくとも構文チェックで新規分割ファイルと `Keycap.js` が正常に通る。
 - 今後のカテゴリ追加や表示調整時に、共通部を 1 箇所修正すれば済む状態になっている。
