@@ -30,9 +30,10 @@ export function renderModKeycap({
     baseLabel,
     baseIsFluent,
     keyStyle,
+    isAppDark,
     modLabel
 }) {
-    const primaryModColor = getModColor(modKeys[0], isLight);
+    const primaryModColor = getModColor(modKeys[0], isLight, isAppDark);
     const shouldCompactTapPrimary = !baseIsFluent && baseLabel && baseLabel.length >= 3;
 
     if (modType === 'base') {

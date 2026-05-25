@@ -21,10 +21,11 @@ export function renderLayerKeycap({
     tapIsFluent,
     tapLabel,
     isLight,
+    isAppDark,
     kWidth,
     targetScale
 }) {
-    const accentColor = getLayerFooterColor(Number(layerNum || 0), isLight);
+    const accentColor = getLayerFooterColor(Number(layerNum || 0), isLight, isAppDark);
     const bottomCaptionLabel = layerNum2
         ? `FN${layerNum}+${layerNum2}`
         : null;

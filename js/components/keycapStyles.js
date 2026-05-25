@@ -184,7 +184,7 @@ export const getBottomCaptionStyle = (isLight, color = null) => ({
     fontSize: '15px',
     fontWeight: '500',
     color: color || (isLight ? '#64748b' : '#94a3b8'),
-    opacity: 0.78,
+    opacity: color ? (isLight ? 0.98 : 0.96) : 0.78,
     fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
     letterSpacing: '0.05em',
     lineHeight: '1',
@@ -295,7 +295,7 @@ export const getOffsetSecondaryContentStyle = (isLight, color, customFontSize = 
     fontWeight: '500',
     fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
     color: color || (isLight ? '#64748b' : '#94a3b8'),
-    opacity: 0.82,
+    opacity: color ? (isLight ? 0.99 : 0.98) : 0.82,
     lineHeight: '1',
     textAlign: 'right',
     textTransform: 'uppercase',
@@ -312,7 +312,7 @@ export const getOffsetSecondaryAccentStyle = (isLight, color, customFontSize = '
     fontSize: customFontSize,
     color,
     transform: 'scale(0.64)',
-    opacity: 0.82
+    opacity: isLight ? 0.99 : 0.98
 });
 
 export const getTextScale = (displayText, keyWidth = 1, isFluentIcon = false) => {
@@ -380,26 +380,61 @@ export const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, k
     };
 };
 
-export const getLayerFooterColor = (num, isLight) => {
-    const lightColors = ['#64748b', '#2563eb', '#4f46e5', '#0891b2', '#10b981', '#f59e0b', '#ea580c', '#e11d48', '#9333ea', '#0284c7'];
-    const darkColors = ['#475569', '#1e40af', '#3730a3', '#155e75', '#065f46', '#92400e', '#9a3412', '#9f1239', '#6b21a8', '#075985'];
-    return (isLight ? lightColors : darkColors)[num % 10];
+export const getLayerFooterColor = (num, isLight, isAppDark = true) => {
+    const lightKeycapColors = ['#334155', '#1e40af', '#3730a3', '#115e59', '#047857', '#b45309', '#9a3412', '#9f1239', '#6b21a8', '#075985'];
+    const darkKeycapColors = isAppDark
+        ? ['#cbd5e1', '#60a5fa', '#818cf8', '#22d3ee', '#34d399', '#fbbf24', '#fb923c', '#fb7185', '#c084fc', '#38bdf8']
+        : ['#e2e8f0', '#93c5fd', '#a5b4fc', '#67e8f9', '#6ee7b7', '#fcd34d', '#fdba74', '#fda4af', '#d8b4fe', '#7dd3fc'];
+    return (isLight ? lightKeycapColors : darkKeycapColors)[num % 10];
 };
 
-export const getModColor = (mod, isLight) => {
-    if (!mod) return isLight ? '#475569' : '#334155';
+export const getModColor = (mod, isLight, isAppDark = true) => {
+    if (!mod) return isLight ? '#475569' : (isAppDark ? '#cbd5e1' : '#e2e8f0');
     const cleanMod = mod.toUpperCase();
     const palettes = {
-        SHIFT: { light: '#c2410c', dark: '#ea580c' },
-        SHFT: { light: '#c2410c', dark: '#ea580c' },
-        CTRL: { light: '#0369a1', dark: '#0284c7' },
-        ALT: { light: '#6d28d9', dark: '#7c3aed' },
-        GUI: { light: '#065f46', dark: '#059669' },
-        WIN: { light: '#065f46', dark: '#059669' },
-        CMD: { light: '#065f46', dark: '#059669' }
+        SHIFT: {
+            light: '#9a3412',
+            darkApp: '#fb923c',
+            lightApp: '#fdba74'
+        },
+        SHFT: {
+            light: '#9a3412',
+            darkApp: '#fb923c',
+            lightApp: '#fdba74'
+        },
+        CTRL: {
+            light: '#075985',
+            darkApp: '#60a5fa',
+            lightApp: '#93c5fd'
+        },
+        ALT: {
+            light: '#6d28d9',
+            darkApp: '#c084fc',
+            lightApp: '#d8b4fe'
+        },
+        GUI: {
+            light: '#065f46',
+            darkApp: '#34d399',
+            lightApp: '#6ee7b7'
+        },
+        WIN: {
+            light: '#065f46',
+            darkApp: '#34d399',
+            lightApp: '#6ee7b7'
+        },
+        CMD: {
+            light: '#065f46',
+            darkApp: '#34d399',
+            lightApp: '#6ee7b7'
+        }
     };
-    const entry = palettes[cleanMod] || { light: '#475569', dark: '#334155' };
-    return isLight ? entry.light : entry.dark;
+    const entry = palettes[cleanMod] || {
+        light: '#475569',
+        darkApp: '#cbd5e1',
+        lightApp: '#e2e8f0'
+    };
+    if (isLight) return entry.light;
+    return isAppDark ? entry.darkApp : entry.lightApp;
 };
 
 export const getModGradient = (mKeys, isLight) => {

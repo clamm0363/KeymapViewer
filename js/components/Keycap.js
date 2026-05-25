@@ -238,7 +238,7 @@ export function Keycap({
                 top: 0,
                 bottom: 0,
                 width: '3.5px',
-                backgroundColor: getModColor(modKeys[0], isLight),
+                backgroundColor: getModColor(modKeys[0], isLight, isAppDark),
                 zIndex: 20
             }
         }),
@@ -256,13 +256,13 @@ export function Keycap({
                 targetScale
             })
         ) : isModKey ? (
-                renderModKeycap({
-                    modType,
-                    finalDisplayText,
-                    displayMode,
-                    kWidth: (k.w || 56) / 56,
-                    actuallyShowingSvg,
-                    isWirelessKey,
+            renderModKeycap({
+                modType,
+                finalDisplayText,
+                displayMode,
+                kWidth: (k.w || 56) / 56,
+                actuallyShowingSvg,
+                isWirelessKey,
                 isMouseKey,
                 targetScale,
                 targetIconKey,
