@@ -234,7 +234,7 @@ function determineCategory(keyCode) {
   if (keyCode.startsWith('KC_AUDIO_') || keyCode.startsWith('KC_KB_VOLUME_')) return 'audio';
   if (keyCode.startsWith('KC_MEDIA_')) return 'media';
   if (keyCode.startsWith('KC_WWW_')) return 'web';
-  if (keyCode.startsWith('KC_MS_') || keyCode.startsWith('KC_BTN') || keyCode.startsWith('KC_WH_')) return 'mouse';
+  if (keyCode.startsWith('KC_MS_') || keyCode.startsWith('KC_BTN') || keyCode.startsWith('KC_WH_') || keyCode.startsWith('KC_ACL')) return 'mouse';
   if (keyCode.startsWith('KC_BT_') || keyCode.startsWith('KC_OUT_')) return 'wireless';
   if (keyCode.startsWith('KC_RGB_')) return 'rgb';
   if (keyboardKeys.has(keyCode)) return 'keyboard';

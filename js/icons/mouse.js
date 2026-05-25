@@ -151,7 +151,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uF445',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'mouse'
   },
 
   KC_ACL1: {
@@ -162,7 +162,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uF445',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'mouse'
   },
 
   KC_ACL2: {
@@ -173,6 +173,6 @@ export const MOUSE_ICONS = {
     fallback: '\\uF445',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'mouse'
   }
 };

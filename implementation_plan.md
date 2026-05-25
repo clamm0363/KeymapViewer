@@ -2,47 +2,90 @@
 
 ## 目的
 
-Antigravity 側の計画を踏まえ、SVG 検証と `utility.js` 分割を破壊的変更なしで引き継ぐ。
+肥大化した `js/components/Keycap.js` を、既存挙動を保ちながら責務ごとに段階的に分割し、今後の SVG / 表示ロジック追加時に安全に修正できる状態へ近づける。
 
-## 参照した外部計画の要点
+## 今回の修正ブランチ
 
-- 目的は 2 つ:
-  1. 有効な SVG アイコンを Fluent UI System Icons 基準で見直すこと
-  2. 肥大化した `js/icons/utility.js` をカテゴリ別に分割すること
-- Antigravity 側では `DEBUG` が唯一の非公式 SVG で、正式な `bug_24_regular` に置換する想定だった。
-- 分割対象として `keyboard.js` `edit.js` `web.js` `rgb.js` を作る方針だった。
-- `svg-icons.js` と `scripts/add-svg-icon.js` も追従修正する想定だった。
+- ブランチ名: `fix/svg-tooling-followup`
 
 ## 現状把握
 
-- `js/icons/edit.js` `js/icons/keyboard.js` `js/icons/rgb.js` `js/icons/web.js` はすでに作成済み。
-- 4 ファイルは Node import で構文エラーなく読み込めることを確認済み。
-- `js/svg-icons.js` は新規 4 カテゴリを import 済みで、統合順も `UTILITY_ICONS` が最後になるよう整理済み。
-- `SVG_ICONS` では `KC_COPY` `KC_ENT` `KC_RGB_TOG` `KC_WWW_HOME` に加えて、`DEBUG` `KC_RESET` `KC_DM_REC1` などの代表キーも解決できることを確認済み。
-- `js/icons/utility.js` は縮小済みで、`DEBUG`、Magic 系、マクロ系、未分割ユーティリティのみを残す構成へ整理済み。
-- `DEBUG` は非公式の自作 SVG から、Fluent 公式の bug アイコンベースへ置換済み。
-- `scripts/add-svg-icon.js` は `keyboard` `edit` `web` `rgb` のカテゴリ振り分けに追従済み。
-- ブラウザ上の見た目確認はまだ未実施。
+- `Keycap.js` は 1500 行超で、キー判定、表示文言整形、スタイル計算、特殊カテゴリ SVG 描画、エンコーダ分岐、最終レンダリングを 1 ファイルで抱えている。
+- すでに一度分割された形跡はあるが、特殊キーごとの SVG + 下部ラベル描画が横並びで重複しており、仕様差分の混入や修正漏れを起こしやすい。
+- `RGB` `MAGIC` `WIRELESS` `WEB` `MOUSE` `MACRO` はほぼ同型の描画を個別実装しており、保守コストの割に差分が小さい。
+- 既存 UI はユーザー側ブラウザで問題なしとの確認があるため、今回の優先事項は「見た目の変更」ではなく「ロジックの整理と重複除去」。
+
+## 分割方針
+
+- `Keycap.js` から純粋関数として切り出せるものを先に抽出する。
+- 抽出先は責務単位で分ける。
+  - `keycapStyles.js`: スタイル計算
+  - `keycapIconUtils.js`: 表示ラベル整形、カテゴリ判定、SVG 表示条件判定
+- `keycapRenderers.js`: SVG を使う共通レンダラー
+- `keycapEncoder.js`: エンコーダ専用の tooltip / 見た目 / クリック処理
+- `keycapSections.js`: `Layer` / `Mod` / 通常キー表示の専用 renderer
+- `keycapLayerSection.js`: `Layer` 表示専用 renderer
+- `keycapModSection.js`: `Mod` 表示専用 renderer
+- `keycapStandardSection.js`: 通常キー表示専用 renderer
+- 本体コンポーネント内では「条件分岐」と「レイアウト組み立て」に集中させる。
+- 一度に大規模再設計はせず、まずは重複レンダリングの除去を優先する。
+
+## 修正対象
+
+- `js/components/Keycap.js`
+  - ローカル helper を削減し、抽出済みモジュールを使うよう整理する。
+  - 特殊カテゴリごとの SVG + 下部ラベル描画を共通レンダラーへ集約する。
+  - 可能であれば通常 Fluent SVG 描画も共通 renderer を使う。
+- `js/components/keycapStyles.js`
+  - `Keycap.js` から移したスタイル計算関数を保持する。
+- `js/components/keycapIconUtils.js`
+  - ラベル短縮、カテゴリ判定、アイコン表示条件判定を保持する。
+- `js/components/keycapRenderers.js`
+  - 特殊カテゴリ向け共通描画関数、通常 SVG 描画関数を保持する。
+- `js/components/keycapEncoder.js`
+  - エンコーダ専用 UI を `Keycap.js` から分離する。
+- `js/components/keycapSections.js`
+  - `Layer` / `Mod` / 通常キー表示 renderer のエクスポート窓口として使う。
+- `js/components/keycapLayerSection.js`
+  - `Layer` 表示の専用 renderer を保持する。
+- `js/components/keycapModSection.js`
+  - `Mod` 表示の専用 renderer を保持する。
+- `js/components/keycapStandardSection.js`
+  - 通常キー表示の専用 renderer を保持する。
 
 ## 実施済み
 
-- [x] Git の現在状態と未コミット差分を確認する。
-- [x] 外部の Antigravity 側 `implementation_plan.md` を参照する。
-- [x] 新規分割ファイルの構文確認を行う。
-- [x] `js/svg-icons.js` で新規カテゴリを読み込める状態にする。
-- [x] 代表キーが `SVG_ICONS` から解決できることを確認する。
-- [x] `utility.js` に残すキーを Antigravity 計画に沿って整理する。
-- [x] `DEBUG` を Fluent 公式の bug アイコンへ置き換える。
-- [x] `scripts/add-svg-icon.js` のカテゴリマップと振り分けロジックを更新する。
-- [x] 変更後の主要ファイルに対して Node の構文チェックを行う。
-- [x] `scripts/add-svg-icon.js` の dry-run で `edit` `web` `rgb` の書き込み先を spot check する。
+- [x] `Keycap.js` の肥大化要因を確認し、分割対象を洗い出す。
+- [x] スタイル計算関数群を `keycapStyles.js` へ抽出する。
+- [x] ラベル整形とカテゴリ判定を `keycapIconUtils.js` へ抽出する。
+- [x] SVG レンダリングの共通 helper を `keycapRenderers.js` として作成する。
+- [x] `Keycap.js` から抽出済み helper を import する形へ切り替える。
+- [x] `displayRaw` 正規化やカテゴリ別表示状態判定を共通 utility 経由へ寄せる。
+- [x] `RGB` `MAGIC` `WIRELESS` `WEB` `MOUSE` `MACRO` の重複 SVG 描画を共通レンダラーへ統合する。
+- [x] 通常 Fluent SVG 描画を共通 inline renderer へ寄せる。
+- [x] キー外枠スタイル計算を `keycapStyles.js` へ移す。
+- [x] エンコーダ描画と tooltip 構築を `keycapEncoder.js` へ切り出す。
+- [x] `Layer` / `Mod` / 通常キー描画を `keycapSections.js` へ切り出す。
+- [x] `keycapSections.js` を `Layer` / `Mod` / `Standard` 単位の個別 renderer へ再分割する。
 
 ## これからやること
 
-- [ ] ブラウザ上で主要キーの表示確認を行う。
+- [ ] 分割後の helper 間依存が過剰になっていないか最終確認する。
+- [ ] 新規分割後のファイル群に対して構文チェックを実施する。
+- [ ] 差分をレビューし、挙動変更のリスクが高い箇所を洗い出す。
+
+## 完了条件
+
+- `Keycap.js` から重複した特殊 SVG 描画ブロックが除去されている。
+- `Keycap.js` からエンコーダ専用処理が分離されている。
+- `Keycap.js` から `Layer` / `Mod` / 通常キー描画分岐が分離されている。
+- `keycapSections.js` が大きな実装本体ではなく、薄いエクスポート窓口になっている。
+- 抽出した helper ファイルが責務ごとに分かれ、`Keycap.js` の見通しが改善している。
+- 少なくとも構文チェックで新規分割ファイルと `Keycap.js` が正常に通る。
+- 今後のカテゴリ追加や表示調整時に、共通部を 1 箇所修正すれば済む状態になっている。
 
 ## 注意点
 
-- `svg-icons.js` の統合順は重複キーの最終定義に影響する。
-- 今回は `utility.js` を先に縮小したうえで `UTILITY_ICONS` を最後に配置しているため、重複上書きのリスクはかなり下がっている。
-- ただし最終的な品質確認として、UI 上で代表キーの見た目を一度確認したい。
+- 挙動差分が出やすいのは `MAGIC` のようにラベルが動的計算されるキー、`Mod-Tap` や `Layer-Tap` など複合表示キー。
+- UI の見た目変更は目的ではないため、共通化しても既存サイズ・位置・配色は基本的に維持する。
+- `AGENTS.md` は未追跡のまま存在しているため、今回のコミット対象に含めない。

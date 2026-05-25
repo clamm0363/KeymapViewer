@@ -157,8 +157,8 @@ export function DeviceSlot({
                         }, dev.name || 'No Device'),
                         createElement('button', { key: 'edit-btn', onClick: () => onStartEditing(dev), className: 'p-1 text-slate-400 hover:text-blue-400 transition-colors' }, 
                             createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, [
-                                createElement('path', { d: 'M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' }),
-                                createElement('path', { d: 'm15 5 4 4' })
+                                createElement('path', { key: 'edit-body', d: 'M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' }),
+                                createElement('path', { key: 'edit-line', d: 'm15 5 4 4' })
                             ])
                         )
                     ])
@@ -166,16 +166,16 @@ export function DeviceSlot({
             createElement('div', { key: 'header-controls', className: 'flex items-center gap-1' }, [
                 createElement('button', { key: 'del-btn', onClick: () => onRemoveDevice(dev.id), className: 'p-2 text-slate-400 hover:text-red-400 transition-colors', title: 'Remove Slot' }, 
                     createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, [
-                        createElement('path', { d: 'M3 6h18' }),
-                        createElement('path', { d: 'M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6' }),
-                        createElement('path', { d: 'M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2' })
+                        createElement('path', { key: 'trash-top', d: 'M3 6h18' }),
+                        createElement('path', { key: 'trash-body', d: 'M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6' }),
+                        createElement('path', { key: 'trash-handle', d: 'M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2' })
                     ])
                 ),
                 createElement('button', { key: 'settings-btn', onClick: () => onUpdateDevice(dev.id, { showSettings: !dev.showSettings }), className: 'p-2 ' + (dev.showSettings ? 'text-blue-400 bg-blue-500/10 rounded-lg' : 'text-slate-400 hover:text-blue-400') + ' transition-all', title: 'Display Settings' }, 
                     createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, [
-                        createElement('line', { x1: 3, y1: 12, x2: 21, y2: 12 }),
-                        createElement('line', { x1: 3, y1: 6, x2: 21, y2: 6 }),
-                        createElement('line', { x1: 3, y1: 18, x2: 21, y2: 18 })
+                        createElement('line', { key: 'menu-mid', x1: 3, y1: 12, x2: 21, y2: 12 }),
+                        createElement('line', { key: 'menu-top', x1: 3, y1: 6, x2: 21, y2: 6 }),
+                        createElement('line', { key: 'menu-bottom', x1: 3, y1: 18, x2: 21, y2: 18 })
                     ])
                 )
             ])
