@@ -21,7 +21,8 @@
 - 抽出先は責務単位で分ける。
   - `keycapStyles.js`: スタイル計算
   - `keycapIconUtils.js`: 表示ラベル整形、カテゴリ判定、SVG 表示条件判定
-  - `keycapRenderers.js`: SVG を使う共通レンダラー
+- `keycapRenderers.js`: SVG を使う共通レンダラー
+- `keycapEncoder.js`: エンコーダ専用の tooltip / 見た目 / クリック処理
 - 本体コンポーネント内では「条件分岐」と「レイアウト組み立て」に集中させる。
 - 一度に大規模再設計はせず、まずは重複レンダリングの除去を優先する。
 
@@ -37,6 +38,8 @@
   - ラベル短縮、カテゴリ判定、アイコン表示条件判定を保持する。
 - `js/components/keycapRenderers.js`
   - 特殊カテゴリ向け共通描画関数、通常 SVG 描画関数を保持する。
+- `js/components/keycapEncoder.js`
+  - エンコーダ専用 UI を `Keycap.js` から分離する。
 
 ## 実施済み
 
@@ -48,16 +51,19 @@
 - [x] `displayRaw` 正規化やカテゴリ別表示状態判定を共通 utility 経由へ寄せる。
 - [x] `RGB` `MAGIC` `WIRELESS` `WEB` `MOUSE` `MACRO` の重複 SVG 描画を共通レンダラーへ統合する。
 - [x] 通常 Fluent SVG 描画を共通 inline renderer へ寄せる。
+- [x] キー外枠スタイル計算を `keycapStyles.js` へ移す。
+- [x] エンコーダ描画と tooltip 構築を `keycapEncoder.js` へ切り出す。
 
 ## これからやること
 
-- [ ] `Keycap.js` に残っているさらなる分割候補を確認する。
+- [ ] `Keycap.js` に残っている `Layer` / `Mod` / 通常キー描画の再分割余地を確認する。
 - [ ] 新規分割後のファイル群に対して構文チェックを実施する。
 - [ ] 差分をレビューし、挙動変更のリスクが高い箇所を洗い出す。
 
 ## 完了条件
 
 - `Keycap.js` から重複した特殊 SVG 描画ブロックが除去されている。
+- `Keycap.js` からエンコーダ専用処理が分離されている。
 - 抽出した helper ファイルが責務ごとに分かれ、`Keycap.js` の見通しが改善している。
 - 少なくとも構文チェックで新規分割ファイルと `Keycap.js` が正常に通る。
 - 今後のカテゴリ追加や表示調整時に、共通部を 1 箇所修正すれば済む状態になっている。

@@ -1,5 +1,132 @@
 import { FLUENT_FONT_STACK } from '../constants.js';
 
+export const getKeycapFrameStyle = ({ k, isLayerKey, encoderStyles, isLight, isAppDark }) => {
+    const paddingOffset = 20;
+    const lightBorder = isAppDark ? '#94a3b8' : '#cbd5e1';
+    const darkBorder = isAppDark ? '#475569' : '#334155';
+
+    if (k.isEncoder) {
+        const currentStyle = (encoderStyles && encoderStyles[k.encoderIndex]) || 'Dial';
+        if (currentStyle === 'VerticalWheel') {
+            const wellW = 33;
+            const wellH = 44;
+            const leftOffset = (k.w - 6) / 2 - wellW / 2;
+            const topOffset = (k.h - 6) / 2 - wellH / 2;
+            return {
+                left: `${k.x + paddingOffset + leftOffset}px`,
+                top: `${k.y + paddingOffset + topOffset}px`,
+                width: `${wellW}px`,
+                height: `${wellH}px`,
+                position: 'absolute',
+                borderRadius: '6px',
+                border: `1.5px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#1e293b' : '#334155')}`,
+                background: isLight
+                    ? 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)'
+                    : 'linear-gradient(135deg, #0f172a 0%, #020617 100%)',
+                boxShadow: isLight
+                    ? 'inset 0 3px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.05)'
+                    : 'inset 0 4px 8px rgba(0,0,0,0.65), 0 1px 2px rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 40
+            };
+        }
+
+        if (currentStyle === 'HorizontalWheel') {
+            const wellW = 44;
+            const wellH = 33;
+            const leftOffset = (k.w - 6) / 2 - wellW / 2;
+            const topOffset = (k.h - 6) / 2 - wellH / 2;
+            return {
+                left: `${k.x + paddingOffset + leftOffset}px`,
+                top: `${k.y + paddingOffset + topOffset}px`,
+                width: `${wellW}px`,
+                height: `${wellH}px`,
+                position: 'absolute',
+                borderRadius: '6px',
+                border: `1.5px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#1e293b' : '#334155')}`,
+                background: isLight
+                    ? 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)'
+                    : 'linear-gradient(135deg, #0f172a 0%, #020617 100%)',
+                boxShadow: isLight
+                    ? 'inset 0 3px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.05)'
+                    : 'inset 0 4px 8px rgba(0,0,0,0.65), 0 1px 2px rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 40
+            };
+        }
+
+        const knobSize = 44;
+        const leftOffset = (k.w - 6) / 2 - knobSize / 2;
+        const topOffset = (k.h - 6) / 2 - knobSize / 2;
+        return {
+            left: `${k.x + paddingOffset + leftOffset}px`,
+            top: `${k.y + paddingOffset + topOffset}px`,
+            width: `${knobSize}px`,
+            height: `${knobSize}px`,
+            position: 'absolute',
+            borderRadius: '50%',
+            borderWidth: '3px',
+            borderStyle: 'solid',
+            borderColor: isLight ? lightBorder : darkBorder,
+            background: isLight
+                ? 'radial-gradient(circle at 35% 35%, #ffffff 0%, #f1f5f9 50%, #cbd5e1 100%)'
+                : 'radial-gradient(circle at 35% 35%, #334155 0%, #1e293b 50%, #0f172a 100%)',
+            boxShadow: isLight
+                ? '0 6px 10px -1px rgb(0 0 0 / 0.15), inset 0 2px 4px rgba(255,255,255,0.8), inset 0 -2px 4px rgba(0,0,0,0.1)'
+                : '0 10px 15px -3px rgb(0 0 0 / 0.3), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 -4px 6px rgba(0,0,0,0.5)',
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            transition: 'all 0.075s ease',
+            cursor: 'pointer',
+            zIndex: 40
+        };
+    }
+
+    if (k.isJIS) {
+        return {
+            left: `${k.x + paddingOffset}px`,
+            top: `${k.y + paddingOffset}px`,
+            width: `${k.w - 6}px`,
+            height: `${k.h - 6}px`,
+            position: 'absolute',
+            border: 'none',
+            background: 'transparent',
+            boxShadow: 'none',
+            overflow: 'visible',
+            display: 'flex',
+            flexDirection: 'column',
+            transition: 'all 0.075s ease'
+        };
+    }
+
+    return {
+        left: `${k.x + paddingOffset}px`,
+        top: `${k.y + paddingOffset}px`,
+        width: `${k.w - 6}px`,
+        height: `${k.h - 6}px`,
+        position: 'absolute',
+        borderRadius: '6px',
+        borderWidth: '3px',
+        borderStyle: 'solid',
+        borderColor: isLight ? lightBorder : darkBorder,
+        backgroundColor: isLight ? '#ffffff' : (isAppDark ? 'rgba(15, 23, 42, 0.6)' : '#1e293b'),
+        boxShadow: isLight ? '0 4px 6px -1px rgb(0 0 0 / 0.1)' : '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'all 0.075s ease'
+    };
+};
+
 export const getFooterContainerStyle = (isLight, isAppDark) => ({
     marginTop: 'auto',
     width: '100%',
