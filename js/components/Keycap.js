@@ -1,257 +1,32 @@
 const { createElement } = React;
 
-import { FLUENT_FONT_STACK } from '../constants.js';
-import { createSVGElement, isSVGAvailable } from '../svg-icons.js';
+import { isSVGAvailable } from '../svg-icons.js';
 import { parseKeyLabel } from '../utils/labelParser.js';
-
-// Shared footer skeleton and text styling utilities for visual consistency across all keytypes
-const getFooterContainerStyle = (isLight, isAppDark) => ({
-    marginTop: 'auto',
-    width: '100%',
-    height: '18px',
-    display: 'flex',
-    zIndex: 10,
-    overflow: 'hidden',
-    borderBottomLeftRadius: '3px',
-    borderBottomRightRadius: '3px',
-    borderTop: `2px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#475569' : '#334155')}`
-});
-
-const getFooterTextStyle = (scale = 0.72, translateY = 0, fontSize = '14px') => {
-    const baseFontSize = parseFloat(fontSize);
-    const computedSize = Math.round(baseFontSize * scale * 100) / 100;
-    return {
-        fontSize: `${computedSize}px`,
-        fontWeight: '500',
-        fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
-        letterSpacing: '0.05em',
-        lineHeight: '1',
-        transform: translateY !== 0 ? `translateY(${translateY}px)` : 'none',
-        whiteSpace: 'nowrap'
-    };
-};
-
-// Shared layout and offset styling utilities for offset-legend keycaps (e.g., LT, FN_MO13)
-const getOffsetContainerStyle = () => ({
-    flex: 1,
-    position: 'relative',
-    width: '100%'
-});
-
-const getOffsetPrimaryStyle = (isLight, isFluent = false, customFontSize = null) => {
-    const baseFontSize = parseFloat(customFontSize || (isFluent ? '26' : '22'));
-    const computedSize = Math.round(baseFontSize * 0.75 * 100) / 100;
-    return {
-        position: 'absolute',
-        left: '6px',
-        bottom: '3.5px',
-        fontSize: `${computedSize}px`,
-        fontWeight: '400',
-        fontFamily: isFluent 
-            ? FLUENT_FONT_STACK.primary
-            : FLUENT_FONT_STACK.fallback,
-        color: isLight ? '#1e293b' : '#fff',
-        lineHeight: '1'
-    };
-};
-
-const getOffsetSecondaryStyle = (isLight) => ({
-    position: 'absolute',
-    right: '6px',
-    top: '3px',
-    fontSize: '12px',
-    fontWeight: '400',
-    fontFamily: '"Outfit", "Arial", "Helvetica", sans-serif',
-    color: isLight ? '#64748b' : '#94a3b8',
-    opacity: 0.8,
-    lineHeight: '1'
-});
-
-// Calculate text category for bottom-right badges in Text mode
-const getKeyCategory = (kCode) => {
-    if (!kCode) return null;
-    const upper = kCode.toUpperCase();
-    if (upper.startsWith('KC_RGB_')) return 'RGB';
-    
-    // WIRELESS category
-    if (
-        upper.startsWith('KC_BT_') || 
-        upper.startsWith('KC_OUT_') ||
-        upper.startsWith('BT_') ||
-        upper.startsWith('OUT_')
-    ) {
-        return 'WIRE';
-    }
-    
-    // SOUND category
-    if (
-        upper.startsWith('KC_AUDIO_') || 
-        upper.startsWith('KC_KB_VOLUME_') || 
-        upper === 'KC_KB_MUTE' ||
-        upper === 'KC_MUTE' ||
-        upper === 'KC_VOLU' ||
-        upper === 'KC_VOLD'
-    ) {
-        return 'SOUND';
-    }
-    
-    // MEDIA category
-    if (
-        upper.startsWith('KC_MEDIA_') ||
-        ['KC_MNXT', 'KC_MPRV', 'KC_MSTP', 'KC_MPLY', 'KC_MSEL', 'KC_EJCT', 'KC_MFFD', 'KC_MRWD', 'KC_MEDIA_PLAY'].includes(upper)
-    ) {
-        return 'MEDIA';
-    }
-
-    // WEB category
-    if (
-        upper.startsWith('KC_WWW_') ||
-        ['KC_WBAK', 'KC_WFWD', 'KC_WREF', 'KC_WSTP', 'KC_WFAV', 'KC_WHOM', 'KC_WSRC'].some(prefix => upper.startsWith(prefix))
-    ) {
-        return 'WEB';
-    }
-    
-    // MOUSE category
-    if (
-        upper.startsWith('KC_MS_') || 
-        upper.startsWith('KC_BTN') || 
-        upper.startsWith('KC_WH_') ||
-        upper.startsWith('KC_ACL') ||
-        ['MS_U', 'MS_D', 'MS_L', 'MS_R', 'BTN1', 'BTN2', 'BTN3', 'BTN4', 'BTN5', 'WH_U', 'WH_D', 'WH_L', 'WH_R', 'ACL0', 'ACL1', 'ACL2'].some(prefix => upper.startsWith(prefix))
-    ) {
-        return 'MOUSE';
-    }
-
-    // MAGIC category
-    if (
-        upper.includes('MAGIC_') || 
-        ['KC_AG_TOGG', 'AG_TOGG', 'KC_CG_TOGG', 'CG_TOGG'].includes(upper)
-    ) {
-        return 'MAGIC';
-    }
-
-    // MACRO category
-    if (
-        upper.startsWith('KC_DM_') ||
-        ['DM_REC', 'DM_PLY', 'DM_RSTP'].some(prefix => upper.includes(prefix))
-    ) {
-        return 'MACRO';
-    }
-    
-    return null;
-};
-
-// Calculate text scale based on character length and key width to maintain physical harmony
-const getTextScale = (displayText, keyWidth = 1, isFluentIcon = false) => {
-    let textScale = 1.0;
-    if (!isFluentIcon && displayText) {
-        const isFunctionKey = /^F\d+$/.test(displayText);
-        if (isFunctionKey) {
-            textScale = 1.0;
-        } else {
-            const len = displayText.length;
-            if (len === 3) {
-                textScale = keyWidth >= 1.25 ? 0.85 : 0.62;
-            }
-            else if (len === 4) {
-                textScale = keyWidth >= 1.25 ? 0.85 : 0.62;
-            }
-            else if (len >= 5) {
-                if (keyWidth >= 2.0) {
-                    textScale = 0.85;
-                } else if (keyWidth >= 1.25) {
-                    textScale = 0.70;
-                } else {
-                    // 1uキーキャップでの文字数ごとの微細な最適化
-                    if (len === 5) {
-                        textScale = 0.62;
-                    } else if (len === 6) {
-                        textScale = 0.58;
-                    } else {
-                        textScale = 0.50;
-                    }
-                }
-            }
-        }
-    }
-    return textScale;
-};
-
-// Shared main legend styling utility for standard/modifier/layer text keycaps to enforce strict size harmony
-const getMainLegendStyle = (isLight, displayText, isFluentIcon = false, keyWidth = 1, customOverrides = {}) => {
-    const textScale = getTextScale(displayText, keyWidth, isFluentIcon);
-    const baseFontSize = 22;
-    const computedFontSize = isFluentIcon ? baseFontSize : Math.round(baseFontSize * textScale * 100) / 100;
-
-    const baseStyle = {
-        color: isLight ? '#1e293b' : '#fff',
-        fontWeight: '400',
-        fontFamily: isFluentIcon 
-            ? (displayText === '\uE986' ? FLUENT_FONT_STACK.jpKana : FLUENT_FONT_STACK.primary)
-            : FLUENT_FONT_STACK.fallback,
-        fontSize: `${computedFontSize}px`,
-        lineHeight: '1',
-        transform: isFluentIcon ? 'translateY(1.5px)' : 'none',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        textTransform: 'uppercase',
-        letterSpacing: '-0.02em',
-        width: '100%',
-        overflow: 'visible',
-        whiteSpace: 'nowrap'
-    };
-
-    return {
-        ...baseStyle,
-        ...customOverrides
-    };
-};
-
-const getLayerFooterColor = (num, isLight) => {
-    const lightColors = ['#64748b', '#2563eb', '#4f46e5', '#0891b2', '#10b981', '#f59e0b', '#ea580c', '#e11d48', '#9333ea', '#0284c7'];
-    const darkColors = ['#475569', '#1e40af', '#3730a3', '#155e75', '#065f46', '#92400e', '#9a3412', '#9f1239', '#6b21a8', '#075985'];
-    return (isLight ? lightColors : darkColors)[num % 10];
-};
-
-const getModColor = (mod, isLight) => {
-    if (!mod) return isLight ? '#475569' : '#334155';
-    const cleanMod = mod.toUpperCase();
-    const palettes = {
-        SHIFT: { light: '#c2410c', dark: '#ea580c' },
-        SHFT:  { light: '#c2410c', dark: '#ea580c' },
-        CTRL:  { light: '#0369a1', dark: '#0284c7' },
-        ALT:   { light: '#6d28d9', dark: '#7c3aed' },
-        GUI:   { light: '#065f46', dark: '#059669' },
-        WIN:   { light: '#065f46', dark: '#059669' },
-        CMD:   { light: '#065f46', dark: '#059669' }
-    };
-    const entry = palettes[cleanMod] || { light: '#475569', dark: '#334155' };
-    return isLight ? entry.light : entry.dark;
-};
-
-const getModGradient = (mKeys, isLight) => {
-    if (!mKeys || mKeys.length === 0) return isLight ? '#64748b' : '#475569';
-    if (mKeys.length === 1) return getModColor(mKeys[0], isLight);
-    
-    const colorStops = mKeys.map((m, idx) => {
-        const color = getModColor(m, isLight);
-        const startPerc = (idx / mKeys.length) * 100;
-        const endPerc = ((idx + 1) / mKeys.length) * 100;
-        return `${color} ${startPerc}%, ${color} ${endPerc}%`;
-    });
-    return `linear-gradient(to right, ${colorStops.join(', ')})`;
-};
-
-const getEncoderActions = (encodersSource, encoderIdx, layerIdx) => {
-    if (!encodersSource || !encodersSource[encoderIdx]) return null;
-    const encData = encodersSource[encoderIdx];
-    if (encData && encData[layerIdx]) {
-        return encData[layerIdx];
-    }
-    return null;
-};
+import {
+    getEncoderActions,
+    getFooterContainerStyle,
+    getFooterTextStyle,
+    getLayerFooterColor,
+    getMainLegendStyle,
+    getModColor,
+    getModGradient,
+    getOffsetContainerStyle,
+    getOffsetPrimaryStyle,
+    getOffsetSecondaryStyle,
+    getTextScale
+} from './keycapStyles.js';
+import {
+    buildDisplayRaw,
+    getIconRenderState,
+    getKeyCategory,
+    narrowSlash,
+    normalizeTargetIconKey,
+    shortenLabel
+} from './keycapIconUtils.js';
+import {
+    renderFluentIconWithBottomLabel,
+    renderInlineFluentIcon
+} from './keycapRenderers.js';
 
 export function Keycap({
     k,
@@ -400,192 +175,43 @@ export function Keycap({
         isModKey, modType, modLabel, modKeys, baseLabel, baseIsFluent
     } = parsed;
 
-    const narrowSlash = (str) => {
-        if (typeof str !== 'string') return str;
-        return str.replace(/\s+\/\s+/g, '\u200a/\u200a');
-    };
-
     displayText = narrowSlash(displayText);
     tapLabel = narrowSlash(tapLabel);
     baseLabel = narrowSlash(baseLabel);
     modLabel = narrowSlash(modLabel);
 
-    const cleanRawForRGB = fullRaw ? fullRaw.toUpperCase() : '';
-    const displayRawForRGB = (val && typeof val === 'string' && val.toUpperCase().startsWith('KC_'))
-        ? val.toUpperCase()
-        : (cleanRawForRGB.startsWith('KC_') ? cleanRawForRGB : 'KC_' + cleanRawForRGB);
-
-    // Normalize shift and modifier keycodes locally to guarantee consistent rendering and bypass potential browser caching
-    let targetIconKey = displayRawForRGB;
-    if (['KC_LSHIFT', 'LSHIFT', 'LSFT'].includes(targetIconKey)) {
-        targetIconKey = 'KC_LSFT';
-    } else if (['KC_RSHIFT', 'RSHIFT', 'RSFT'].includes(targetIconKey)) {
-        targetIconKey = 'KC_RSFT';
-    }
-
-    const isRGBKey = targetIconKey.startsWith('KC_RGB_');
-    const rgbLabels = {
-        "KC_RGB_TOG": "TOG",
-        "KC_RGB_MOD": "MODE+",
-        "KC_RGB_RMOD": "MODE-",
-        "KC_RGB_HUI": "HUE+",
-        "KC_RGB_HUD": "HUE-",
-        "KC_RGB_SAI": "SAT+",
-        "KC_RGB_SAD": "SAT-",
-        "KC_RGB_VAI": "BRT+",
-        "KC_RGB_VAD": "BRT-",
-        "KC_RGB_SPI": "SPD+",
-        "KC_RGB_SPD": "SPD-"
-    };
-    const isFluentMode = (displayMode === 'Fluent');
-    const isRGBFluent = isRGBKey && isFluentMode && isSVGAvailable(targetIconKey);
-    const rgbLabel = rgbLabels[targetIconKey] || '';
-
-    const isShiftKey = ['KC_LSFT', 'KC_RSFT'].includes(targetIconKey);
-    const isBottomMod = [
-        'KC_LCTL', 'KC_RCTL', 'KC_LALT', 'KC_RALT', 'KC_LGUI', 'KC_RGUI', 'KC_APP', 'KC_FN',
-        'KC_LCTRL', 'KC_RCTRL', 'KC_LOPTION', 'KC_ROPTION', 'KC_LCMD', 'KC_RCMD',
-        'LCTL', 'RCTL', 'LALT', 'RALT', 'LGUI', 'RGUI', 'APP', 'FN'
-    ].includes(targetIconKey);
-    const isBaseModSvg = isModKey && modType === 'base' && (
-        isShiftKey || (isBottomMod && keyStyle === 'Mac')
-    );
-    const actuallyShowingSvg = isFluentMode && isSVGAvailable(targetIconKey) && (
-        (isModKey && modType === 'base') ? isBaseModSvg : true
-    );
-
-    const isMagicKey = targetIconKey.includes('MAGIC_TOGGLE_') || ['KC_AG_TOGG', 'AG_TOGG', 'KC_CG_TOGG', 'CG_TOGG'].includes(targetIconKey);
-    const isMagicFluent = isMagicKey && isFluentMode && isSVGAvailable(targetIconKey);
-
-    const isMacroKey = targetIconKey.startsWith('KC_DM_') || ['KC_DM_REC1', 'KC_DM_REC2', 'KC_DM_PLY1', 'KC_DM_PLY2', 'KC_DM_RSTP'].includes(targetIconKey);
-    const isMacroFluent = isMacroKey && isFluentMode && isSVGAvailable(targetIconKey);
-    
-    const macroLabels = {
-        "KC_DM_REC1": "REC1",
-        "KC_DM_REC2": "REC2",
-        "KC_DM_PLY1": "PLY1",
-        "KC_DM_PLY2": "PLY2",
-        "KC_DM_RSTP": "RSTP"
-    };
-    const macroLabel = macroLabels[displayRawForRGB] || displayRawForRGB.replace('KC_DM_', '').replace('KC_', '');
-
-    const wirelessLabels = {
-        "KC_OUT_AUTO": "AUTO",
-        "KC_OUT_USB": "USB",
-        "KC_OUT_BT": "BT",
-        "KC_OUT_2G4": "2.4G",
-        "KC_BT_SEL_0": "BT 1",
-        "KC_BT_SEL_1": "BT 2",
-        "KC_BT_SEL_2": "BT 3",
-        "KC_BT_SEL_3": "BT 4",
-        "KC_BT_SEL_4": "BT 5",
-        "KC_BT_NXT": "NEXT",
-        "KC_BT_PRV": "PREV",
-        "KC_BT_CLR": "CLR",
-        "KC_BT_CLR_ALL": "CLR ALL",
-        "KC_BT_TOGG": "TOGG",
-        "KC_BT_ON": "ON",
-        "KC_BT_OFF": "OFF",
-        "OUT_AUTO": "AUTO",
-        "OUT_USB": "USB",
-        "OUT_BT": "BT",
-        "OUT_2G4": "2.4G",
-        "BT_SEL_0": "BT 1",
-        "BT_SEL_1": "BT 2",
-        "BT_SEL_2": "BT 3",
-        "BT_SEL_3": "BT 4",
-        "BT_SEL_4": "BT 5",
-        "BT_CLR": "CLR",
-        "BT_CLR_ALL": "CLR ALL",
-        "BT_TOGG": "TOGG",
-        "BT_NXT": "NEXT",
-        "BT_PRV": "PREV",
-        "BT_ON": "ON",
-        "BT_OFF": "OFF"
-    };
-    const isWirelessKey = displayRawForRGB.startsWith('KC_BT_') || 
-                          displayRawForRGB.startsWith('KC_OUT_') ||
-                          displayRawForRGB.startsWith('BT_') ||
-                          displayRawForRGB.startsWith('OUT_') ||
-                          wirelessLabels[displayRawForRGB] !== undefined;
-    const isWirelessFluent = isWirelessKey && isFluentMode && isSVGAvailable(displayRawForRGB);
-    const wirelessLabel = wirelessLabels[displayRawForRGB] || '';
-
-    const mouseLabels = {
-        "KC_MS_U": "MS UP",
-        "KC_MS_D": "MS DN",
-        "KC_MS_L": "MS LT",
-        "KC_MS_R": "MS RT",
-        "KC_BTN1": "LCLK",
-        "KC_BTN2": "RCLK",
-        "KC_BTN3": "MCLK",
-        "KC_BTN4": "BTN4",
-        "KC_BTN5": "BTN5",
-        "KC_WH_U": "WHL U",
-        "KC_WH_D": "WHL D",
-        "KC_WH_L": "WHL L",
-        "KC_WH_R": "WHL R",
-        "KC_ACL0": "ACL0",
-        "KC_ACL1": "ACL1",
-        "KC_ACL2": "ACL2",
-        "MS_U": "MS UP",
-        "MS_D": "MS DN",
-        "MS_L": "MS LT",
-        "MS_R": "MS RT",
-        "BTN1": "LCLK",
-        "BTN2": "RCLK",
-        "BTN3": "MCLK",
-        "BTN4": "BTN4",
-        "BTN5": "BTN5",
-        "WH_U": "WHL U",
-        "WH_D": "WHL D",
-        "WH_L": "WHL L",
-        "WH_R": "WHL R",
-        "ACL0": "ACL0",
-        "ACL1": "ACL1",
-        "ACL2": "ACL2"
-    };
-    const isMouseKey = displayRawForRGB.startsWith('KC_MS_') || 
-                       displayRawForRGB.startsWith('KC_BTN') ||
-                       displayRawForRGB.startsWith('KC_WH_') ||
-                       displayRawForRGB.startsWith('KC_ACL') ||
-                       ['MS_', 'BTN', 'WH_', 'ACL'].some(prefix => displayRawForRGB.startsWith(prefix)) ||
-                       mouseLabels[displayRawForRGB] !== undefined;
-    const isMouseFluent = isMouseKey && isFluentMode && isSVGAvailable(displayRawForRGB);
-    const mouseLabel = mouseLabels[displayRawForRGB] || '';
-
-    const webLabels = {
-        "KC_WWW_HOME": "HOME",
-        "KC_WWW_SEARCH": "SRCH",
-        "KC_WWW_FAVORITES": "FAV",
-        "KC_WWW_REFRESH": "RLOD",
-        "KC_WWW_BACK": "BACK",
-        "KC_WWW_FORWARD": "FWD",
-        "KC_WWW_STOP": "STOP",
-        "WHOM": "HOME",
-        "WSRC": "SRCH",
-        "WFAV": "FAV",
-        "WREF": "RLOD",
-        "WBAK": "BACK",
-        "WFWD": "FWD",
-        "WSTP": "STOP"
-    };
-    const isWebKey = displayRawForRGB.startsWith('KC_WWW_') ||
-                      ['KC_WBAK', 'KC_WFWD', 'KC_WREF', 'KC_WSTP', 'KC_WFAV', 'KC_WHOM', 'KC_WSRC'].some(prefix => displayRawForRGB.startsWith(prefix)) ||
-                      webLabels[displayRawForRGB] !== undefined;
-    const isWebFluent = isWebKey && isFluentMode && isSVGAvailable(displayRawForRGB);
-    const webLabel = webLabels[displayRawForRGB] || '';
+    const displayRawForRGB = buildDisplayRaw(fullRaw, val);
+    const targetIconKey = normalizeTargetIconKey(displayRawForRGB);
+    const {
+        isFluentMode,
+        isRGBKey,
+        isRGBFluent,
+        rgbLabel,
+        actuallyShowingSvg,
+        isMagicKey,
+        isMagicFluent,
+        isMacroKey,
+        isMacroFluent,
+        macroLabel,
+        isWirelessKey,
+        isWirelessFluent,
+        wirelessLabel,
+        isMouseKey,
+        isMouseFluent,
+        mouseLabel,
+        isWebKey,
+        isWebFluent,
+        webLabel
+    } = getIconRenderState({
+        displayRaw: displayRawForRGB,
+        targetIconKey,
+        displayMode,
+        keyStyle,
+        isModKey,
+        modType
+    });
 
     const is1u = (k.w || 56) / 56 < 1.25;
-    const shortenLabel = (label) => {
-        if (!label) return label;
-        const upper = label.toUpperCase();
-        if (upper === 'SPACE') return 'SPC';
-        if (upper === 'ENTER') return 'ENT';
-        if (upper === 'ESCAPE') return 'ESC';
-        return label;
-    };
-
     if (is1u) {
         displayText = shortenLabel(displayText);
         tapLabel = shortenLabel(tapLabel);
@@ -594,6 +220,9 @@ export function Keycap({
 
     const isFluentCenter = isFluentIcon || (isModKey && baseIsFluent);
     const centerText = (isModKey && modType !== 'base') ? baseLabel : displayText;
+    const magicLabel = isMagicFluent
+        ? narrowSlash(parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases).displayText)
+        : '';
 
     if (k.isEncoder) {
         const currentStyle = (encoderStyles && encoderStyles[k.encoderIndex]) || 'Dial';
@@ -806,6 +435,7 @@ export function Keycap({
             shapeRendering: 'geometricPrecision'
         },
             createElement('path', {
+                key: 'jis-enter-path',
                 d: pathD,
                 className: "jis-enter-path",
                 fill: fillColor,
@@ -939,8 +569,12 @@ export function Keycap({
 
                         if (actuallyShowingSvg) {
                             const effectiveSvgSize = Math.max(8, Math.round(24 * combinedScale));
-                            const svgEl = createSVGElement(targetIconKey, { size: effectiveSvgSize, color: getModColor(modKeys[0], isLight) });
-                            if (svgEl) {
+                            const iconElement = renderInlineFluentIcon({
+                                iconKey: targetIconKey,
+                                size: effectiveSvgSize,
+                                color: getModColor(modKeys[0], isLight)
+                            });
+                            if (iconElement) {
                                 return createElement('div', {
                                     className: "key-content flex-1 flex items-center justify-center w-full h-full",
                                     style: {
@@ -960,16 +594,7 @@ export function Keycap({
                                             boxSizing: 'border-box'
                                         }
                                     },
-                                        createElement('div', {
-                                            style: {
-                                                width: effectiveSvgSize + 'px',
-                                                height: effectiveSvgSize + 'px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center'
-                                            },
-                                            dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
-                                        })
+                                        iconElement
                                     )
                                 );
                             }
@@ -1084,367 +709,47 @@ export function Keycap({
                 }
             },
                 isRGBFluent ? (
-                    (() => {
-                        const effectiveSvgSize = 20;
-                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
-                        
-                        return createElement('div', {
-                            style: {
-                                position: 'relative',
-                                width: '100%',
-                                height: '100%',
-                                boxSizing: 'border-box'
-                            }
-                        }, [
-                            svgEl && createElement('div', {
-                                key: 'rgb-svg-render',
-                                style: {
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    zIndex: 1
-                                },
-                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
-                            }),
-                            createElement('div', {
-                                key: 'rgb-text-label',
-                                style: {
-                                    position: 'absolute',
-                                    bottom: '1.5px',
-                                    left: 0,
-                                    width: '100%',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    zIndex: 2,
-                                    pointerEvents: 'none',
-                                    userSelect: 'none'
-                                }
-                            }, 
-                                createElement('span', {
-                                    style: {
-                                        fontSize: '11px',
-                                        fontWeight: '500', 
-                                        color: isLight ? '#1e293b' : '#ffffff',
-                                        fontFamily: '"Outfit", sans-serif',
-                                        letterSpacing: '0.06em', 
-                                        lineHeight: '1',
-                                        textTransform: 'uppercase',
-                                        transform: 'scale(0.55)',
-                                        transformOrigin: 'bottom center',
-                                        display: 'inline-block',
-                                        whiteSpace: 'nowrap'
-                                    }
-                                }, rgbLabel)
-                            )
-                        ]);
-                    })()
+                    renderFluentIconWithBottomLabel({
+                        iconKey: displayRawForRGB,
+                        label: rgbLabel,
+                        labelKey: 'rgb',
+                        isLight
+                    })
                 ) : isMagicFluent ? (
-                    (() => {
-                        const effectiveSvgSize = 20;
-                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
-                        const parsedText = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases);
-                        const magicLabel = narrowSlash(parsedText.displayText);
-                        
-                        return createElement('div', {
-                            style: {
-                                position: 'relative',
-                                width: '100%',
-                                height: '100%',
-                                boxSizing: 'border-box'
-                            }
-                        }, [
-                            svgEl && createElement('div', {
-                                key: 'magic-svg-render',
-                                style: {
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    zIndex: 1
-                                },
-                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
-                            }),
-                            createElement('div', {
-                                key: 'magic-text-label',
-                                style: {
-                                    position: 'absolute',
-                                    bottom: '1.5px',
-                                    left: 0,
-                                    width: '100%',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    zIndex: 2,
-                                    pointerEvents: 'none',
-                                    userSelect: 'none'
-                                }
-                            }, 
-                                createElement('span', {
-                                    style: {
-                                        fontSize: '11px',
-                                        fontWeight: '500', 
-                                        color: isLight ? '#1e293b' : '#ffffff',
-                                        fontFamily: '"Outfit", sans-serif',
-                                        letterSpacing: '0.06em', 
-                                        lineHeight: '1',
-                                        textTransform: 'uppercase',
-                                        transform: 'scale(0.55)',
-                                        transformOrigin: 'bottom center',
-                                        display: 'inline-block',
-                                        whiteSpace: 'nowrap'
-                                    }
-                                }, magicLabel)
-                            )
-                        ]);
-                    })()
+                    renderFluentIconWithBottomLabel({
+                        iconKey: displayRawForRGB,
+                        label: magicLabel,
+                        labelKey: 'magic',
+                        isLight
+                    })
                 ) : isWirelessFluent ? (
-                    (() => {
-                        const effectiveSvgSize = 20;
-                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
-                        
-                        return createElement('div', {
-                            style: {
-                                position: 'relative',
-                                width: '100%',
-                                height: '100%',
-                                boxSizing: 'border-box'
-                            }
-                        }, [
-                            svgEl && createElement('div', {
-                                key: 'wireless-svg-render',
-                                style: {
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    zIndex: 1
-                                },
-                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
-                            }),
-                            createElement('div', {
-                                key: 'wireless-text-label',
-                                style: {
-                                    position: 'absolute',
-                                    bottom: '1.5px',
-                                    left: 0,
-                                    width: '100%',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    zIndex: 2,
-                                    pointerEvents: 'none',
-                                    userSelect: 'none'
-                                }
-                            }, 
-                                createElement('span', {
-                                    style: {
-                                        fontSize: '11px',
-                                        fontWeight: '500', 
-                                        color: isLight ? '#1e293b' : '#ffffff',
-                                        fontFamily: '"Outfit", sans-serif',
-                                        letterSpacing: '0.06em', 
-                                        lineHeight: '1',
-                                        textTransform: 'uppercase',
-                                        transform: 'scale(0.55)',
-                                        transformOrigin: 'bottom center',
-                                        display: 'inline-block',
-                                        whiteSpace: 'nowrap'
-                                    }
-                                }, wirelessLabel)
-                            )
-                        ]);
-                    })()
+                    renderFluentIconWithBottomLabel({
+                        iconKey: displayRawForRGB,
+                        label: wirelessLabel,
+                        labelKey: 'wireless',
+                        isLight
+                    })
                 ) : isWebFluent ? (
-                    (() => {
-                        const effectiveSvgSize = 20;
-                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
-                        
-                        return createElement('div', {
-                            style: {
-                                position: 'relative',
-                                width: '100%',
-                                height: '100%',
-                                boxSizing: 'border-box'
-                            }
-                        }, [
-                            svgEl && createElement('div', {
-                                key: 'web-svg-render',
-                                style: {
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    zIndex: 1
-                                },
-                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
-                            }),
-                            createElement('div', {
-                                key: 'web-text-label',
-                                style: {
-                                    position: 'absolute',
-                                    bottom: '1.5px',
-                                    left: 0,
-                                    width: '100%',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    zIndex: 2,
-                                    pointerEvents: 'none',
-                                    userSelect: 'none'
-                                }
-                            }, 
-                                createElement('span', {
-                                    style: {
-                                        fontSize: '11px',
-                                        fontWeight: '500', 
-                                        color: isLight ? '#1e293b' : '#ffffff',
-                                        fontFamily: '"Outfit", sans-serif',
-                                        letterSpacing: '0.06em', 
-                                        lineHeight: '1',
-                                        textTransform: 'uppercase',
-                                        transform: 'scale(0.55)',
-                                        transformOrigin: 'bottom center',
-                                        display: 'inline-block',
-                                        whiteSpace: 'nowrap'
-                                    }
-                                }, webLabel)
-                            )
-                        ]);
-                    })()
+                    renderFluentIconWithBottomLabel({
+                        iconKey: displayRawForRGB,
+                        label: webLabel,
+                        labelKey: 'web',
+                        isLight
+                    })
                 ) : isMouseFluent ? (
-                    (() => {
-                        const effectiveSvgSize = 20;
-                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
-                        
-                        return createElement('div', {
-                            style: {
-                                position: 'relative',
-                                width: '100%',
-                                height: '100%',
-                                boxSizing: 'border-box'
-                            }
-                        }, [
-                            svgEl && createElement('div', {
-                                key: 'mouse-svg-render',
-                                style: {
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    zIndex: 1
-                                },
-                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
-                            }),
-                            createElement('div', {
-                                key: 'mouse-text-label',
-                                style: {
-                                    position: 'absolute',
-                                    bottom: '1.5px',
-                                    left: 0,
-                                    width: '100%',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    zIndex: 2,
-                                    pointerEvents: 'none',
-                                    userSelect: 'none'
-                                }
-                            }, 
-                                createElement('span', {
-                                    style: {
-                                        fontSize: '11px',
-                                        fontWeight: '500', 
-                                        color: isLight ? '#1e293b' : '#ffffff',
-                                        fontFamily: '"Outfit", sans-serif',
-                                        letterSpacing: '0.06em', 
-                                        lineHeight: '1',
-                                        textTransform: 'uppercase',
-                                        transform: 'scale(0.55)',
-                                        transformOrigin: 'bottom center',
-                                        display: 'inline-block',
-                                        whiteSpace: 'nowrap'
-                                    }
-                                }, mouseLabel)
-                            )
-                        ]);
-                    })()
+                    renderFluentIconWithBottomLabel({
+                        iconKey: displayRawForRGB,
+                        label: mouseLabel,
+                        labelKey: 'mouse',
+                        isLight
+                    })
                 ) : isMacroFluent ? (
-                    (() => {
-                        const effectiveSvgSize = 20;
-                        const svgEl = createSVGElement(displayRawForRGB, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
-                        
-                        return createElement('div', {
-                            style: {
-                                position: 'relative',
-                                width: '100%',
-                                height: '100%',
-                                boxSizing: 'border-box'
-                            }
-                        }, [
-                            svgEl && createElement('div', {
-                                key: 'macro-svg-render',
-                                style: {
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    zIndex: 1
-                                },
-                                dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
-                            }),
-                            createElement('div', {
-                                key: 'macro-text-label',
-                                style: {
-                                    position: 'absolute',
-                                    bottom: '1.5px',
-                                    left: 0,
-                                    width: '100%',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    zIndex: 2,
-                                    pointerEvents: 'none',
-                                    userSelect: 'none'
-                                }
-                            }, 
-                                createElement('span', {
-                                    style: {
-                                        fontSize: '11px',
-                                        fontWeight: '500', 
-                                        color: isLight ? '#1e293b' : '#ffffff',
-                                        fontFamily: '"Outfit", sans-serif',
-                                        letterSpacing: '0.06em', 
-                                        lineHeight: '1',
-                                        textTransform: 'uppercase',
-                                        transform: 'scale(0.55)',
-                                        transformOrigin: 'bottom center',
-                                        display: 'inline-block',
-                                        whiteSpace: 'nowrap'
-                                    }
-                                }, macroLabel)
-                            )
-                        ]);
-                    })()
+                    renderFluentIconWithBottomLabel({
+                        iconKey: displayRawForRGB,
+                        label: macroLabel,
+                        labelKey: 'macro',
+                        isLight
+                    })
                 ) : (
                     (() => {
                         let textScale = manualWrap 
@@ -1470,30 +775,22 @@ export function Keycap({
                             }
                         }, [
                             (() => {
-                                const modeCheck = (displayMode === 'Fluent');
-                                const svgCheck = isSVGAvailable(displayRaw);
-
-                                if (modeCheck && svgCheck) {
+                                if (displayMode === 'Fluent' && isSVGAvailable(displayRaw)) {
                                     const effectiveSvgSize = Math.max(8, Math.round(24 * combinedScale));
-                                    const svgEl = createSVGElement(displayRaw, { size: effectiveSvgSize, color: isLight ? '#1e293b' : '#fff' });
-                                    if (svgEl) {
-                                        return createElement('div', {
-                                            key: 'svg-render',
-                                            style: {
-                                                width: effectiveSvgSize + 'px',
-                                                height: effectiveSvgSize + 'px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center'
-                                            },
-                                            dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
-                                        });
+                                    const iconElement = renderInlineFluentIcon({
+                                        iconKey: displayRaw,
+                                        size: effectiveSvgSize,
+                                        color: isLight ? '#1e293b' : '#fff'
+                                    });
+                                    if (iconElement) {
+                                        return createElement('div', { key: 'svg-render' }, iconElement);
                                     }
                                 }
                                 
                                 const effectiveFontSize = 22 * combinedScale;
                                 const needsScaleBypass = effectiveFontSize < 14;
                                 return createElement('div', {
+                                    key: 'legend-text',
                                     className: "legend-text",
                                     style: getMainLegendStyle(isLight, finalDisplayText, isFluentIcon, (k.w || 56) / 56, {
                                         transform: 'none',

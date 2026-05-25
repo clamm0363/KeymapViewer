@@ -2,7 +2,7 @@
 
 ## 目的
 
-SVG 分割後の `.js` 群をレビューし、場当たり的な修正や古い運用前提が残っている補助スクリプト・検証スクリプトを現行構成に合わせて整備する。
+肥大化した `js/components/Keycap.js` を、既存挙動を保ちながら責務ごとに段階的に分割し、今後の SVG / 表示ロジック追加時に安全に修正できる状態へ近づける。
 
 ## 今回の修正ブランチ
 
@@ -10,51 +10,60 @@ SVG 分割後の `.js` 群をレビューし、場当たり的な修正や古い
 
 ## 現状把握
 
-- 本体の `js/icons/*.js` と `js/svg-icons.js` は、構文チェック・代表キー解決・カテゴリ重複確認の範囲では大きな破綻は見つかっていない。
-- `js/svg-icons.js` は `system` `media` `wireless` `mouse` `keyboard` `edit` `rgb` `web` `utility` の順で統合されている。
-- `scripts/add-svg-icon.js` は新カテゴリ構成に追従済みで、`edit` `web` `rgb` への dry-run も確認済み。
-- 一方で `scripts/add-svg-icon.sh` は旧構成前提のままで、`keyboard` `edit` `web` `rgb` を個別ファイルへ振り分けられない。
-- `scripts/add-mouse-icons-robust.js` は `js/svg-icons.js` へ直接追記する旧式スクリプトで、モジュール分割後の構成と矛盾している。
-- `js/test-svg-validation.js` は ESM export を import せずグローバル変数前提で書かれており、現在の構成では信頼できる検証になっていない。
+- `Keycap.js` は 1500 行超で、キー判定、表示文言整形、スタイル計算、特殊カテゴリ SVG 描画、エンコーダ分岐、最終レンダリングを 1 ファイルで抱えている。
+- すでに一度分割された形跡はあるが、特殊キーごとの SVG + 下部ラベル描画が横並びで重複しており、仕様差分の混入や修正漏れを起こしやすい。
+- `RGB` `MAGIC` `WIRELESS` `WEB` `MOUSE` `MACRO` はほぼ同型の描画を個別実装しており、保守コストの割に差分が小さい。
+- 既存 UI はユーザー側ブラウザで問題なしとの確認があるため、今回の優先事項は「見た目の変更」ではなく「ロジックの整理と重複除去」。
+
+## 分割方針
+
+- `Keycap.js` から純粋関数として切り出せるものを先に抽出する。
+- 抽出先は責務単位で分ける。
+  - `keycapStyles.js`: スタイル計算
+  - `keycapIconUtils.js`: 表示ラベル整形、カテゴリ判定、SVG 表示条件判定
+  - `keycapRenderers.js`: SVG を使う共通レンダラー
+- 本体コンポーネント内では「条件分岐」と「レイアウト組み立て」に集中させる。
+- 一度に大規模再設計はせず、まずは重複レンダリングの除去を優先する。
 
 ## 修正対象
 
-- `scripts/add-svg-icon.sh`
-  - 現行のカテゴリ分割と一致するように振り分けロジックを更新する。
-  - 20px / 24px の Fluent SVG 探索挙動を `scripts/add-svg-icon.js` に合わせる。
-- `scripts/add-mouse-icons-robust.js`
-  - 現行運用に不要なら廃止候補として扱う。
-  - 残す場合は `js/icons/mouse.js` などのカテゴリモジュールへ出力する形へ改修する。
-- `js/test-svg-validation.js`
-  - 現在の ESM 構成で実行可能な検証スクリプトへ組み替える。
-  - 少なくとも import、主要 API、代表アイコン解決を自動で確認できる状態にする。
+- `js/components/Keycap.js`
+  - ローカル helper を削減し、抽出済みモジュールを使うよう整理する。
+  - 特殊カテゴリごとの SVG + 下部ラベル描画を共通レンダラーへ集約する。
+  - 可能であれば通常 Fluent SVG 描画も共通 renderer を使う。
+- `js/components/keycapStyles.js`
+  - `Keycap.js` から移したスタイル計算関数を保持する。
+- `js/components/keycapIconUtils.js`
+  - ラベル短縮、カテゴリ判定、アイコン表示条件判定を保持する。
+- `js/components/keycapRenderers.js`
+  - 特殊カテゴリ向け共通描画関数、通常 SVG 描画関数を保持する。
 
 ## 実施済み
 
-- [x] `.js` ファイル群の棚卸しを行う。
-- [x] `js/svg-icons.js` とカテゴリモジュール間の重複キー有無を確認する。
-- [x] `ICON_ALIASES` の参照先がすべて解決できることを確認する。
-- [x] 補助スクリプトと検証スクリプトのうち、旧構成に依存している候補を洗い出す。
-- [x] 修正用ブランチ `fix/svg-tooling-followup` を作成する。
-- [x] `scripts/add-svg-icon.sh` を Node 実装への互換ラッパーとして整理し、カテゴリ二重管理を解消する。
-- [x] `scripts/add-mouse-icons-robust.js` を現行 `add-svg-icon.js` へ委譲する互換ラッパーへ置き換える。
-- [x] `scripts/add-svg-icon.js` に `KC_ACL*` を含むマウスカテゴリ判定を追加する。
-- [x] `js/icons/mouse.js` の `KC_ACL*` カテゴリ表記を `mouse` に揃える。
-- [x] `js/test-svg-validation.js` を ESM ベースの現行検証スクリプトへ更新する。
-- [x] Node ベースで構文確認と代表ケース検証を実施する。
+- [x] `Keycap.js` の肥大化要因を確認し、分割対象を洗い出す。
+- [x] スタイル計算関数群を `keycapStyles.js` へ抽出する。
+- [x] ラベル整形とカテゴリ判定を `keycapIconUtils.js` へ抽出する。
+- [x] SVG レンダリングの共通 helper を `keycapRenderers.js` として作成する。
+- [x] `Keycap.js` から抽出済み helper を import する形へ切り替える。
+- [x] `displayRaw` 正規化やカテゴリ別表示状態判定を共通 utility 経由へ寄せる。
+- [x] `RGB` `MAGIC` `WIRELESS` `WEB` `MOUSE` `MACRO` の重複 SVG 描画を共通レンダラーへ統合する。
+- [x] 通常 Fluent SVG 描画を共通 inline renderer へ寄せる。
 
 ## これからやること
 
-- [ ] 必要であれば Bash 実行環境上でも `scripts/add-svg-icon.sh` の委譲動作を spot check する。
+- [ ] `Keycap.js` に残っているさらなる分割候補を確認する。
+- [ ] 新規分割後のファイル群に対して構文チェックを実施する。
+- [ ] 差分をレビューし、挙動変更のリスクが高い箇所を洗い出す。
 
 ## 完了条件
 
-- `add-svg-icon.sh` と `add-svg-icon.js` が同じカテゴリ方針で動作する。
-- 古い `js/svg-icons.js` 直接追記フローが残らない、または残す理由が明確に説明できる。
-- `test-svg-validation.js` が現在の構成でそのまま実行でき、主要 API と代表アイコンを検証できる。
+- `Keycap.js` から重複した特殊 SVG 描画ブロックが除去されている。
+- 抽出した helper ファイルが責務ごとに分かれ、`Keycap.js` の見通しが改善している。
+- 少なくとも構文チェックで新規分割ファイルと `Keycap.js` が正常に通る。
+- 今後のカテゴリ追加や表示調整時に、共通部を 1 箇所修正すれば済む状態になっている。
 
 ## 注意点
 
-- `AGENTS.md` の運用ルール上、SVG 追加は手動編集ではなく自動化スクリプト経由で成立する必要がある。
-- 補助スクリプトの放置は、次回のアイコン追加時に静かに旧構成へ逆戻りするリスクがある。
-- 本体 UI は現状大きく壊れていない前提なので、今回は「補助ツールと検証基盤の整合性回復」を優先する。
+- 挙動差分が出やすいのは `MAGIC` のようにラベルが動的計算されるキー、`Mod-Tap` や `Layer-Tap` など複合表示キー。
+- UI の見た目変更は目的ではないため、共通化しても既存サイズ・位置・配色は基本的に維持する。
+- `AGENTS.md` は未追跡のまま存在しているため、今回のコミット対象に含めない。
