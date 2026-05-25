@@ -2,7 +2,8 @@
  * SVG Icon Library for KeymapViewer
  * Provides SVG rendering with WebFont fallback support
  *
- * This entrypoint modularizes system, media, wireless, mouse, and utility icons
+ * This entrypoint modularizes system, media, wireless, mouse, utility,
+ * keyboard, edit, RGB, and web icons
  * into distinct submodules under js/icons/ for extreme safety and clean version control.
  */
 
@@ -11,6 +12,10 @@ import { MEDIA_ICONS } from './icons/media.js';
 import { WIRELESS_ICONS } from './icons/wireless.js';
 import { MOUSE_ICONS } from './icons/mouse.js';
 import { UTILITY_ICONS } from './icons/utility.js';
+import { KEYBOARD_ICONS } from './icons/keyboard.js';
+import { EDIT_ICONS } from './icons/edit.js';
+import { RGB_ICONS } from './icons/rgb.js';
+import { WEB_ICONS } from './icons/web.js';
 import { ICON_ALIASES } from './icons/aliases.js';
 
 // Assemble all icon categories into a unified SVG_ICONS dictionary
@@ -20,6 +25,10 @@ export const SVG_ICONS = Object.assign(
   MEDIA_ICONS,
   WIRELESS_ICONS,
   MOUSE_ICONS,
+  KEYBOARD_ICONS,
+  EDIT_ICONS,
+  RGB_ICONS,
+  WEB_ICONS,
   UTILITY_ICONS
 );
 

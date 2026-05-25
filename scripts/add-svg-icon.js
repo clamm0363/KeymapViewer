@@ -26,8 +26,10 @@ const CATEGORY_MAP = {
   'media': { file: 'media.js', exportName: 'MEDIA_ICONS' },
   'wireless': { file: 'wireless.js', exportName: 'WIRELESS_ICONS' },
   'mouse': { file: 'mouse.js', exportName: 'MOUSE_ICONS' },
-  'web': { file: 'utility.js', exportName: 'UTILITY_ICONS' },
-  'rgb': { file: 'utility.js', exportName: 'UTILITY_ICONS' },
+  'keyboard': { file: 'keyboard.js', exportName: 'KEYBOARD_ICONS' },
+  'edit': { file: 'edit.js', exportName: 'EDIT_ICONS' },
+  'web': { file: 'web.js', exportName: 'WEB_ICONS' },
+  'rgb': { file: 'rgb.js', exportName: 'RGB_ICONS' },
   'jp-keys': { file: 'utility.js', exportName: 'UTILITY_ICONS' },
   'utility': { file: 'utility.js', exportName: 'UTILITY_ICONS' }
 };
@@ -215,12 +217,29 @@ function extractSVGContent(svgPath) {
  * Determine category from keycode
  */
 function determineCategory(keyCode) {
+  const keyboardKeys = new Set([
+    'KC_ENT', 'KC_BSPC', 'KC_TAB', 'KC_CAPS', 'KC_SPC',
+    'KC_LCTL', 'KC_RCTL', 'KC_LALT', 'KC_RALT', 'KC_LGUI', 'KC_RGUI',
+    'KC_FN', 'KC_APP', 'KC_LSFT', 'KC_RSFT',
+    'KC_UP', 'KC_DOWN', 'KC_LEFT', 'KC_RGHT', 'KC_TRNS'
+  ]);
+  const editKeys = new Set([
+    'KC_HELP', 'KC_UNDO', 'KC_CUT', 'KC_COPY', 'KC_PASTE', 'KC_AGAIN'
+  ]);
+  const webKeys = new Set([
+    'KC_MAIL', 'KC_CALCULATOR', 'KC_MY_COMPUTER',
+    'KC_ASSISTANT', 'KC_MISSION_CONTROL', 'KC_LAUNCHPAD'
+  ]);
+
   if (keyCode.startsWith('KC_AUDIO_') || keyCode.startsWith('KC_KB_VOLUME_')) return 'audio';
   if (keyCode.startsWith('KC_MEDIA_')) return 'media';
   if (keyCode.startsWith('KC_WWW_')) return 'web';
   if (keyCode.startsWith('KC_MS_') || keyCode.startsWith('KC_BTN') || keyCode.startsWith('KC_WH_')) return 'mouse';
   if (keyCode.startsWith('KC_BT_') || keyCode.startsWith('KC_OUT_')) return 'wireless';
   if (keyCode.startsWith('KC_RGB_')) return 'rgb';
+  if (keyboardKeys.has(keyCode)) return 'keyboard';
+  if (editKeys.has(keyCode)) return 'edit';
+  if (webKeys.has(keyCode)) return 'web';
   if (keyCode.startsWith('JP_') || keyCode.startsWith('KC_JP_')) return 'jp-keys';
   if (keyCode.includes('BRIGHTNESS')) return 'system';
   if (keyCode.includes('POWER') || keyCode.includes('SLEEP') || keyCode.includes('WAKE')) return 'system';
