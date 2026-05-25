@@ -40,7 +40,12 @@
       "KC_DM_REC1", "KC_DM_PLY1", "KC_DM_REC2", "KC_DM_PLY2",
       "TRNS", "TRNS", "TRNS", "TRNS"
     ],
-    ["TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS", "TRNS"]
+    [
+      "MO(1)", "TG(2)", "TT(3)", "OSL(4)",
+      "TO(5)", "DF(6)", "LT(1,KC_SPC)", "LT(2,KC_TAB)",
+      "LALT(KC_Z)", "LCTL(KC_ESC)", "LSFT(KC_A)", "HYPR(KC_BSPC)",
+      "MEH(KC_ENT)", "MT(MOD_LGUI,KC_SPC)", "LGUI_T(KC_TAB)", "RALT_T(KC_DEL)"
+    ]
   ],
   "macros": [
     "Hello! This is a sample macro.",

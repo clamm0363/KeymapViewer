@@ -1,14 +1,18 @@
 const { createElement } = React;
 
 import {
-    getFooterContainerStyle,
-    getFooterTextStyle,
     getMainLegendStyle,
     getModColor,
-    getModGradient,
+    getOffsetContainerStyle,
+    getOffsetPrimaryContentStyle,
+    getOffsetPrimarySlotStyle,
     getTextScale
 } from './keycapStyles.js';
-import { renderInlineFluentIcon } from './keycapRenderers.js';
+import {
+    renderInlineFluentIcon,
+    renderModifierSupplement,
+    renderTopTag
+} from './keycapRenderers.js';
 
 export function renderModKeycap({
     modType,
@@ -24,9 +28,12 @@ export function renderModKeycap({
     canWrap,
     baseLabel,
     baseIsFluent,
-    isAppDark,
+    keyStyle,
     modLabel
 }) {
+    const primaryModColor = getModColor(modKeys[0], isLight);
+    const shouldCompactTapPrimary = !baseIsFluent && baseLabel && baseLabel.length >= 3;
+
     if (modType === 'base') {
         let textScale = getTextScale(finalDisplayText, kWidth, actuallyShowingSvg);
         if (isWirelessKey || isMouseKey) {
@@ -39,7 +46,7 @@ export function renderModKeycap({
             const iconElement = renderInlineFluentIcon({
                 iconKey: targetIconKey,
                 size: effectiveSvgSize,
-                color: getModColor(modKeys[0], isLight)
+                color: primaryModColor
             });
             if (iconElement) {
                 return createElement('div', {
@@ -88,7 +95,7 @@ export function renderModKeycap({
         createElement('div', {
             className: 'legend-text',
             style: getMainLegendStyle(isLight, finalDisplayText, actuallyShowingSvg, kWidth, {
-                color: getModColor(modKeys[0], isLight),
+                color: primaryModColor,
                 transform: 'none',
                 fontSize: needsScaleBypass ? '16px' : `${effectiveFontSize}px`,
                 display: 'flex',
@@ -108,33 +115,90 @@ export function renderModKeycap({
         }, finalDisplayText) : null)));
     }
 
+    if (modType === 'tap') {
+        return createElement('div', {
+            className: 'key-mod-split-container',
+            style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }
+        }, [
+            renderTopTag({
+                label: 'MT',
+                isLight,
+                accentColor: primaryModColor
+            }),
+            createElement('div', {
+                key: 'mod-main',
+                className: 'key-mod-main relative',
+                style: getOffsetContainerStyle()
+            }, [
+                createElement('div', {
+                    key: 'mod-primary',
+                    className: 'mod-primary',
+                    style: getOffsetPrimarySlotStyle()
+                }, createElement('span', {
+                    style: {
+                        ...getOffsetPrimaryContentStyle(
+                            isLight,
+                            baseIsFluent,
+                            shouldCompactTapPrimary ? '16px' : null
+                        ),
+                        ...(shouldCompactTapPrimary ? {
+                            letterSpacing: '-0.01em'
+                        } : {}),
+                        ...(shouldCompactTapPrimary ? {
+                            transform: 'scale(0.82)',
+                            transformOrigin: 'left bottom'
+                        } : {})
+                    }
+                }, baseLabel)),
+                renderModifierSupplement({
+                    modKeys,
+                    label: modLabel,
+                    isLight,
+                    color: primaryModColor,
+                    keyStyle,
+                    placement: 'offset'
+                })
+            ])
+        ]);
+    }
+
     return createElement('div', {
         className: 'key-mod-split-container',
-        style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }
-    },
-    createElement('div', {
-        className: 'key-mod-main',
-        style: getMainLegendStyle(isLight, baseLabel, baseIsFluent, kWidth, {
-            flex: 1,
-            ...(baseIsFluent ? { fontSize: '20px' } : {}),
-            marginTop: '6px'
+        style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }
+    }, [(() => {
+        const textScale = getTextScale(baseLabel, kWidth, baseIsFluent);
+        const combinedScale = targetScale * textScale * 0.9;
+        const effectiveFontSize = 22 * combinedScale;
+        const needsScaleBypass = effectiveFontSize < 14;
+
+        return createElement('div', {
+            key: 'mod-main',
+            className: 'key-mod-main',
+            style: getMainLegendStyle(isLight, baseLabel, baseIsFluent, kWidth, {
+                flex: 1,
+                transform: 'none',
+                fontSize: needsScaleBypass ? '16px' : `${effectiveFontSize}px`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                maxHeight: 'none'
+            })
+        }, baseLabel ? createElement('span', {
+            style: needsScaleBypass ? {
+                transform: `scale(${effectiveFontSize / 16})`,
+                transformOrigin: 'center center',
+                display: 'inline-block',
+                whiteSpace: 'nowrap'
+            } : null
+        }, baseLabel) : null);
+    })(),
+        renderModifierSupplement({
+            modKeys,
+            label: modLabel,
+            isLight,
+            color: primaryModColor,
+            keyStyle
         })
-    }, baseLabel),
-    createElement('div', {
-        className: 'key-mod-footer',
-        style: getFooterContainerStyle(isLight, isAppDark)
-    },
-    createElement('div', {
-        style: {
-            flex: 1,
-            background: getModGradient(modKeys, isLight),
-            color: '#f8fafc',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-        }
-    },
-    createElement('span', {
-        style: getFooterTextStyle(0.72, 0, '14px')
-    }, modLabel))));
+    ]);
 }
