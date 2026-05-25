@@ -1,5 +1,6 @@
 # Plans and dev docs
 plans/
+implementation_plan.md
 
 # Legacy unused module files (Ignored and untracked)
 legacy/
