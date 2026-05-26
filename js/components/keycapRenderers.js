@@ -238,6 +238,11 @@ function renderModifierSvgSequence({ iconKeys, placement, color, isLight }) {
     }, iconElements);
 }
 
+function isNamedModifierComboLabel(label, modKeys = []) {
+    if (!label || !Array.isArray(modKeys)) return false;
+    return modKeys.length > 1 && !String(label).includes('+');
+}
+
 export function renderModifierSupplement({
     modKeys,
     label,
@@ -252,7 +257,9 @@ export function renderModifierSupplement({
         ? abbreviateModifierCombo(label, { keyStyle, variant: 'short3' })
         : label;
 
-    const shouldUseModifierSvg = keyStyle === 'Mac' && displayMode === 'Fluent';
+    const shouldUseModifierSvg = keyStyle === 'Mac'
+        && displayMode === 'Fluent'
+        && !isNamedModifierComboLabel(label, modKeys);
     const modifierIconKeys = shouldUseModifierSvg ? getModifierIconKeys(modKeys) : [];
     const hasModifierSvg = modifierIconKeys.length > 0;
 
