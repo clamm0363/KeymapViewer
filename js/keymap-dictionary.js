@@ -347,7 +347,8 @@ export const KeymapDictionary = {
     // Bootloader & Utility
     "KC_RESET": { text: "BOOT", fluent: "\uF8C1" }, // rocket_24
     "KC_QK_BOOT": { text: "BOOT", fluent: "\uF8C1" }, // rocket_24
-    "KC_EE_CLR": { text: "EE_CLR", fluent: "\uF34D" }, // eraser_24
+    "KC_EE_CLR": { text: "EE CLR", fluent: "\uF34D" }, // eraser_24
+    "QK_CLEAR_EEPROM": { text: "EE CLR", fluent: "\uF34D" }, // eraser_24
     "KC_DEBUG": { text: "DEBUG", fluent: "\uE207" },
 
     // Advanced Logic & Macros
@@ -751,6 +752,8 @@ const compactKeySymbols = {
 };
 
 const phraseTextOverrides = {
+  EE_CLR: 'EE CLR',
+  QK_CLEAR_EEPROM: 'EE CLR',
   CAPS_LOCK: 'CAPS',
   SCROLL_LOCK: 'SLCK',
   NUM_LOCK: 'NUM',

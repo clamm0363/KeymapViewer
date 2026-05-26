@@ -79,7 +79,9 @@ export function Keycap({
         mouseLabel,
         isWebKey,
         isWebFluent,
-        webLabel
+        webLabel,
+        isUtilityFluent,
+        utilityLabel
     } = iconRenderState;
 
     const is1u = (k.w || 56) / 56 < 1.25;
@@ -195,7 +197,9 @@ export function Keycap({
             webLabel,
             mouseLabel,
             macroLabel,
-            magicLabel
+            magicLabel,
+            isUtilityFluent,
+            utilityLabel
         }
     });
 

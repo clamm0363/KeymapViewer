@@ -110,6 +110,12 @@ const WEB_LABELS = {
     WSTP: 'STOP'
 };
 
+const UTILITY_LABELS = {
+    KC_EE_CLR: 'EE CLR',
+    QK_CLEAR_EEPROM: 'EE CLR',
+    EE_CLR: 'EE CLR'
+};
+
 export function narrowSlash(str) {
     if (typeof str !== 'string') return str;
     return str.replace(/\s+\/\s+/g, '\u200a/\u200a');
@@ -117,9 +123,9 @@ export function narrowSlash(str) {
 
 export function buildDisplayRaw(fullRaw, val) {
     const cleanRaw = fullRaw ? fullRaw.toUpperCase() : '';
-    return (val && typeof val === 'string' && val.toUpperCase().startsWith('KC_'))
+    return (val && typeof val === 'string' && /^(KC_|QK_)/.test(val.toUpperCase()))
         ? val.toUpperCase()
-        : (cleanRaw.startsWith('KC_') ? cleanRaw : 'KC_' + cleanRaw);
+        : (/^(KC_|QK_)/.test(cleanRaw) ? cleanRaw : 'KC_' + cleanRaw);
 }
 
 export function normalizeTargetIconKey(displayRaw) {
@@ -145,6 +151,7 @@ export function shortenLabel(label) {
 export function getKeyCategory(kCode) {
     if (!kCode) return null;
     const upper = kCode.toUpperCase();
+    if (upper === 'QK_CLEAR_EEPROM' || upper === 'KC_EE_CLR' || upper === 'EE_CLR') return 'QK';
     if (upper.startsWith('KC_RGB_')) return 'RGB';
 
     if (
@@ -205,6 +212,10 @@ export function getKeyCategory(kCode) {
         return 'MACRO';
     }
 
+    if (upper.startsWith('QK_')) {
+        return 'QK';
+    }
+
     return null;
 }
 
@@ -260,6 +271,10 @@ export function getIconRenderState({ displayRaw, targetIconKey, displayMode, key
     const isWebFluent = isWebKey && isFluentMode && isSVGAvailable(targetIconKey);
     const webLabel = WEB_LABELS[displayRaw] || WEB_LABELS[normalizedDisplayRaw] || '';
 
+    const isUtilityKey = UTILITY_LABELS[displayRaw] !== undefined || UTILITY_LABELS[normalizedDisplayRaw] !== undefined;
+    const isUtilityFluent = isUtilityKey && isFluentMode && isSVGAvailable(targetIconKey);
+    const utilityLabel = UTILITY_LABELS[displayRaw] || UTILITY_LABELS[normalizedDisplayRaw] || '';
+
     return {
         isFluentMode,
         isRGBKey,
@@ -279,7 +294,10 @@ export function getIconRenderState({ displayRaw, targetIconKey, displayMode, key
         mouseLabel,
         isWebKey,
         isWebFluent,
-        webLabel
+        webLabel,
+        isUtilityKey,
+        isUtilityFluent,
+        utilityLabel
     };
 }
 
@@ -303,7 +321,8 @@ export function buildStandardDisplayModel({
         { matches: iconState.isWirelessFluent, label: iconState.wirelessLabel, labelKey: 'wireless' },
         { matches: iconState.isWebFluent, label: iconState.webLabel, labelKey: 'web' },
         { matches: iconState.isMouseFluent, label: iconState.mouseLabel, labelKey: 'mouse' },
-        { matches: iconState.isMacroFluent, label: iconState.macroLabel, labelKey: 'macro' }
+        { matches: iconState.isMacroFluent, label: iconState.macroLabel, labelKey: 'macro' },
+        { matches: iconState.isUtilityFluent, label: iconState.utilityLabel, labelKey: 'utility' }
     ].find((entry) => entry.matches) || null;
 
     const categoryCaption = displayMode === 'Text'

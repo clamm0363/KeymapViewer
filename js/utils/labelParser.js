@@ -5,7 +5,8 @@ import {
     getModifierDefinition,
     getModifierLabel,
     KeymapDictionary,
-    normalizeModifierLabel
+    normalizeModifierLabel,
+    resolveKeycodeAlias
 } from '../keymap-dictionary.js';
 
 export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, isJIS = false) {
@@ -127,6 +128,7 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
     }
 
     const raw = fullRaw.replace(/MACRO\((\d+)\)/g, (match, p1) => (macroAliases && macroAliases[p1] ? macroAliases[p1] : `M${p1}`)).replace(/CUSTOM\((\d+)\)/g, 'C$1');
+    const canonicalRaw = resolveKeycodeAlias(raw);
 
     let displayText = raw;
     let isFluentIcon = false;
@@ -171,7 +173,12 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
         if (hasFluentMod || hasFluentBase) isFluentIcon = true;
     } else {
         const cleanRawForNo = raw.startsWith('KC_') ? raw : `KC_${raw}`;
-        if (displayMode === 'Fluent' && (cleanRawForNo === 'KC_NO' || cleanRawForNo === 'KC_NONE' || raw === 'None')) {
+        if (canonicalRaw === 'KC_EE_CLR' || raw === 'QK_CLEAR_EEPROM' || raw === 'EE_CLR') {
+            displayText = 'EE CLR';
+            if (displayMode === 'Fluent') {
+                isFluentIcon = true;
+            }
+        } else if (displayMode === 'Fluent' && (cleanRawForNo === 'KC_NO' || cleanRawForNo === 'KC_NONE' || raw === 'None')) {
             displayText = "";
         } else {
             const dictLabel = getDictLabel(raw);
