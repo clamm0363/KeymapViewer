@@ -84,6 +84,10 @@ export function abbreviateModifierCombo(label, options = {}) {
     .join('+');
 }
 
+function normalizeKeycodeToken(code) {
+  return String(code || '').trim().toUpperCase();
+}
+
 // Microsoft Fluent System Icons (Open Source WebFont) に基づくマッピング
 export const KeymapDictionary = {
   modifiers: {
@@ -369,12 +373,85 @@ export const KeymapDictionary = {
     "ic_fluent_keyboard_24_regular": { text: "KEYB", fluent: "\uE6C6" }, // keyboard_24_regular
 
     // 透過キー
+    "KC_NO": { text: "NO" },
+    "KC_NONE": { text: "NO" },
     "KC_TRNS": { text: "▽", fluent: "\u{F02F9}" } // triangle_down_24_regular
   }
 };
 
+const modifierAliasPairs = [
+  ['KC_LEFT_CTRL', 'KC_LCTL'],
+  ['KC_RIGHT_CTRL', 'KC_RCTL'],
+  ['KC_LEFT_SHIFT', 'KC_LSFT'],
+  ['KC_RIGHT_SHIFT', 'KC_RSFT'],
+  ['KC_LEFT_ALT', 'KC_LALT'],
+  ['KC_RIGHT_ALT', 'KC_RALT'],
+  ['KC_LEFT_GUI', 'KC_LGUI'],
+  ['KC_RIGHT_GUI', 'KC_RGUI'],
+  ['KC_LCMD', 'KC_LGUI'],
+  ['KC_RCMD', 'KC_RGUI'],
+  ['KC_LWIN', 'KC_LGUI'],
+  ['KC_RWIN', 'KC_RGUI'],
+  ['KC_LOPT', 'KC_LALT'],
+  ['KC_ROPT', 'KC_RALT'],
+  ['KC_ALGR', 'KC_RALT']
+];
+
 // QMKのショートキーコード（エイリアス）を正規のキーコードからプログラムで複製
 const aliasPairs = [
+  // QMK basic-keycode official names <-> existing canonical entries
+  ['KC_CAPS_LOCK',                     'KC_CAPS'],
+  ['KC_SCROLL_LOCK',                   'KC_SLCK'],
+  ['KC_SCRL',                          'KC_SLCK'],
+  ['KC_BRMD',                          'KC_SLCK'],
+  ['KC_PRINT_SCREEN',                  'KC_PSCR'],
+  ['KC_PAUSE',                         'KC_PAUS'],
+  ['KC_BRK',                           'KC_PAUS'],
+  ['KC_BRMU',                          'KC_PAUS'],
+  ['KC_INSERT',                        'KC_INS'],
+  ['KC_PAGE_UP',                       'KC_PGUP'],
+  ['KC_DELETE',                        'KC_DEL'],
+  ['KC_PAGE_DOWN',                     'KC_PGDN'],
+  ['KC_RIGHT',                         'KC_RGHT'],
+  ['KC_APPLICATION',                   'KC_APP'],
+  ['KC_EXECUTE',                       'KC_EXEC'],
+  ['KC_MENU',                          'KC_MENU'],
+  ['KC_SELECT',                        'KC_SELECT'],
+  ['KC_SLCT',                          'KC_SELECT'],
+  ['KC_AGIN',                          'KC_AGAIN'],
+  ['KC_PSTE',                          'KC_PASTE'],
+  ['KC_ALTERNATE_ERASE',               'KC_ERAS'],
+  ['KC_SYSTEM_REQUEST',                'KC_SYRQ'],
+  ['KC_CANCEL',                        'KC_CNCL'],
+  ['KC_CLEAR',                         'KC_CLR'],
+  ['KC_PRIOR',                         'KC_PRIR'],
+  ['KC_RETURN',                        'KC_RETN'],
+  ['KC_SEPARATOR',                     'KC_SEPR'],
+  ['KC_CLEAR_AGAIN',                   'KC_CLAG'],
+  ['KC_CRSL',                          'KC_CRSEL'],
+  ['KC_EXSL',                          'KC_EXSEL'],
+  ['KC_NUM_LOCK',                      'KC_NUM'],
+  ['KC_KP_SLASH',                      'KC_PSLS'],
+  ['KC_KP_ASTERISK',                   'KC_PAST'],
+  ['KC_KP_MINUS',                      'KC_PMNS'],
+  ['KC_KP_PLUS',                       'KC_PPLS'],
+  ['KC_KP_ENTER',                      'KC_PENT'],
+  ['KC_KP_0',                          'KC_P0'],
+  ['KC_KP_1',                          'KC_P1'],
+  ['KC_KP_2',                          'KC_P2'],
+  ['KC_KP_3',                          'KC_P3'],
+  ['KC_KP_4',                          'KC_P4'],
+  ['KC_KP_5',                          'KC_P5'],
+  ['KC_KP_6',                          'KC_P6'],
+  ['KC_KP_7',                          'KC_P7'],
+  ['KC_KP_8',                          'KC_P8'],
+  ['KC_KP_9',                          'KC_P9'],
+
+  // Transparent / No-op aliases
+  ['KC_TRANSPARENT',                   'KC_TRNS'],
+  ['_______',                          'KC_TRNS'],
+  ['XXXXXXX',                          'KC_NO'],
+
   ['KC_MUTE', 'KC_AUDIO_MUTE'],
   ['KC_VOLU', 'KC_AUDIO_VOL_UP'],
   ['KC_VOLD', 'KC_AUDIO_VOL_DOWN'],
@@ -415,6 +492,15 @@ const aliasPairs = [
   ['KC_CG_TOGG',                        'MAGIC_TOGGLE_CTL_GUI'],
   ['AG_TOGG',                           'MAGIC_TOGGLE_ALT_GUI'],
   ['KC_AG_TOGG',                        'MAGIC_TOGGLE_ALT_GUI'],
+
+  // Quantum keycodes
+  ['QK_BOOTLOADER',                     'KC_RESET'],
+  ['QK_BOOT',                           'KC_RESET'],
+  ['QK_CLEAR_EEPROM',                   'KC_EE_CLR'],
+  ['EE_CLR',                            'KC_EE_CLR'],
+  ['QK_DEBUG_TOGGLE',                   'KC_DEBUG'],
+  ['DB_TOGG',                           'KC_DEBUG'],
+
   // Wireless standard aliases mapping
   ['OUT_AUTO',                          'KC_OUT_AUTO'],
   ['OUT_USB',                           'KC_OUT_USB'],
@@ -440,11 +526,17 @@ const aliasPairs = [
   ['BT_SEL2',                           'KC_BT_SEL_2'],
   ['BT_SEL3',                           'KC_BT_SEL_3'],
   ['BT_SEL4',                           'KC_BT_SEL_4'],
-  // Mouse aliases mapping
+
+  // Mouse aliases mapping (legacy / project-local)
   ['MS_U',                              'KC_MS_U'],
   ['MS_D',                              'KC_MS_D'],
   ['MS_L',                              'KC_MS_L'],
   ['MS_R',                              'KC_MS_R'],
+  ['KC_MS_UP',                          'KC_MS_U'],
+  ['KC_MS_DOWN',                        'KC_MS_D'],
+  ['KC_MS_LEFT',                        'KC_MS_L'],
+  ['KC_MS_RIGHT',                       'KC_MS_R'],
+  ['KC_MS_RGHT',                        'KC_MS_R'],
   ['MS_UP',                             'KC_MS_U'],
   ['MS_DN',                             'KC_MS_D'],
   ['MS_LT',                             'KC_MS_L'],
@@ -472,12 +564,267 @@ const aliasPairs = [
   ['SCROLL_RIGHT',                      'KC_WH_R'],
   ['ACL0',                              'KC_ACL0'],
   ['ACL1',                              'KC_ACL1'],
-  ['ACL2',                              'KC_ACL2']
+  ['ACL2',                              'KC_ACL2'],
+
+  // Mouse aliases mapping (QMK official aliases)
+  ['MS_DOWN',                           'KC_MS_D'],
+  ['MS_LEFT',                           'KC_MS_L'],
+  ['MS_RGHT',                           'KC_MS_R'],
+  ['MS_BTN1',                           'KC_BTN1'],
+  ['MS_BTN2',                           'KC_BTN2'],
+  ['MS_BTN3',                           'KC_BTN3'],
+  ['MS_BTN4',                           'KC_BTN4'],
+  ['MS_BTN5',                           'KC_BTN5'],
+  ['KC_MS_BTN1',                        'KC_BTN1'],
+  ['KC_MS_BTN2',                        'KC_BTN2'],
+  ['KC_MS_BTN3',                        'KC_BTN3'],
+  ['KC_MS_BTN4',                        'KC_BTN4'],
+  ['KC_MS_BTN5',                        'KC_BTN5'],
+  ['MS_WHLU',                           'KC_WH_U'],
+  ['MS_WHLD',                           'KC_WH_D'],
+  ['MS_WHLL',                           'KC_WH_L'],
+  ['MS_WHLR',                           'KC_WH_R'],
+  ['KC_MS_WHLU',                        'KC_WH_U'],
+  ['KC_MS_WHLD',                        'KC_WH_D'],
+  ['KC_MS_WHLL',                        'KC_WH_L'],
+  ['KC_MS_WHLR',                        'KC_WH_R'],
+  ['MS_ACL0',                           'KC_ACL0'],
+  ['MS_ACL1',                           'KC_ACL1'],
+  ['MS_ACL2',                           'KC_ACL2'],
+  ['KC_MS_ACL0',                        'KC_ACL0'],
+  ['KC_MS_ACL1',                        'KC_ACL1'],
+  ['KC_MS_ACL2',                        'KC_ACL2'],
+
+  // Mouse formal keycode names from QMK docs
+  ['QK_MOUSE_CURSOR_UP',                'KC_MS_U'],
+  ['QK_MOUSE_CURSOR_DOWN',              'KC_MS_D'],
+  ['QK_MOUSE_CURSOR_LEFT',              'KC_MS_L'],
+  ['QK_MOUSE_CURSOR_RIGHT',             'KC_MS_R'],
+  ['QK_MOUSE_BUTTON_1',                 'KC_BTN1'],
+  ['QK_MOUSE_BUTTON_2',                 'KC_BTN2'],
+  ['QK_MOUSE_BUTTON_3',                 'KC_BTN3'],
+  ['QK_MOUSE_BUTTON_4',                 'KC_BTN4'],
+  ['QK_MOUSE_BUTTON_5',                 'KC_BTN5'],
+  ['QK_MOUSE_WHEEL_UP',                 'KC_WH_U'],
+  ['QK_MOUSE_WHEEL_DOWN',               'KC_WH_D'],
+  ['QK_MOUSE_WHEEL_LEFT',               'KC_WH_L'],
+  ['QK_MOUSE_WHEEL_RIGHT',              'KC_WH_R'],
+  ['QK_MOUSE_ACCELERATION_0',           'KC_ACL0'],
+  ['QK_MOUSE_ACCELERATION_1',           'KC_ACL1'],
+  ['QK_MOUSE_ACCELERATION_2',           'KC_ACL2']
 ];
 
-aliasPairs.forEach(([shortKey, longKey]) => {
-  if (KeymapDictionary.keys[longKey]) {
-    KeymapDictionary.keys[shortKey] = KeymapDictionary.keys[longKey];
-  }
+function registerAliases(target, pairs) {
+  pairs.forEach(([aliasKey, canonicalKey]) => {
+    if (target[canonicalKey]) {
+      target[aliasKey] = target[canonicalKey];
+    }
+  });
+}
+
+registerAliases(KeymapDictionary.keys, aliasPairs);
+registerAliases(KeymapDictionary.modifiers, modifierAliasPairs);
+
+const keyAliasLookup = new Map();
+aliasPairs.forEach(([aliasKey, canonicalKey]) => {
+  keyAliasLookup.set(normalizeKeycodeToken(aliasKey), canonicalKey);
 });
+
+const modifierAliasLookup = new Map();
+modifierAliasPairs.forEach(([aliasKey, canonicalKey]) => {
+  modifierAliasLookup.set(normalizeKeycodeToken(aliasKey), canonicalKey);
+});
+
+const keyTokenAbbreviations = {
+  AUDIO: 'AUD',
+  APPLICATION: 'APP',
+  ASSISTANT: 'ASST',
+  BACK: 'BACK',
+  BACKLIGHT: 'BKL',
+  BOOTLOADER: 'BOOT',
+  BRIGHTNESS: 'BRT',
+  BUTTON: 'BTN',
+  CAPS: 'CAPS',
+  CLEAR: 'CLR',
+  COMPUTER: 'PC',
+  CONTROL: 'CTRL',
+  COPY: 'COPY',
+  CURSOR: 'MS',
+  DEBUG: 'DBG',
+  DELETE: 'DEL',
+  DOWN: 'DOWN',
+  EEPROM: 'EE',
+  EJECT: 'EJCT',
+  ESCAPE: 'ESC',
+  FAVORITES: 'FAV',
+  FORWARD: 'FWD',
+  GUI: 'GUI',
+  HOME: 'HOME',
+  HUE: 'HUE',
+  INSERT: 'INS',
+  KEYBOARD: 'KB',
+  LANGUAGE: 'LNG',
+  LAUNCHPAD: 'LNCH',
+  LEFT: 'LEFT',
+  MACRO: 'MAC',
+  MEDIA: 'MED',
+  MISSION: 'MISS',
+  MODE: 'MODE',
+  MOUSE: 'MS',
+  NEXT: 'NEXT',
+  NO: 'NO',
+  PAGE: 'PG',
+  PASTE: 'PSTE',
+  PAUSE: 'PAUS',
+  PLAY: 'PLAY',
+  POINTING: 'POINT',
+  POWER: 'PWR',
+  PREVIOUS: 'PREV',
+  PRINT: 'PSCR',
+  PROGRAMMABLE: 'PB',
+  REBOOT: 'RBT',
+  RECORD: 'REC',
+  REDO: 'REDO',
+  REFRESH: 'RLOD',
+  RESET: 'RST',
+  REWIND: 'RWD',
+  RIGHT: 'RGHT',
+  SCROLL: 'WHL',
+  SEARCH: 'SRCH',
+  SELECT: 'SEL',
+  SHIFT: 'SHFT',
+  SLEEP: 'SLEP',
+  SPACE: 'SPC',
+  SPEED: 'SPD',
+  STOP: 'STOP',
+  SUPER: 'GUI',
+  SYSTEM: 'SYS',
+  TAP: 'TAP',
+  TOGGLE: 'TOG',
+  TRACK: 'TRK',
+  TRANSPARENT: 'TRNS',
+  UNDERGLOW: 'UG',
+  UNDO: 'UNDO',
+  UP: 'UP',
+  VOLUME: 'VOL',
+  WAKE: 'WAKE',
+  WHEEL: 'WHL',
+  WINDOWS: 'WIN',
+  WIRELESS: 'WL'
+};
+
+const compactKeySymbols = {
+  KC_MINS: '-',
+  KC_EQL: '=',
+  KC_LBRC: '[',
+  KC_RBRC: ']',
+  KC_BSLS: '\\',
+  KC_NUHS: '#',
+  KC_SCLN: ';',
+  KC_QUOT: '\'',
+  KC_GRV: '`',
+  KC_COMM: ',',
+  KC_DOT: '.',
+  KC_SLSH: '/',
+  KC_MINUS: '-',
+  KC_EQUAL: '=',
+  KC_LEFT_BRACKET: '[',
+  KC_RIGHT_BRACKET: ']',
+  KC_BACKSLASH: '\\',
+  KC_NONUS_HASH: '#',
+  KC_SEMICOLON: ';',
+  KC_QUOTE: '\'',
+  KC_GRAVE: '`',
+  KC_COMMA: ',',
+  KC_DOT: '.',
+  KC_SLASH: '/',
+  KC_KP_SLASH: '/',
+  KC_KP_ASTERISK: '*',
+  KC_KP_MINUS: '-',
+  KC_KP_PLUS: '+',
+  KC_KP_DOT: '.',
+  KC_PSLS: '/',
+  KC_PAST: '*',
+  KC_PMNS: '-',
+  KC_PPLS: '+',
+  KC_PDOT: '.'
+};
+
+const phraseTextOverrides = {
+  CAPS_LOCK: 'CAPS',
+  SCROLL_LOCK: 'SLCK',
+  NUM_LOCK: 'NUM',
+  PRINT_SCREEN: 'PSCR',
+  PAGE_UP: 'PGUP',
+  PAGE_DOWN: 'PGDN',
+  ALTERNATE_ERASE: 'ERAS',
+  SYSTEM_REQUEST: 'SYRQ',
+  CLEAR_AGAIN: 'CLAG',
+  LEFT_CTRL: 'LCTL',
+  RIGHT_CTRL: 'RCTL',
+  LEFT_SHIFT: 'LSFT',
+  RIGHT_SHIFT: 'RSFT',
+  LEFT_ALT: 'LALT',
+  RIGHT_ALT: 'RALT',
+  LEFT_GUI: 'LGUI',
+  RIGHT_GUI: 'RGUI',
+  MOUSE_CURSOR_UP: 'MS UP',
+  MOUSE_CURSOR_DOWN: 'MS DN',
+  MOUSE_CURSOR_LEFT: 'MS LT',
+  MOUSE_CURSOR_RIGHT: 'MS RT',
+  MOUSE_WHEEL_UP: 'WHL U',
+  MOUSE_WHEEL_DOWN: 'WHL D',
+  MOUSE_WHEEL_LEFT: 'WHL L',
+  MOUSE_WHEEL_RIGHT: 'WHL R',
+  MOUSE_ACCELERATION_0: 'ACL0',
+  MOUSE_ACCELERATION_1: 'ACL1',
+  MOUSE_ACCELERATION_2: 'ACL2'
+};
+
+function deriveTextFromKeycode(code) {
+  const normalized = normalizeKeycodeToken(code);
+  if (!normalized) return '';
+  if (compactKeySymbols[normalized]) return compactKeySymbols[normalized];
+
+  const raw = normalized.replace(/^KC_/, '').replace(/^QK_/, '');
+  if (phraseTextOverrides[raw]) return phraseTextOverrides[raw];
+  if (/^[A-Z0-9]$/.test(raw)) return raw;
+  if (/^F\d{1,2}$/.test(raw)) return raw;
+  if (/^P\d$/.test(raw)) return raw.slice(1);
+
+  const tokens = raw.split('_').filter(Boolean);
+  if (tokens.length === 0) return raw;
+
+  const mapped = tokens.map((token) => keyTokenAbbreviations[token] || token);
+  const joined = mapped.join(' ').trim();
+  if (joined.length <= 10) return joined;
+
+  const compact = mapped.map((token) => token.length > 4 ? token.slice(0, 4) : token).join(' ').trim();
+  return compact.length <= 10 ? compact : compact.slice(0, 10);
+}
+
+export function resolveModifierKeycode(code) {
+  const normalized = normalizeKeycodeToken(code);
+  if (!normalized) return '';
+  return modifierAliasLookup.get(normalized) || normalized;
+}
+
+export function resolveKeycodeAlias(code) {
+  const normalized = normalizeKeycodeToken(code);
+  if (!normalized) return '';
+  return keyAliasLookup.get(normalized) || normalized;
+}
+
+export function getModifierDefinition(code) {
+  const canonical = resolveModifierKeycode(code);
+  return KeymapDictionary.modifiers[canonical] || null;
+}
+
+export function getKeyDefinition(code) {
+  const canonical = resolveKeycodeAlias(code);
+  const explicit = KeymapDictionary.keys[canonical];
+  if (explicit) return explicit;
+  if (!canonical) return null;
+  return { text: deriveTextFromKeycode(canonical) };
+}
 

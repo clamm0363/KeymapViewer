@@ -302,6 +302,7 @@ export function Keycap({
                 isMouseKey,
                 isWebKey,
                 targetScale,
+                targetIconKey,
                 displayRaw,
                 displayMode,
                 canWrap,

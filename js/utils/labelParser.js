@@ -1,6 +1,8 @@
 import { SYMBOL_MAP, FLUENT_MAP } from '../constants.js';
 import { getRawLabel } from './helpers.js';
 import {
+    getKeyDefinition,
+    getModifierDefinition,
     getModifierLabel,
     KeymapDictionary,
     normalizeModifierLabel
@@ -122,14 +124,14 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
         const cleanCode = kCode.startsWith('KC_') ? kCode : `KC_${kCode}`;
         const rawCode = kCode.startsWith('KC_') ? kCode.replace('KC_', '') : kCode;
 
-        const modEntry = dict.modifiers[cleanCode] || dict.modifiers[rawCode];
+        const modEntry = getModifierDefinition(cleanCode) || getModifierDefinition(rawCode);
         if (modEntry) {
             return displayMode === 'Fluent' 
                 ? (keyStyle === 'Mac' ? modEntry.mac : modEntry.win) 
                 : ((keyStyle === 'Mac' ? (modEntry.macText || modEntry.text) : modEntry.text) || kCode.replace('KC_', ''));
         }
 
-        const keyEntry = dict.keys[cleanCode] || dict.keys[rawCode];
+        const keyEntry = getKeyDefinition(cleanCode) || getKeyDefinition(rawCode);
         if (keyEntry) {
             return displayMode === 'Fluent' && keyEntry.fluent ? keyEntry.fluent : ((keyStyle === 'Mac' ? (keyEntry.macText || keyEntry.text) : keyEntry.text) || kCode.replace('KC_', ''));
         }
@@ -156,7 +158,7 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
                 displayText = dictLabel;
                 const cleanCode = raw.startsWith('KC_') ? raw : `KC_${raw}`;
                 const rawCode = raw.startsWith('KC_') ? raw.replace('KC_', '') : raw;
-                const entry = dict.modifiers[cleanCode] || dict.modifiers[rawCode] || dict.keys[cleanCode] || dict.keys[rawCode];
+                const entry = getModifierDefinition(cleanCode) || getModifierDefinition(rawCode) || getKeyDefinition(cleanCode) || getKeyDefinition(rawCode);
                 if (displayMode === 'Fluent' && entry) {
                     if (entry.isFluent === true || (entry.fluent)) {
                         isFluentIcon = true;
@@ -198,7 +200,7 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
         const dictLabel = getDictLabel(tKeyRaw);
         tapLabel = dictLabel || SYMBOL_MAP[tKeyRaw] || tKeyRaw.replace('KC_', '');
         const cleanTKey = tKeyRaw.replace('KC_', '');
-        const entry = dict.keys[`KC_${cleanTKey}`] || dict.modifiers[`KC_${cleanTKey}`];
+            const entry = getKeyDefinition(`KC_${cleanTKey}`) || getModifierDefinition(`KC_${cleanTKey}`);
         if (displayMode === 'Fluent') {
             if (entry && entry.fluent) {
                 tapIsFluent = true;
@@ -282,7 +284,7 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
         baseLabel = dictBase || SYMBOL_MAP[baseClean] || baseClean;
         
         if (displayMode === 'Fluent') {
-            const entry = dict.keys[`KC_${baseClean}`] || dict.modifiers[`KC_${baseClean}`];
+            const entry = getKeyDefinition(`KC_${baseClean}`) || getModifierDefinition(`KC_${baseClean}`);
             if (entry && entry.fluent) {
                 baseIsFluent = true;
                 baseLabel = entry.fluent;

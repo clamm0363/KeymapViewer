@@ -2,52 +2,44 @@
 
 ## 目的
 
-入力デバイスの表現を `ENCODER` 一段ではなく、`入力デバイス種別` と `見た目バリエーション` の二段構造へ整理し、`Pointing Device` を独立した概念として扱えるようにする。
+QMK / VIA の正式キーコードについて、TEXT / FLUENT の両モードで表示が崩れないようにする。今回は特に `KC_MS_UP` などの正式マウスキーで SVG アイコンが欠ける問題と、`KC_GRV` / `KC_EQL` などの記号キーが略称表示になる問題を修正する。
 
 ## 今回の対象
 
-- `js/app.js`
-- `js/components/DeviceSlot.js`
-- `js/components/keycapEncoder.js`
-- `js/components/keycapStyles.js`
-- `SampleLayouts/sample_numpad.json`
-- `SampleLayouts/sample_numpad_mapping.json`
+- `js/keymap-dictionary.js`
+- `js/components/keycapIconUtils.js`
+- `js/components/keycapStandardSection.js`
+- `js/utils/labelParser.js`
 
 ## 現状把握
 
-- 現在は `encoderStyles` だけで `Dial` / `Wheel` / `Trackball` を切り替えている。
-- ただし `Trackball` は QMK / VIA の意味論では回転体より `Pointing Device` に近い。
-- 将来的に `Touchpad` などを増やすなら、`Encoder` と `Pointing Device` を同列に扱える構造のほうが自然である。
-- 既存データや共有URLとの互換のため、旧 `encoderStyles` は当面読み取れる必要がある。
+- `KC_MS_UP` などは TEXT モードでは正しく見えるが、FLUENT モードでは SVG icon key への正規化が不十分だと欠落する。
+- `KC_GRV` や `KC_EQL` などは辞書の汎用フォールバックが先に働き、最終的な記号変換よりも `GRV` / `EQL` が優先されてしまう。
+- さらに、カテゴリ別の下ラベル付き SVG 描画では canonical key ではなく生の `displayRawForRGB` を渡しており、`KC_MS_UP` のような正式名がそこで再び取りこぼされている。
 
 ## 方針
 
-- 新しい設定構造として `inputDeviceSettings` を導入し、各入力位置ごとに `kind` と `variant` を持たせる。
-- UI はまず `Encoder` / `Pointing Device` を選び、その後に対応する見た目候補を選ぶ二段構造へ変える。
-- 描画側は新構造を優先して解釈し、旧 `encoderStyles` は読み込み時や参照時に吸収して後方互換を保つ。
-- `Pointing Device` では少なくとも `Trackball` と `Touchpad` を選べるようにし、既存の `Trackball` はそこへ移動する。
+- SVG 解決前に、辞書と同じ alias 正規化を通して canonical key へ寄せる。
+- 記号キーは辞書側のフォールバックでも必ず記号を返せるよう、短縮形 canonical key も明示的にシンボルへ対応付ける。
+- 代表的な `KC_MS_*` と `KC_GRV` / `KC_EQL` などで両モードの表示を検証する。
 
 ## 実施手順
 
-1. 新旧設定を吸収できる入力デバイス解決ロジックを追加する。
-2. サンプル読込・JSON読込・共有状態で `inputDeviceSettings` を扱えるようにする。
-3. 設定 UI を二段構造へ変更する。
-4. 描画ロジックとフレームロジックを `kind` / `variant` ベースへ移行する。
-5. サンプル JSON を新構造へ更新する。
-6. 構文チェックと JSON 妥当性確認を行う。
+1. マウス系正式名の SVG 解決と記号キーのテキスト解決を再確認する。
+2. 必要な正規化と記号マッピングを辞書・描画側へ反映する。
+3. `KC_MS_*` と `KC_GRV` / `KC_EQL` などで表示結果を検証する。
 
 ## 実施済み
 
-- [x] 新旧設定を吸収できる入力デバイス解決ロジックを追加した。
-- [x] サンプル読込・JSON読込・共有状態で `inputDeviceSettings` を扱えるようにした。
-- [x] 設定 UI を二段構造へ変更した。
-- [x] 描画ロジックとフレームロジックを `kind` / `variant` ベースへ移行した。
-- [x] サンプル JSON を新構造へ更新した。
-- [x] 構文チェックと JSON 妥当性確認を行った。
+- [x] SVG 解決経路で canonical 化されていない箇所を確認した。
+- [x] `keycapIconUtils.js` などに alias 正規化を適用した。
+- [x] 記号キーの短縮 canonical key を辞書側でシンボル表示へ統一した。
+- [x] 下ラベル付き SVG 描画でも canonical icon key を使うよう統一した。
+- [x] `KC_MS_*` と `KC_GRV` / `KC_EQL` などで表示結果を再検証した。
 
 ## 完了条件
 
-- `Encoder` と `Pointing Device` を別種別として選択できる。
-- `Pointing Device` 配下で `Trackball` と少なくとも 1 つ以上の別候補を選択できる。
-- 既存の `encoderStyles` ベースデータも破綻なく表示される。
-- サンプル JSON と主要 JavaScript の整合が確認できる。
+- `KC_MS_BTN1`、`KC_MS_UP`、`KC_MS_LEFT` などの正式名で正しい SVG アイコンが出る。
+- `KC_GRV`、`KC_EQL`、`KC_MINS` などが略称ではなく記号で表示される。
+- エイリアス名と正式名で同じ icon key / 表示テキストに解決される。
+- 代表キーコードの静的検証が通る。

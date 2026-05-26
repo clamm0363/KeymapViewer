@@ -1,4 +1,5 @@
 import { isSVGAvailable } from '../svg-icons.js';
+import { resolveKeycodeAlias } from '../keymap-dictionary.js';
 
 const RGB_LABELS = {
     KC_RGB_TOG: 'TOG',
@@ -122,13 +123,14 @@ export function buildDisplayRaw(fullRaw, val) {
 }
 
 export function normalizeTargetIconKey(displayRaw) {
+    const normalizedAlias = resolveKeycodeAlias(displayRaw);
     if (['KC_LSHIFT', 'LSHIFT', 'LSFT'].includes(displayRaw)) {
         return 'KC_LSFT';
     }
     if (['KC_RSHIFT', 'RSHIFT', 'RSFT'].includes(displayRaw)) {
         return 'KC_RSFT';
     }
-    return displayRaw;
+    return normalizedAlias || displayRaw;
 }
 
 export function shortenLabel(label) {
@@ -208,10 +210,11 @@ export function getKeyCategory(kCode) {
 
 export function getIconRenderState({ displayRaw, targetIconKey, displayMode, keyStyle, isModKey, modType }) {
     const isFluentMode = displayMode === 'Fluent';
+    const normalizedDisplayRaw = resolveKeycodeAlias(displayRaw) || displayRaw;
 
-    const isRGBKey = targetIconKey.startsWith('KC_RGB_');
+    const isRGBKey = normalizedDisplayRaw.startsWith('KC_RGB_');
     const isRGBFluent = isRGBKey && isFluentMode && isSVGAvailable(targetIconKey);
-    const rgbLabel = RGB_LABELS[targetIconKey] || '';
+    const rgbLabel = RGB_LABELS[targetIconKey] || RGB_LABELS[normalizedDisplayRaw] || '';
 
     const isShiftKey = ['KC_LSFT', 'KC_RSFT'].includes(targetIconKey);
     const isBottomMod = [
@@ -229,30 +232,33 @@ export function getIconRenderState({ displayRaw, targetIconKey, displayMode, key
 
     const isMacroKey = targetIconKey.startsWith('KC_DM_') || ['KC_DM_REC1', 'KC_DM_REC2', 'KC_DM_PLY1', 'KC_DM_PLY2', 'KC_DM_RSTP'].includes(targetIconKey);
     const isMacroFluent = isMacroKey && isFluentMode && isSVGAvailable(targetIconKey);
-    const macroLabel = MACRO_LABELS[displayRaw] || displayRaw.replace('KC_DM_', '').replace('KC_', '');
+    const macroLabel = MACRO_LABELS[displayRaw] || MACRO_LABELS[normalizedDisplayRaw] || normalizedDisplayRaw.replace('KC_DM_', '').replace('KC_', '');
 
-    const isWirelessKey = displayRaw.startsWith('KC_BT_') ||
-        displayRaw.startsWith('KC_OUT_') ||
-        displayRaw.startsWith('BT_') ||
-        displayRaw.startsWith('OUT_') ||
-        WIRELESS_LABELS[displayRaw] !== undefined;
-    const isWirelessFluent = isWirelessKey && isFluentMode && isSVGAvailable(displayRaw);
-    const wirelessLabel = WIRELESS_LABELS[displayRaw] || '';
+    const isWirelessKey = normalizedDisplayRaw.startsWith('KC_BT_') ||
+        normalizedDisplayRaw.startsWith('KC_OUT_') ||
+        normalizedDisplayRaw.startsWith('BT_') ||
+        normalizedDisplayRaw.startsWith('OUT_') ||
+        WIRELESS_LABELS[displayRaw] !== undefined ||
+        WIRELESS_LABELS[normalizedDisplayRaw] !== undefined;
+    const isWirelessFluent = isWirelessKey && isFluentMode && isSVGAvailable(targetIconKey);
+    const wirelessLabel = WIRELESS_LABELS[displayRaw] || WIRELESS_LABELS[normalizedDisplayRaw] || '';
 
-    const isMouseKey = displayRaw.startsWith('KC_MS_') ||
-        displayRaw.startsWith('KC_BTN') ||
-        displayRaw.startsWith('KC_WH_') ||
-        displayRaw.startsWith('KC_ACL') ||
-        ['MS_', 'BTN', 'WH_', 'ACL'].some(prefix => displayRaw.startsWith(prefix)) ||
-        MOUSE_LABELS[displayRaw] !== undefined;
-    const isMouseFluent = isMouseKey && isFluentMode && isSVGAvailable(displayRaw);
-    const mouseLabel = MOUSE_LABELS[displayRaw] || '';
+    const isMouseKey = normalizedDisplayRaw.startsWith('KC_MS_') ||
+        normalizedDisplayRaw.startsWith('KC_BTN') ||
+        normalizedDisplayRaw.startsWith('KC_WH_') ||
+        normalizedDisplayRaw.startsWith('KC_ACL') ||
+        ['MS_', 'BTN', 'WH_', 'ACL'].some(prefix => normalizedDisplayRaw.startsWith(prefix)) ||
+        MOUSE_LABELS[displayRaw] !== undefined ||
+        MOUSE_LABELS[normalizedDisplayRaw] !== undefined;
+    const isMouseFluent = isMouseKey && isFluentMode && isSVGAvailable(targetIconKey);
+    const mouseLabel = MOUSE_LABELS[displayRaw] || MOUSE_LABELS[normalizedDisplayRaw] || '';
 
-    const isWebKey = displayRaw.startsWith('KC_WWW_') ||
-        ['KC_WBAK', 'KC_WFWD', 'KC_WREF', 'KC_WSTP', 'KC_WFAV', 'KC_WHOM', 'KC_WSRC'].some(prefix => displayRaw.startsWith(prefix)) ||
-        WEB_LABELS[displayRaw] !== undefined;
-    const isWebFluent = isWebKey && isFluentMode && isSVGAvailable(displayRaw);
-    const webLabel = WEB_LABELS[displayRaw] || '';
+    const isWebKey = normalizedDisplayRaw.startsWith('KC_WWW_') ||
+        ['KC_WBAK', 'KC_WFWD', 'KC_WREF', 'KC_WSTP', 'KC_WFAV', 'KC_WHOM', 'KC_WSRC'].some(prefix => normalizedDisplayRaw.startsWith(prefix)) ||
+        WEB_LABELS[displayRaw] !== undefined ||
+        WEB_LABELS[normalizedDisplayRaw] !== undefined;
+    const isWebFluent = isWebKey && isFluentMode && isSVGAvailable(targetIconKey);
+    const webLabel = WEB_LABELS[displayRaw] || WEB_LABELS[normalizedDisplayRaw] || '';
 
     return {
         isFluentMode,

@@ -11,6 +11,7 @@ import {
 
 export function renderStandardKeycap({
     k,
+    targetIconKey,
     isRGBFluent,
     displayRawForRGB,
     rgbLabel,
@@ -37,6 +38,7 @@ export function renderStandardKeycap({
     canWrap,
     kWidth
 }) {
+    const resolvedIconKey = targetIconKey || displayRawForRGB || displayRaw;
     const containerStyle = k.isJIS ? {
         position: 'absolute',
         left: 0,
@@ -60,27 +62,27 @@ export function renderStandardKeycap({
 
     if (isRGBFluent) {
         return createElement('div', { className: 'key-content flex-1 flex items-center justify-center w-full h-full', style: containerStyle },
-            renderFluentIconWithBottomLabel({ iconKey: displayRawForRGB, label: rgbLabel, labelKey: 'rgb', isLight }));
+            renderFluentIconWithBottomLabel({ iconKey: resolvedIconKey, label: rgbLabel, labelKey: 'rgb', isLight }));
     }
     if (isMagicFluent) {
         return createElement('div', { className: 'key-content flex-1 flex items-center justify-center w-full h-full', style: containerStyle },
-            renderFluentIconWithBottomLabel({ iconKey: displayRawForRGB, label: magicLabel, labelKey: 'magic', isLight }));
+            renderFluentIconWithBottomLabel({ iconKey: resolvedIconKey, label: magicLabel, labelKey: 'magic', isLight }));
     }
     if (isWirelessFluent) {
         return createElement('div', { className: 'key-content flex-1 flex items-center justify-center w-full h-full', style: containerStyle },
-            renderFluentIconWithBottomLabel({ iconKey: displayRawForRGB, label: wirelessLabel, labelKey: 'wireless', isLight }));
+            renderFluentIconWithBottomLabel({ iconKey: resolvedIconKey, label: wirelessLabel, labelKey: 'wireless', isLight }));
     }
     if (isWebFluent) {
         return createElement('div', { className: 'key-content flex-1 flex items-center justify-center w-full h-full', style: containerStyle },
-            renderFluentIconWithBottomLabel({ iconKey: displayRawForRGB, label: webLabel, labelKey: 'web', isLight }));
+            renderFluentIconWithBottomLabel({ iconKey: resolvedIconKey, label: webLabel, labelKey: 'web', isLight }));
     }
     if (isMouseFluent) {
         return createElement('div', { className: 'key-content flex-1 flex items-center justify-center w-full h-full', style: containerStyle },
-            renderFluentIconWithBottomLabel({ iconKey: displayRawForRGB, label: mouseLabel, labelKey: 'mouse', isLight }));
+            renderFluentIconWithBottomLabel({ iconKey: resolvedIconKey, label: mouseLabel, labelKey: 'mouse', isLight }));
     }
     if (isMacroFluent) {
         return createElement('div', { className: 'key-content flex-1 flex items-center justify-center w-full h-full', style: containerStyle },
-            renderFluentIconWithBottomLabel({ iconKey: displayRawForRGB, label: macroLabel, labelKey: 'macro', isLight }));
+            renderFluentIconWithBottomLabel({ iconKey: resolvedIconKey, label: macroLabel, labelKey: 'macro', isLight }));
     }
 
     let textScale = manualWrap ? 0.62 : getTextScale(finalDisplayText, kWidth, isFluentIcon);
@@ -107,10 +109,10 @@ export function renderStandardKeycap({
         }
     }, [
         (() => {
-            if (displayMode === 'Fluent' && isSVGAvailable(displayRaw)) {
+            if (displayMode === 'Fluent' && isSVGAvailable(targetIconKey || displayRaw)) {
                 const effectiveSvgSize = Math.max(8, Math.round(24 * combinedScale));
                 const iconElement = renderInlineFluentIcon({
-                    iconKey: displayRaw,
+                    iconKey: targetIconKey || displayRaw,
                     size: effectiveSvgSize,
                     color: isLight ? '#1e293b' : '#fff'
                 });
