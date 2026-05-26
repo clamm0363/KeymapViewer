@@ -2,6 +2,7 @@ const { useState, useEffect, useMemo, useRef, createElement } = React;
 
 import { STORAGE_KEY } from './constants.js';
 import { loadSavedState, sanitizeDeviceName } from './utils/helpers.js';
+import { normalizeLegacyEncoderStyle } from './components/inputDeviceSettings.js';
 import { Header } from './components/Header.js';
 import { DeviceSlot } from './components/DeviceSlot.js';
 import { HelpModal } from './components/Modals/HelpModal.js';
@@ -11,6 +12,34 @@ import { ExportModal } from './components/Modals/ExportModal.js';
 import { Keyboard } from './components/Keyboard.js';
 
 const CURRENT_VERSION = '1.2.5';
+
+function buildInputDeviceSettings(inputDeviceSettings = {}, encoderStyles = {}) {
+    const next = { ...inputDeviceSettings };
+    Object.entries(encoderStyles || {}).forEach(([idx, style]) => {
+        if (!next[idx]) {
+            next[idx] = normalizeLegacyEncoderStyle(style);
+        }
+    });
+    return next;
+}
+
+function createEmptyDevice() {
+    return {
+        id: Date.now(),
+        name: null,
+        design: null,
+        keymapJson: null,
+        layer: 0,
+        displayMode: 'Fluent',
+        theme: 'System',
+        keyStyle: 'Windows',
+        encoderStyles: {},
+        inputDeviceSettings: {},
+        layoutOptions: {},
+        separation: 'DISABLE',
+        showSettings: false
+    };
+}
 
 export function App() {
     const saved = useMemo(() => {
@@ -38,6 +67,7 @@ export function App() {
                             theme: parsed.theme || 'System',
                             keyStyle: parsed.keyStyle || 'Windows',
                             encoderStyles: parsed.encoderStyles || {},
+                            inputDeviceSettings: buildInputDeviceSettings(parsed.inputDeviceSettings, parsed.encoderStyles),
                             layoutOptions: parsed.layoutOptions || {},
                             separation: parsed.separation || 'DISABLE',
                             macroAliases: parsed.keymapJson?.macroAliases || {},
@@ -50,8 +80,13 @@ export function App() {
             console.error('Failed to restore shared state from URL:', e);
         }
 
-        if (saved && saved.devices && saved.devices.length > 0) return saved.devices;
-        return [{ id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, layoutOptions: {}, showSettings: false }];
+        if (saved && saved.devices && saved.devices.length > 0) {
+            return saved.devices.map(device => ({
+                ...device,
+                inputDeviceSettings: buildInputDeviceSettings(device.inputDeviceSettings, device.encoderStyles)
+            }));
+        }
+        return [createEmptyDevice()];
     });
     const [layoutMode, setLayoutMode] = useState(() => (saved && saved.layoutMode) || 'stack');
     const [appTheme, setAppTheme] = useState(() => (saved && saved.appTheme) || 'dark');
@@ -112,7 +147,8 @@ export function App() {
                         displayMode: 'Fluent',
                         theme: 'System',
                         keyStyle: s.keyStyle,
-                        encoderStyles: {},
+                        encoderStyles: data.encoderStyles || {},
+                        inputDeviceSettings: buildInputDeviceSettings(data.inputDeviceSettings, data.encoderStyles),
                         layoutOptions: {},
                         macroAliases: keymapJson.macroAliases,
                         showSettings: false
@@ -197,9 +233,7 @@ export function App() {
 
     const addSlot = () => {
         if (devices.length >= 4) return;
-        setDevices(prev => [...prev, {
-            id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, layoutOptions: {}, showSettings: false
-        }]);
+        setDevices(prev => [...prev, createEmptyDevice()]);
     };
 
     const updateDevice = (id, data) => {
@@ -214,7 +248,13 @@ export function App() {
                 try {
                     const j = JSON.parse(ev.target.result);
                     if (type === 'layout') {
-                        if (j.layouts) updateDevice(id, { design: j, name: sanitizeDeviceName(j.name || 'Device'), layoutOptions: {} });
+                        if (j.layouts) updateDevice(id, {
+                            design: j,
+                            name: sanitizeDeviceName(j.name || 'Device'),
+                            layoutOptions: {},
+                            encoderStyles: j.encoderStyles || {},
+                            inputDeviceSettings: buildInputDeviceSettings(j.inputDeviceSettings, j.encoderStyles)
+                        });
                         else alert('レイアウト情報が見つかりません');
                     } else {
                         if (j.layers) updateDevice(id, { keymapJson: j });
@@ -229,7 +269,7 @@ export function App() {
 
     const removeDevice = (id) => {
         if (devices.length === 1) {
-            updateDevice(id, { name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', keyStyle: 'Windows', encoderStyles: {}, layoutOptions: {}, showSettings: false });
+            updateDevice(id, { ...createEmptyDevice(), id });
         } else {
             setDevices(prev => prev.filter(d => d.id !== id));
         }
@@ -279,12 +319,24 @@ export function App() {
             try {
                 const j = JSON.parse(ev.target.result);
                 if (targetDevId) {
-                    if (j.layouts) updateDevice(targetDevId, { design: j, name: sanitizeDeviceName(j.name || 'Device'), layoutOptions: {} });
+                    if (j.layouts) updateDevice(targetDevId, {
+                        design: j,
+                        name: sanitizeDeviceName(j.name || 'Device'),
+                        layoutOptions: {},
+                        encoderStyles: j.encoderStyles || {},
+                        inputDeviceSettings: buildInputDeviceSettings(j.inputDeviceSettings, j.encoderStyles)
+                    });
                     else if (j.layers) updateDevice(targetDevId, { keymapJson: j });
                 } else {
                     if (devices.length >= 4) return;
-                    const nd = { id: Date.now(), name: null, design: null, keymapJson: null, layer: 0, displayMode: 'Fluent', theme: 'System', keyStyle: 'Windows', encoderStyles: {}, layoutOptions: {}, showSettings: false };
-                    if (j.layouts) { nd.design = j; nd.name = sanitizeDeviceName(j.name || 'Device'); nd.layoutOptions = {}; }
+                    const nd = createEmptyDevice();
+                    if (j.layouts) {
+                        nd.design = j;
+                        nd.name = sanitizeDeviceName(j.name || 'Device');
+                        nd.layoutOptions = {};
+                        nd.encoderStyles = j.encoderStyles || {};
+                        nd.inputDeviceSettings = buildInputDeviceSettings(j.inputDeviceSettings, j.encoderStyles);
+                    }
                     else if (j.layers) { nd.keymapJson = j; nd.name = sanitizeDeviceName(j.name || 'Mapping'); }
                     setDevices(prev => [...prev, nd]);
                 }
@@ -391,6 +443,7 @@ export function App() {
                     macroAliases: dev.macroAliases || {},
                     keyStyle: dev.keyStyle || 'Windows',
                     encoderStyles: dev.encoderStyles || {},
+                    inputDeviceSettings: dev.inputDeviceSettings || {},
                     layoutOptions: dev.layoutOptions || {},
                     forcedScale: 1.0,
                     separation: dev.separation || 'DISABLE'

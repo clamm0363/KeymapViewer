@@ -4,7 +4,7 @@ const html = htm.bind(createElement);
 import { findSplitX } from '../utils/helpers.js';
 import { Keycap } from './Keycap.js';
 
-export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, keyStyle = 'Windows', separation = 'DISABLE', encoderStyles = {}, layoutOptions = {} }) {
+export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, keyStyle = 'Windows', separation = 'DISABLE', encoderStyles = {}, inputDeviceSettings = {}, layoutOptions = {} }) {
     const [codes, setCodes] = useState({});
     const containerRef = useRef(null);
     const [scale, setScale] = useState(1);
@@ -367,6 +367,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                         macroAliases,
                         onMacroClick,
                         encoderStyles,
+                        inputDeviceSettings,
                         layer,
                         design,
                         externalMap,
