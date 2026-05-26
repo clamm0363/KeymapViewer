@@ -125,6 +125,14 @@ export function DeviceSlot({
     const hasDeviceSpecificOptions = showSeparation || hasEncoders || hasLayoutOptions;
     const currentDisplayScale = normalizeDisplayScale(dev.displayScale);
     const isScaleFollowing = !!dev.followScale;
+    const layerOptions = ((dev.keymapJson && dev.keymapJson.layers) || (dev.design && dev.design.layers) || [0, 1, 2, 3]);
+    const actionButtonClass = 'flex h-10 min-w-[92px] items-center justify-center rounded-xl border px-3 text-[9px] font-black uppercase tracking-[0.22em] transition-all sm:min-w-[100px]';
+    const neutralActionButtonClass = actionButtonClass + ' ' + (isLightApp
+        ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200'
+        : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 border-slate-700/50');
+    const primaryActionButtonClass = actionButtonClass + ' ' + (isLightApp
+        ? 'bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200'
+        : 'bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border-blue-500/30');
 
     const handleShare = () => {
         if (!hasData) return;
@@ -201,41 +209,43 @@ export function DeviceSlot({
                 createElement('span', { key: 'dot-3', className: 'h-1.5 w-1.5 rounded-full bg-current opacity-70' })
             ])
         ])),
-        createElement('div', { key: 'slot-header', className: 'mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between' }, [
-            createElement('div', { key: 'title-grp', className: 'flex min-w-0 flex-1 items-start gap-3' }, [
-                createElement('span', { key: 'slot-idx', className: 'inline-flex items-center justify-center text-[10px] font-black px-2 h-5 rounded-md bg-blue-600 text-white uppercase tracking-wider pt-[1px] flex-shrink-0 whitespace-nowrap' }, 'Slot ' + (idx + 1)),
-                editingDeviceId === dev.id ? 
-                    createElement('input', { 
-                        key: 'name-input', 
-                        type: 'text', 
-                        value: editingName, 
-                        onInput: (e) => onSetEditingName(sanitizeDeviceName(e.target.value)), 
-                        onBlur: () => onFinishEditing(dev.id), 
-                        onKeyDown: (e) => e.key === 'Enter' && onFinishEditing(dev.id), 
-                        placeholder: 'DEVICE NAME...',
-                        className: (isLightApp 
-                            ? 'bg-blue-50/80 border-blue-400 text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20' 
-                            : 'bg-blue-950/30 border-blue-500/60 text-white placeholder-slate-600 focus:bg-blue-950/50 focus:ring-2 focus:ring-blue-500/30') 
-                            + ' text-lg font-black outline-none border-2 w-full max-w-[560px] min-w-0 px-3 py-1 rounded-xl transition-all uppercase',
-                        ref: (el) => el && el.focus() 
-                    }) :
-                    createElement(Fragment, { key: 'name-static' }, [
-                        createElement('div', { key: 'title-stack', className: 'flex min-w-0 flex-1 items-start gap-2' }, [
-                            createElement('h2', { 
-                                key: 'h2', 
-                                className: 'min-w-0 break-words text-lg font-black leading-tight tracking-tight uppercase ' + (isLightApp ? 'text-slate-900' : 'text-slate-100'),
-                                style: { wordSpacing: '0.25em' } 
-                            }, dev.name || 'No Device'),
-                            createElement('button', { key: 'edit-btn', onClick: () => onStartEditing(dev), className: 'flex-shrink-0 p-1 text-slate-400 hover:text-blue-400 transition-colors' }, 
-                                createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, [
-                                    createElement('path', { key: 'edit-body', d: 'M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' }),
-                                    createElement('path', { key: 'edit-line', d: 'm15 5 4 4' })
-                                ])
-                            )
+        createElement('div', { key: 'slot-header', className: 'mb-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start' }, [
+            createElement('div', { key: 'title-grp', className: 'flex min-w-0 flex-col gap-3' }, [
+                createElement('div', { key: 'title-row', className: 'flex min-w-0 items-start gap-3' }, [
+                    createElement('span', { key: 'slot-idx', className: 'inline-flex h-5 flex-shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-blue-600 px-2 text-[10px] font-black uppercase tracking-wider text-white pt-[1px]' }, 'Slot ' + (idx + 1)),
+                    editingDeviceId === dev.id ? 
+                        createElement('input', { 
+                            key: 'name-input', 
+                            type: 'text', 
+                            value: editingName, 
+                            onInput: (e) => onSetEditingName(sanitizeDeviceName(e.target.value)), 
+                            onBlur: () => onFinishEditing(dev.id), 
+                            onKeyDown: (e) => e.key === 'Enter' && onFinishEditing(dev.id), 
+                            placeholder: 'DEVICE NAME...',
+                            className: (isLightApp 
+                                ? 'bg-blue-50/80 border-blue-400 text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20' 
+                                : 'bg-blue-950/30 border-blue-500/60 text-white placeholder-slate-600 focus:bg-blue-950/50 focus:ring-2 focus:ring-blue-500/30') 
+                                + ' text-lg font-black outline-none border-2 w-full max-w-[560px] min-w-0 px-3 py-1 rounded-xl transition-all uppercase',
+                            ref: (el) => el && el.focus() 
+                        }) :
+                        createElement(Fragment, { key: 'name-static' }, [
+                            createElement('div', { key: 'title-stack', className: 'flex min-w-0 flex-1 items-start gap-2' }, [
+                                createElement('h2', { 
+                                    key: 'h2', 
+                                    className: 'min-w-0 break-words text-lg font-black leading-tight tracking-tight uppercase ' + (isLightApp ? 'text-slate-900' : 'text-slate-100'),
+                                    style: { wordSpacing: '0.25em' } 
+                                }, dev.name || 'No Device'),
+                                createElement('button', { key: 'edit-btn', onClick: () => onStartEditing(dev), className: 'flex-shrink-0 p-1 text-slate-400 hover:text-blue-400 transition-colors' }, 
+                                    createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, [
+                                        createElement('path', { key: 'edit-body', d: 'M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' }),
+                                        createElement('path', { key: 'edit-line', d: 'm15 5 4 4' })
+                                    ])
+                                )
+                            ])
                         ])
-                    ])
+                ])
             ]),
-            createElement('div', { key: 'header-controls', className: 'flex flex-shrink-0 items-center gap-1 self-end sm:self-start' }, [
+            createElement('div', { key: 'header-controls', className: 'flex flex-shrink-0 items-center gap-1 self-end sm:self-start sm:justify-self-end' }, [
                 createElement('button', { key: 'del-btn', onClick: () => onRemoveDevice(dev.id), className: 'p-2 text-slate-400 hover:text-red-400 transition-colors', title: 'Remove Slot' }, 
                     createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, [
                         createElement('path', { key: 'trash-top', d: 'M3 6h18' }),
@@ -250,6 +260,46 @@ export function DeviceSlot({
                         createElement('line', { key: 'menu-bottom', x1: 3, y1: 18, x2: 21, y2: 18 })
                     ])
                 )
+            ]),
+            createElement('div', { key: 'header-control-band', className: 'flex flex-col gap-2 sm:col-span-2 lg:flex-row lg:items-center lg:justify-between' }, [
+                dev.design ? createElement('div', {
+                    key: 'layer-bar',
+                    className: 'flex h-10 w-fit items-center gap-2 rounded-xl border px-2.5 ' + (isLightApp ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/40 backdrop-blur-sm border-slate-700/50')
+                }, [
+                    createElement('span', { key: 'lbl', className: 'px-1 text-[9px] font-black uppercase tracking-[0.22em] text-slate-400' }, 'LAYER'),
+                    createElement('div', { key: 'btns', className: 'flex gap-1.5' }, 
+                        layerOptions.map((_, l) => createElement('button', {
+                            key: l,
+                            onClick: () => onUpdateDevice(dev.id, { layer: l }),
+                            className: (dev.layer === l
+                                ? 'bg-blue-600 text-white shadow-lg'
+                                : (isLightApp ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700' : 'text-slate-500 hover:bg-slate-700/60 hover:text-slate-200'))
+                                + ' flex h-7 w-7 items-center justify-center rounded-lg text-[10px] font-black transition-all'
+                        }, l))
+                    )
+                ]) : null,
+                createElement('div', { key: 'action-band', className: 'flex flex-wrap items-center gap-2 lg:ml-auto lg:justify-end' }, [
+                    createElement('label', { key: 'layout-lbl', className: neutralActionButtonClass + ' cursor-pointer' }, [
+                        'LAYOUT',
+                        createElement('input', { key: 'layout-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'layout') })
+                    ]),
+                    createElement('label', { key: 'map-lbl', className: neutralActionButtonClass + ' cursor-pointer' }, [
+                        'MAPPING',
+                        createElement('input', { key: 'map-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'mapping') })
+                    ]),
+                    createElement('button', { key: 'macro-btn', onClick: () => onSetMacroModal({ deviceId: dev.id, macroId: null }), className: neutralActionButtonClass }, 'MACROS'),
+                    createElement('button', { 
+                        key: 'share-btn', 
+                        onClick: handleShare, 
+                        disabled: !hasData,
+                        className: actionButtonClass + ' ' +
+                            (!hasData ? 'opacity-40 cursor-not-allowed border-dashed ' : '') +
+                            (copied
+                                ? (isLightApp ? 'bg-green-50 text-green-600 border-green-200 shadow-inner' : 'bg-green-600/20 text-green-400 border-green-500/30 shadow-inner')
+                                : (isLightApp ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200' : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 border-slate-700/50'))
+                    }, copied ? 'COPIED!' : 'SHARE'),
+                    createElement('button', { key: 'export-btn', onClick: () => onSetExportModal(dev), className: primaryActionButtonClass }, 'EXPORT')
+                ])
             ])
         ]),
 
@@ -480,38 +530,7 @@ export function DeviceSlot({
             ]) : null
         ]) : null,
 
-        createElement('div', { key: 'slot-actions', className: 'flex flex-wrap items-center gap-2 mb-6 p-2 ' + (isLightApp ? 'bg-slate-100/50' : 'bg-slate-950/30') + ' rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
-            createElement('label', { key: 'layout-lbl', className: 'flex-1 min-w-[100px] ' + (isLightApp ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm' : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200') + ' px-3 py-2 rounded-lg text-[10px] font-black cursor-pointer transition-all uppercase tracking-widest border ' + (isLightApp ? 'border-slate-200' : 'border-slate-700/50') + ' flex items-center justify-center' }, [
-                'LAYOUT ',
-                createElement('input', { key: 'layout-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'layout') })
-            ]),
-            createElement('label', { key: 'map-lbl', className: 'flex-1 min-w-[100px] ' + (isLightApp ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm' : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200') + ' px-3 py-2 rounded-lg text-[10px] font-black cursor-pointer transition-all uppercase tracking-widest border ' + (isLightApp ? 'border-slate-200' : 'border-slate-700/50') + ' flex items-center justify-center' }, [
-                'MAPPING ',
-                createElement('input', { key: 'map-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'mapping') })
-            ]),
-            createElement('button', { key: 'macro-btn', onClick: () => onSetMacroModal({ deviceId: dev.id, macroId: null }), className: 'flex-1 min-w-[80px] ' + (isLightApp ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm' : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200') + ' px-3 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest border ' + (isLightApp ? 'border-slate-200' : 'border-slate-700/50') }, 'MACROS'),
-            createElement('button', { 
-                key: 'share-btn', 
-                onClick: handleShare, 
-                disabled: !hasData,
-                className: 'flex-1 min-w-[80px] ' + 
-                    (!hasData ? 'opacity-40 cursor-not-allowed border-dashed ' : 'hover:scale-[1.02] ') +
-                    (copied 
-                        ? (isLightApp ? 'bg-green-50 text-green-600 border-green-200 shadow-inner' : 'bg-green-600/20 text-green-400 border-green-500/30 shadow-inner') 
-                        : (isLightApp ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm' : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200')) + 
-                    ' px-3 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest border ' + 
-                    (copied ? '' : (isLightApp ? 'border-slate-200' : 'border-slate-700/50')) 
-            }, copied ? 'COPIED!' : 'SHARE'),
-            createElement('button', { key: 'export-btn', onClick: () => onSetExportModal(dev), className: 'flex-1 min-w-[80px] ' + (isLightApp ? 'bg-blue-50 hover:bg-blue-100 text-blue-600' : 'bg-blue-600/20 hover:bg-blue-600/40 text-blue-400') + ' px-3 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest border ' + (isLightApp ? 'border-blue-200' : 'border-blue-500/30') }, 'EXPORT')
-        ]),
-
-        dev.design ? createElement('div', { key: 'kbd-area', className: 'flex flex-col gap-6' }, [
-            createElement('div', { key: 'layer-bar', className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/40 backdrop-blur-sm border-slate-700/50') + ' p-1.5 rounded-xl border self-start ml-2' }, [
-                createElement('span', { key: 'lbl', className: 'text-[9px] font-black text-slate-400 uppercase tracking-widest px-2' }, 'Layer'),
-                createElement('div', { key: 'btns', className: 'flex gap-2' }, 
-                    ((dev.keymapJson && dev.keymapJson.layers) || (dev.design && dev.design.layers) || [0,1,2,3]).map((_, l) => createElement('button', { key: l, onClick: () => onUpdateDevice(dev.id, { layer: l }), className: (dev.layer === l ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300') + ' w-8 h-8 rounded-lg text-[10px] font-black transition-all' }, l))
-                )
-            ]),
+        dev.design ? createElement('div', { key: 'kbd-area', className: 'flex flex-col gap-4' }, [
             createElement('div', { key: 'kbd-wrap', className: 'w-full flex justify-center overflow-hidden' }, 
                 createElement(Keyboard, { 
                     design: dev.design, 
