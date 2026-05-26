@@ -299,6 +299,7 @@ export function renderEncoderKeycap({
     layer,
     keyStyle,
     macroAliases,
+    macros = [],
     isLight,
     isAppDark
 }) {
@@ -326,6 +327,7 @@ export function renderEncoderKeycap({
         encoderIndex: k.encoderIndex,
         pushText,
         pushCode: val,
+        macros,
         keyStyle,
         currentStyle,
         ccwActions,

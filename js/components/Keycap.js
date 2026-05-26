@@ -112,6 +112,7 @@ export function Keycap({
             layer,
             keyStyle,
             macroAliases,
+            macros: (externalMap && externalMap.macros) || [],
             isLight,
             isAppDark
         });
@@ -171,7 +172,11 @@ export function Keycap({
     if (manualWrap) targetScale = Math.min(0.9, targetScale);
 
     const displayRaw = displayRawForRGB;
-    const tooltipText = buildStandardKeyTooltip(val || fullRaw, keyStyle);
+    const tooltipText = buildStandardKeyTooltip(
+        val || fullRaw,
+        keyStyle,
+        (externalMap && externalMap.macros) || []
+    );
 
     if (actuallyShowingSvg) {
         targetScale = 1.11;

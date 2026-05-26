@@ -154,6 +154,9 @@ QMK 公式ドキュメントの `Key` / `Aliases` / `Description` 情報を本�
   - `KC_VOLU` 入力時でも official description に到達できること
 - `KC_LEFT_GUI` / `LGUI_T(KC_TAB)` / `MT(MOD_LALT, KC_ESC)`
   - Windows と Mac で tooltip 説明文が適切に変化すること
+  - Windows では `GUI` ではなく `Win` 表記になること
+- `MACRO(n)`
+  - ツールチップにマクロ内容が自然言語の英語で表示されること
 - Description 未登録のキー
   - ツールチップが壊れず、キーコードのみで成立すること
 - Encoder tooltip

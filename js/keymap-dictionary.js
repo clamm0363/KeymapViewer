@@ -1180,18 +1180,53 @@ const tooltipModTapDescriptions = {
   HYPR_T: 'Left Control, Left Shift, Left Alt and Left GUI when held'
 };
 
+const modifierWrapperExpansion = {
+  LCTL: ['LCTL'],
+  LSFT: ['LSFT'],
+  LALT: ['LALT'],
+  LGUI: ['LGUI'],
+  RCTL: ['RCTL'],
+  RSFT: ['RSFT'],
+  RALT: ['RALT'],
+  RGUI: ['RGUI'],
+  C: ['LCTL'],
+  S: ['LSFT'],
+  A: ['LALT'],
+  G: ['LGUI'],
+  LCS: ['LCTL', 'LSFT'],
+  LCA: ['LCTL', 'LALT'],
+  LCG: ['LCTL', 'LGUI'],
+  LSA: ['LSFT', 'LALT'],
+  LSG: ['LSFT', 'LGUI'],
+  LAG: ['LALT', 'LGUI'],
+  LCSG: ['LCTL', 'LSFT', 'LGUI'],
+  LCAG: ['LCTL', 'LALT', 'LGUI'],
+  LSAG: ['LSFT', 'LALT', 'LGUI'],
+  RCA: ['RCTL', 'RALT'],
+  RCS: ['RCTL', 'RSFT'],
+  RCG: ['RCTL', 'RGUI'],
+  RSA: ['RSFT', 'RALT'],
+  RSG: ['RSFT', 'RGUI'],
+  RAG: ['RALT', 'RGUI'],
+  RCSG: ['RCTL', 'RSFT', 'RGUI'],
+  RCAG: ['RCTL', 'RALT', 'RGUI'],
+  RSAG: ['RSFT', 'RALT', 'RGUI'],
+  MEH: ['LCTL', 'LSFT', 'LALT'],
+  HYPR: ['LCTL', 'LSFT', 'LALT', 'LGUI']
+};
+
 const tooltipModifierNameByStyle = {
   Windows: {
     LCTL: 'Left Control',
     LSFT: 'Left Shift',
     LALT: 'Left Alt',
-    LGUI: 'Left GUI',
+    LGUI: 'Left Win',
     RCTL: 'Right Control',
     RSFT: 'Right Shift',
     RALT: 'Right Alt',
-    RGUI: 'Right GUI',
+    RGUI: 'Right Win',
     MEH: 'Left Control, Left Shift and Left Alt',
-    HYPR: 'Left Control, Left Shift, Left Alt and Left GUI'
+    HYPR: 'Left Control, Left Shift, Left Alt and Left Win'
   },
   Mac: {
     LCTL: 'Left Control',
@@ -1248,10 +1283,52 @@ function getStyledModifierName(token, keyStyle = 'Windows') {
   return tooltipModifierNameByStyle[styleKey][normalizedToken] || normalizedToken;
 }
 
+function formatModifierList(modifiers) {
+  if (modifiers.length === 0) return '';
+  if (modifiers.length === 1) return modifiers[0];
+  if (modifiers.length === 2) return `${modifiers[0]} and ${modifiers[1]}`;
+  return `${modifiers.slice(0, -1).join(', ')} and ${modifiers[modifiers.length - 1]}`;
+}
+
+function collectModifierChain(source) {
+  const wrapped = extractWrappedExpressionParts(String(source || '').trim());
+  if (!wrapped || wrapped.args.length !== 1) return null;
+
+  const token = wrapped.token.toUpperCase();
+  const modifiers = modifierWrapperExpansion[token];
+  if (!modifiers) return null;
+
+  const child = collectModifierChain(wrapped.args[0]);
+  if (child) {
+    return {
+      modifiers: [...modifiers, ...child.modifiers],
+      leaf: child.leaf
+    };
+  }
+
+  return {
+    modifiers: [...modifiers],
+    leaf: wrapped.args[0]
+  };
+}
+
 function formatDirectDescriptionForKeyStyle(officialCode, description, keyStyle = 'Windows') {
   if (!description) return '';
   const styleKey = normalizeKeyStyle(keyStyle);
-  if (styleKey === 'Windows') return description;
+  if (styleKey === 'Windows') {
+    const windowsOverrides = {
+      KC_LEFT_GUI: 'Left Win',
+      KC_RIGHT_GUI: 'Right Win'
+    };
+
+    if (windowsOverrides[officialCode]) {
+      return windowsOverrides[officialCode];
+    }
+
+    return description
+      .replace(/\bLeft GUI\b/g, 'Left Win')
+      .replace(/\bRight GUI\b/g, 'Right Win');
+  }
 
   const macOverrides = {
     KC_LEFT_ALT: 'Left Option',
@@ -1305,16 +1382,18 @@ function getCompositeKeycodeDescription(code, keyStyle = 'Windows') {
     return viaSpecificDescription;
   }
 
+  const modifierChain = collectModifierChain(code);
+  if (modifierChain) {
+    const modifierNames = modifierChain.modifiers.map((modifier) => getStyledModifierName(modifier, keyStyle));
+    const leafDescription = getKeycodeDescription(modifierChain.leaf, keyStyle) || toCanonicalKeycodeDisplay(modifierChain.leaf);
+    return `Hold ${formatModifierList(modifierNames)} and press ${leafDescription}`;
+  }
+
   const wrapped = extractWrappedExpressionParts(String(code || '').trim());
   if (!wrapped) return '';
 
   const { token, args } = wrapped;
   const canonicalToken = canonicalizeTooltipAtom(token);
-
-  if (tooltipWrapperDescriptions[canonicalToken] && args.length === 1) {
-    const childDescription = getKeycodeDescription(args[0], keyStyle) || toCanonicalKeycodeDisplay(args[0]);
-    return `Hold ${getStyledModifierName(canonicalToken, keyStyle)} and press ${childDescription}`;
-  }
 
   if (tooltipModTapDescriptions[canonicalToken] && args.length === 1) {
     const tapDescription = getKeycodeDescription(args[0], keyStyle) || toCanonicalKeycodeDisplay(args[0]);
