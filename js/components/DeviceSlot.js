@@ -1,6 +1,7 @@
 const { createElement, Fragment, useState } = React;
 import { Keyboard } from './Keyboard.js';
 import { sanitizeDeviceName, findSplitX } from '../utils/helpers.js';
+import { createSVGElement } from '../svg-icons.js';
 import {
     getDefaultInputDeviceSetting,
     getVariantOptions,
@@ -16,6 +17,22 @@ const DEFAULT_DISPLAY_SCALE = 1;
 const normalizeDisplayScale = (value) => {
     const numeric = Number(value);
     return Number.isFinite(numeric) && numeric > 0 ? numeric : DEFAULT_DISPLAY_SCALE;
+};
+
+const renderSlotSvgIcon = (iconKey, color) => {
+    const svgEl = createSVGElement(iconKey, { size: 20, color });
+    if (!svgEl) return null;
+
+    return createElement('div', {
+        style: {
+            width: '20px',
+            height: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        },
+        dangerouslySetInnerHTML: { __html: svgEl.outerHTML }
+    });
 };
 
 const getEncoderIndices = (design) => {
@@ -209,9 +226,9 @@ export function DeviceSlot({
                 createElement('span', { key: 'dot-3', className: 'h-1.5 w-1.5 rounded-full bg-current opacity-70' })
             ])
         ])),
-        createElement('div', { key: 'slot-header', className: 'mb-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start' }, [
-            createElement('div', { key: 'title-grp', className: 'flex min-w-0 flex-col gap-3' }, [
-                createElement('div', { key: 'title-row', className: 'flex min-w-0 items-start gap-3' }, [
+        createElement('div', { key: 'slot-header', className: 'mb-5 flex flex-col gap-3' }, [
+            createElement('div', { key: 'header-main-row', className: 'flex min-w-0 items-center justify-between gap-3' }, [
+                createElement('div', { key: 'title-grp', className: 'flex min-w-0 flex-1 items-center gap-3' }, [
                     createElement('span', { key: 'slot-idx', className: 'inline-flex h-5 flex-shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-blue-600 px-2 text-[10px] font-black uppercase tracking-wider text-white pt-[1px]' }, 'Slot ' + (idx + 1)),
                     editingDeviceId === dev.id ? 
                         createElement('input', { 
@@ -229,37 +246,26 @@ export function DeviceSlot({
                             ref: (el) => el && el.focus() 
                         }) :
                         createElement(Fragment, { key: 'name-static' }, [
-                            createElement('div', { key: 'title-stack', className: 'flex min-w-0 flex-1 items-start gap-2' }, [
+                            createElement('div', { key: 'title-stack', className: 'flex min-w-0 flex-1 items-center gap-2' }, [
                                 createElement('h2', { 
                                     key: 'h2', 
                                     className: 'min-w-0 break-words text-lg font-black leading-tight tracking-tight uppercase ' + (isLightApp ? 'text-slate-900' : 'text-slate-100'),
                                     style: { wordSpacing: '0.25em' } 
                                 }, dev.name || 'No Device'),
-                                createElement('button', { key: 'edit-btn', onClick: () => onStartEditing(dev), className: 'flex-shrink-0 p-1 text-slate-400 hover:text-blue-400 transition-colors' }, 
-                                    createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, [
-                                        createElement('path', { key: 'edit-body', d: 'M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' }),
-                                        createElement('path', { key: 'edit-line', d: 'm15 5 4 4' })
-                                    ])
+                                createElement('button', { key: 'edit-btn', onClick: () => onStartEditing(dev), className: 'flex-shrink-0 p-1 text-slate-400 hover:text-blue-400 transition-colors' },
+                                    renderSlotSvgIcon('ic_fluent_pen_24_regular', 'currentColor')
                                 )
                             ])
                         ])
+                ]),
+                createElement('div', { key: 'header-controls', className: 'flex flex-shrink-0 items-center gap-1' }, [
+                    createElement('button', { key: 'del-btn', onClick: () => onRemoveDevice(dev.id), className: 'p-2 text-slate-400 hover:text-red-400 transition-colors', title: 'Remove Slot' },
+                        renderSlotSvgIcon('ic_fluent_delete_24_regular', 'currentColor')
+                    ),
+                    createElement('button', { key: 'settings-btn', onClick: () => onUpdateDevice(dev.id, { showSettings: !dev.showSettings }), className: 'p-2 ' + (dev.showSettings ? 'text-blue-400 bg-blue-500/10 rounded-lg' : 'text-slate-400 hover:text-blue-400') + ' transition-all', title: 'Display Settings' },
+                        renderSlotSvgIcon('ic_fluent_navigation_24_regular', 'currentColor')
+                    )
                 ])
-            ]),
-            createElement('div', { key: 'header-controls', className: 'flex flex-shrink-0 items-center gap-1 self-end sm:self-start sm:justify-self-end' }, [
-                createElement('button', { key: 'del-btn', onClick: () => onRemoveDevice(dev.id), className: 'p-2 text-slate-400 hover:text-red-400 transition-colors', title: 'Remove Slot' }, 
-                    createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, [
-                        createElement('path', { key: 'trash-top', d: 'M3 6h18' }),
-                        createElement('path', { key: 'trash-body', d: 'M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6' }),
-                        createElement('path', { key: 'trash-handle', d: 'M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2' })
-                    ])
-                ),
-                createElement('button', { key: 'settings-btn', onClick: () => onUpdateDevice(dev.id, { showSettings: !dev.showSettings }), className: 'p-2 ' + (dev.showSettings ? 'text-blue-400 bg-blue-500/10 rounded-lg' : 'text-slate-400 hover:text-blue-400') + ' transition-all', title: 'Display Settings' }, 
-                    createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, [
-                        createElement('line', { key: 'menu-mid', x1: 3, y1: 12, x2: 21, y2: 12 }),
-                        createElement('line', { key: 'menu-top', x1: 3, y1: 6, x2: 21, y2: 6 }),
-                        createElement('line', { key: 'menu-bottom', x1: 3, y1: 18, x2: 21, y2: 18 })
-                    ])
-                )
             ]),
             createElement('div', { key: 'header-control-band', className: 'flex flex-col gap-2 sm:col-span-2 lg:flex-row lg:items-center lg:justify-between' }, [
                 dev.design ? createElement('div', {
