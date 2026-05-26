@@ -1,4 +1,4 @@
-const { createElement, Fragment, useState } = React;
+const { createElement, Fragment, useEffect, useState } = React;
 import { Keyboard } from './Keyboard.js';
 import { sanitizeDeviceName, findSplitX } from '../utils/helpers.js';
 import { createSVGElement } from '../svg-icons.js';
@@ -13,6 +13,7 @@ import {
 const MIN_DISPLAY_SCALE = 0.35;
 const MAX_DISPLAY_SCALE = 1.6;
 const DEFAULT_DISPLAY_SCALE = 1;
+const MAX_VISIBLE_LAYER_BUTTONS = 8;
 
 const normalizeDisplayScale = (value) => {
     const numeric = Number(value);
@@ -113,6 +114,7 @@ export function DeviceSlot({
     dev, 
     idx, 
     isLightApp, 
+    layoutMode,
     dragOverTarget, 
     editingDeviceId, 
     editingName,
@@ -133,6 +135,7 @@ export function DeviceSlot({
     onScaleMetricsChange
 }) {
     const [copied, setCopied] = useState(false);
+    const isGridLayout = layoutMode === 'grid';
     const hasData = !!dev.design;
     const encoderIndices = getEncoderIndices(dev.design);
     const hasGap = dev.design && findSplitX(dev.design) !== null;
@@ -143,13 +146,64 @@ export function DeviceSlot({
     const currentDisplayScale = normalizeDisplayScale(dev.displayScale);
     const isScaleFollowing = !!dev.followScale;
     const layerOptions = ((dev.keymapJson && dev.keymapJson.layers) || (dev.design && dev.design.layers) || [0, 1, 2, 3]);
-    const actionButtonClass = 'flex h-10 min-w-[92px] items-center justify-center rounded-xl border px-3 text-[9px] font-black uppercase tracking-[0.22em] transition-all sm:min-w-[100px]';
+    const totalLayerPages = Math.max(1, Math.ceil(layerOptions.length / MAX_VISIBLE_LAYER_BUTTONS));
+    const [layerPage, setLayerPage] = useState(() => Math.min(totalLayerPages - 1, Math.floor((Number(dev.layer) || 0) / MAX_VISIBLE_LAYER_BUTTONS)));
+    const clampedLayerPage = Math.min(layerPage, totalLayerPages - 1);
+    const visibleLayerStart = clampedLayerPage * MAX_VISIBLE_LAYER_BUTTONS;
+    const visibleLayerOptions = layerOptions.slice(visibleLayerStart, visibleLayerStart + MAX_VISIBLE_LAYER_BUTTONS);
+    const showLayerPagination = layerOptions.length > MAX_VISIBLE_LAYER_BUTTONS;
+    const actionButtonClass = isGridLayout
+        ? 'flex h-9 min-w-[84px] items-center justify-center rounded-xl border px-3 text-[8px] font-black uppercase tracking-[0.18em] transition-all sm:min-w-[92px]'
+        : 'flex h-10 min-w-[92px] items-center justify-center rounded-xl border px-3 text-[9px] font-black uppercase tracking-[0.22em] transition-all sm:min-w-[100px]';
     const neutralActionButtonClass = actionButtonClass + ' ' + (isLightApp
         ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200'
         : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 border-slate-700/50');
     const primaryActionButtonClass = actionButtonClass + ' ' + (isLightApp
         ? 'bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200'
         : 'bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border-blue-500/30');
+
+    useEffect(() => {
+        const nextPage = Math.min(totalLayerPages - 1, Math.floor((Number(dev.layer) || 0) / MAX_VISIBLE_LAYER_BUTTONS));
+        setLayerPage(prev => (prev === nextPage ? prev : nextPage));
+    }, [dev.layer, totalLayerPages]);
+
+    const renderLayerBar = () => dev.design ? createElement('div', {
+        key: 'layer-bar',
+        className: 'flex h-10 w-fit max-w-full items-center gap-2 rounded-xl border px-2.5 ' + (isLightApp ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/40 backdrop-blur-sm border-slate-700/50')
+    }, [
+        createElement('span', { key: 'lbl', className: 'px-1 text-[9px] font-black uppercase tracking-[0.22em] text-slate-400' }, 'LAYER'),
+        showLayerPagination ? createElement('button', {
+            key: 'prev-page',
+            type: 'button',
+            disabled: clampedLayerPage === 0,
+            onClick: () => setLayerPage(prev => Math.max(0, prev - 1)),
+            className: ((clampedLayerPage === 0
+                ? 'cursor-not-allowed opacity-35 '
+                : '') + 'flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-black transition-all ' + (isLightApp ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700' : 'text-slate-400 hover:bg-slate-700/60 hover:text-slate-100'))
+        }, '<') : null,
+        createElement('div', { key: 'btns', className: 'flex gap-1.5' },
+            visibleLayerOptions.map((_, pageOffset) => {
+                const layerIndex = visibleLayerStart + pageOffset;
+                return createElement('button', {
+                    key: layerIndex,
+                    onClick: () => onUpdateDevice(dev.id, { layer: layerIndex }),
+                    className: (dev.layer === layerIndex
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : (isLightApp ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700' : 'text-slate-500 hover:bg-slate-700/60 hover:text-slate-200'))
+                        + ' flex h-7 w-7 items-center justify-center rounded-lg text-[10px] font-black transition-all'
+                }, layerIndex)
+            })
+        ),
+        showLayerPagination ? createElement('button', {
+            key: 'next-page',
+            type: 'button',
+            disabled: clampedLayerPage >= totalLayerPages - 1,
+            onClick: () => setLayerPage(prev => Math.min(totalLayerPages - 1, prev + 1)),
+            className: ((clampedLayerPage >= totalLayerPages - 1
+                ? 'cursor-not-allowed opacity-35 '
+                : '') + 'flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-black transition-all ' + (isLightApp ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700' : 'text-slate-400 hover:bg-slate-700/60 hover:text-slate-100'))
+        }, '>') : null
+    ]) : null;
 
     const handleShare = () => {
         if (!hasData) return;
@@ -267,23 +321,32 @@ export function DeviceSlot({
                     )
                 ])
             ]),
-            createElement('div', { key: 'header-control-band', className: 'flex flex-col gap-2 sm:col-span-2 lg:flex-row lg:items-center lg:justify-between' }, [
-                dev.design ? createElement('div', {
-                    key: 'layer-bar',
-                    className: 'flex h-10 w-fit items-center gap-2 rounded-xl border px-2.5 ' + (isLightApp ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/40 backdrop-blur-sm border-slate-700/50')
-                }, [
-                    createElement('span', { key: 'lbl', className: 'px-1 text-[9px] font-black uppercase tracking-[0.22em] text-slate-400' }, 'LAYER'),
-                    createElement('div', { key: 'btns', className: 'flex gap-1.5' }, 
-                        layerOptions.map((_, l) => createElement('button', {
-                            key: l,
-                            onClick: () => onUpdateDevice(dev.id, { layer: l }),
-                            className: (dev.layer === l
-                                ? 'bg-blue-600 text-white shadow-lg'
-                                : (isLightApp ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700' : 'text-slate-500 hover:bg-slate-700/60 hover:text-slate-200'))
-                                + ' flex h-7 w-7 items-center justify-center rounded-lg text-[10px] font-black transition-all'
-                        }, l))
-                    )
-                ]) : null,
+            createElement('div', { key: 'header-control-band', className: isGridLayout ? 'flex flex-col gap-2' : 'flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between' }, isGridLayout ? [
+                createElement('div', { key: 'action-band', className: 'flex flex-wrap items-center justify-start gap-2' }, [
+                    createElement('label', { key: 'layout-lbl', className: neutralActionButtonClass + ' cursor-pointer' }, [
+                        'LAYOUT',
+                        createElement('input', { key: 'layout-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'layout') })
+                    ]),
+                    createElement('label', { key: 'map-lbl', className: neutralActionButtonClass + ' cursor-pointer' }, [
+                        'MAPPING',
+                        createElement('input', { key: 'map-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'mapping') })
+                    ]),
+                    createElement('button', { key: 'macro-btn', onClick: () => onSetMacroModal({ deviceId: dev.id, macroId: null }), className: neutralActionButtonClass }, 'MACROS'),
+                    createElement('button', { 
+                        key: 'share-btn', 
+                        onClick: handleShare, 
+                        disabled: !hasData,
+                        className: actionButtonClass + ' ' +
+                            (!hasData ? 'opacity-40 cursor-not-allowed border-dashed ' : '') +
+                            (copied
+                                ? (isLightApp ? 'bg-green-50 text-green-600 border-green-200 shadow-inner' : 'bg-green-600/20 text-green-400 border-green-500/30 shadow-inner')
+                                : (isLightApp ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200' : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 border-slate-700/50'))
+                    }, copied ? 'COPIED!' : 'SHARE'),
+                    createElement('button', { key: 'export-btn', onClick: () => onSetExportModal(dev), className: primaryActionButtonClass }, 'EXPORT')
+                ]),
+                renderLayerBar()
+            ] : [
+                renderLayerBar(),
                 createElement('div', { key: 'action-band', className: 'flex flex-wrap items-center gap-2 lg:ml-auto lg:justify-end' }, [
                     createElement('label', { key: 'layout-lbl', className: neutralActionButtonClass + ' cursor-pointer' }, [
                         'LAYOUT',

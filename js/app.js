@@ -550,6 +550,7 @@ export function App() {
                     dev,
                     idx,
                     isLightApp,
+                    layoutMode,
                     dragOverTarget,
                     editingDeviceId,
                     editingName,
