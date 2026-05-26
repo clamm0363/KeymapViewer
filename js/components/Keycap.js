@@ -28,6 +28,7 @@ export function Keycap({
     macroAliases,
     onMacroClick,
     encoderStyles,
+    inputDeviceSettings,
     layer,
     design,
     externalMap,
@@ -99,6 +100,7 @@ export function Keycap({
             fullRaw,
             onMacroClick,
             encoderStyles,
+            inputDeviceSettings,
             encodersSource,
             layer,
             keyStyle,
@@ -225,6 +227,7 @@ export function Keycap({
             k,
             isLayerKey: isLayerKey || isModKey,
             encoderStyles,
+            inputDeviceSettings,
             isLight,
             isAppDark
         })

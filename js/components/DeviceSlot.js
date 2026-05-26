@@ -1,6 +1,13 @@
 const { createElement, Fragment, useState } = React;
 import { Keyboard } from './Keyboard.js';
 import { sanitizeDeviceName, findSplitX } from '../utils/helpers.js';
+import {
+    getDefaultInputDeviceSetting,
+    getVariantOptions,
+    INPUT_DEVICE_KINDS,
+    resolveInputDeviceSetting,
+    toLegacyEncoderStyle
+} from './inputDeviceSettings.js';
 
 const getEncoderIndices = (design) => {
     if (!design || !design.layouts || !design.layouts.keymap) return [];
@@ -61,6 +68,21 @@ const parseLayoutOption = (label, idx) => {
     return { labelName, originalLabel, choices };
 };
 
+const updateInputDeviceSetting = (dev, idx, partialSetting) => {
+    const currentSetting = resolveInputDeviceSetting(dev.inputDeviceSettings, dev.encoderStyles, idx);
+    const nextSetting = { ...currentSetting, ...partialSetting };
+    return {
+        inputDeviceSettings: {
+            ...(dev.inputDeviceSettings || {}),
+            [idx]: nextSetting
+        },
+        encoderStyles: {
+            ...(dev.encoderStyles || {}),
+            [idx]: toLegacyEncoderStyle(nextSetting)
+        }
+    };
+};
+
 export function DeviceSlot({ 
     dev, 
     idx, 
@@ -103,6 +125,7 @@ export function DeviceSlot({
                 theme: dev.theme,
                 displayMode: dev.displayMode,
                 encoderStyles: dev.encoderStyles,
+                inputDeviceSettings: dev.inputDeviceSettings,
                 layoutOptions: dev.layoutOptions,
                 separation: dev.separation
             };
@@ -265,32 +288,41 @@ export function DeviceSlot({
 
                 // 2. Encoder Options
                 ...encoderIndices.map(idx => {
-                    const styles = dev.encoderStyles || {};
-                    const currentStyle = styles[idx] || 'Dial';
+                    const currentSetting = resolveInputDeviceSetting(dev.inputDeviceSettings, dev.encoderStyles, idx);
+                    const kindOptions = [
+                        { value: INPUT_DEVICE_KINDS.ENCODER, label: 'Encoder' },
+                        { value: INPUT_DEVICE_KINDS.POINTING_DEVICE, label: 'Pointing' }
+                    ];
+                    const variantOptions = getVariantOptions(currentSetting.kind);
                     return createElement('div', { key: 'encoder-sect-' + idx, className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
-                        createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'ENCODER e' + idx + ':'),
-                        createElement('div', { key: 'btns', className: 'flex gap-4' }, [
-                            { value: 'Dial', label: 'Dial' },
-                            { value: 'VerticalWheel', label: 'Wheel (V)' },
-                            { value: 'HorizontalWheel', label: 'Wheel (H)' }
-                        ].map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
+                        createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'INPUT e' + idx + ':'),
+                        createElement('div', { key: 'device-kind-btns', className: 'flex gap-4' }, kindOptions.map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
                             createElement('input', { 
                                 key: 'i', 
                                 type: 'radio', 
-                                name: 'encoderStyle-' + idx + '-' + dev.id, 
-                                checked: currentStyle === opt.value, 
-                                onChange: () => onUpdateDevice(dev.id, { 
-                                    encoderStyles: {
-                                        ...styles,
-                                        [idx]: opt.value
-                                    } 
-                                }), 
+                                name: 'inputDeviceKind-' + idx + '-' + dev.id, 
+                                checked: currentSetting.kind === opt.value,
+                                onChange: () => onUpdateDevice(dev.id, updateInputDeviceSetting(dev, idx, getDefaultInputDeviceSetting(opt.value))),
                                 className: 'hidden' 
                             }),
-                            createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentStyle === opt.value ? 'border-blue-500' : '') }, 
-                                currentStyle === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                            createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentSetting.kind === opt.value ? 'border-blue-500' : '') }, 
+                                currentSetting.kind === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
                             ),
-                            createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentStyle === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
+                            createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentSetting.kind === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
+                        ]))),
+                        createElement('div', { key: 'device-variant-btns', className: 'flex gap-4' }, variantOptions.map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
+                            createElement('input', {
+                                key: 'i',
+                                type: 'radio',
+                                name: 'inputDeviceVariant-' + idx + '-' + dev.id,
+                                checked: currentSetting.variant === opt.value,
+                                onChange: () => onUpdateDevice(dev.id, updateInputDeviceSetting(dev, idx, { variant: opt.value })),
+                                className: 'hidden'
+                            }),
+                            createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentSetting.variant === opt.value ? 'border-blue-500' : '') },
+                                currentSetting.variant === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                            ),
+                            createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentSetting.variant === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
                         ])))
                     ]);
                 }),
@@ -386,6 +418,7 @@ export function DeviceSlot({
                     keyStyle: dev.keyStyle || 'Windows',
                     separation: dev.separation || 'DISABLE',
                     encoderStyles: dev.encoderStyles || {},
+                    inputDeviceSettings: dev.inputDeviceSettings || {},
                     layoutOptions: dev.layoutOptions || {}
                 })
             )

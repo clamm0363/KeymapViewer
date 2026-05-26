@@ -3,6 +3,60 @@ const { createElement } = React;
 import { parseKeyLabel } from '../utils/labelParser.js';
 import { buildDisplayRaw } from './keycapIconUtils.js';
 import { getEncoderActions, getKeycapFrameStyle } from './keycapStyles.js';
+import { resolveInputDeviceSetting } from './inputDeviceSettings.js';
+
+function getPointingKeyMeta(keycode) {
+    const code = (keycode || 'KC_NO').toUpperCase();
+    const normalized = code.startsWith('KC_') ? code : `KC_${code}`;
+
+    const pointingMap = {
+        KC_MS_U: { kind: 'cursor', axisLabel: 'CURSOR UP' },
+        KC_MS_D: { kind: 'cursor', axisLabel: 'CURSOR DOWN' },
+        KC_MS_L: { kind: 'cursor', axisLabel: 'CURSOR LEFT' },
+        KC_MS_R: { kind: 'cursor', axisLabel: 'CURSOR RIGHT' },
+        KC_WH_U: { kind: 'wheel', axisLabel: 'WHEEL UP' },
+        KC_WH_D: { kind: 'wheel', axisLabel: 'WHEEL DOWN' },
+        KC_WH_L: { kind: 'wheel', axisLabel: 'WHEEL LEFT' },
+        KC_WH_R: { kind: 'wheel', axisLabel: 'WHEEL RIGHT' },
+        KC_BTN1: { kind: 'button', axisLabel: 'BUTTON 1' },
+        KC_BTN2: { kind: 'button', axisLabel: 'BUTTON 2' },
+        KC_BTN3: { kind: 'button', axisLabel: 'BUTTON 3' },
+        KC_BTN4: { kind: 'button', axisLabel: 'BUTTON 4' },
+        KC_BTN5: { kind: 'button', axisLabel: 'BUTTON 5' },
+        KC_BTN6: { kind: 'button', axisLabel: 'BUTTON 6' },
+        KC_BTN7: { kind: 'button', axisLabel: 'BUTTON 7' },
+        KC_BTN8: { kind: 'button', axisLabel: 'BUTTON 8' },
+        KC_ACL0: { kind: 'accel', axisLabel: 'ACCEL 0' },
+        KC_ACL1: { kind: 'accel', axisLabel: 'ACCEL 1' },
+        KC_ACL2: { kind: 'accel', axisLabel: 'ACCEL 2' }
+    };
+
+    return pointingMap[normalized] || null;
+}
+
+function buildTrackballTooltipLines({ ccwLabel, cwLabel, ccwCode, cwCode }) {
+    const cwMeta = getPointingKeyMeta(cwCode);
+    const ccwMeta = getPointingKeyMeta(ccwCode);
+
+    if (cwMeta && ccwMeta && (cwMeta.kind === 'cursor' || cwMeta.kind === 'wheel') && cwMeta.kind === ccwMeta.kind) {
+        return [
+            `${cwMeta.axisLabel}: ${cwLabel || 'None'} (${cwCode})`,
+            `${ccwMeta.axisLabel}: ${ccwLabel || 'None'} (${ccwCode})`
+        ];
+    }
+
+    if (cwMeta && ccwMeta && cwMeta.kind === ccwMeta.kind && (cwMeta.kind === 'button' || cwMeta.kind === 'accel')) {
+        return [
+            `${cwMeta.axisLabel}: ${cwLabel || 'None'} (${cwCode})`,
+            `${ccwMeta.axisLabel}: ${ccwLabel || 'None'} (${ccwCode})`
+        ];
+    }
+
+    return [
+        `CW-MAPPED: ${cwLabel || 'None'} (${cwCode})`,
+        `CCW-MAPPED: ${ccwLabel || 'None'} (${ccwCode})`
+    ];
+}
 
 function buildEncoderTooltipText({ encoderIndex, currentStyle, pushText, val, ccwActions, ccwLabel, cwLabel, ccwCode, cwCode }) {
     let tooltipText = `Encoder e${encoderIndex}\n`;
@@ -24,12 +78,187 @@ function buildEncoderTooltipText({ encoderIndex, currentStyle, pushText, val, cc
         return tooltipText;
     }
 
+    if (currentStyle === 'Trackball' || currentStyle === 'Touchpad') {
+        const trackballLines = buildTrackballTooltipLines({
+            ccwLabel,
+            cwLabel,
+            ccwCode,
+            cwCode
+        });
+        tooltipText += `\n${trackballLines.join('\n')}`;
+        return tooltipText;
+    }
+
     tooltipText += `\nCW (Clockwise): ${cwLabel || 'None'} (${cwCode})`;
     tooltipText += `\nCCW (Counter-Clockwise): ${ccwLabel || 'None'} (${ccwCode})`;
     return tooltipText;
 }
 
 function getEncoderChildElements(currentStyle, isLight) {
+    if (currentStyle === 'Touchpad') {
+        return [
+            createElement('div', {
+                key: 'touchpad-surface',
+                className: 'transition-all duration-200 group-hover:brightness-105',
+                style: {
+                    position: 'absolute',
+                    inset: '4px',
+                    borderRadius: '8px',
+                    background: isLight
+                        ? 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(226,232,240,0.95) 100%)'
+                        : 'linear-gradient(180deg, rgba(51,65,85,0.9) 0%, rgba(15,23,42,0.98) 100%)',
+                    boxShadow: isLight
+                        ? 'inset 0 1px 2px rgba(255,255,255,0.7), inset 0 -3px 5px rgba(0,0,0,0.12)'
+                        : 'inset 0 1px 2px rgba(255,255,255,0.08), inset 0 -4px 6px rgba(0,0,0,0.42)'
+                }
+            }),
+            createElement('div', {
+                key: 'touchpad-indicator-x',
+                style: {
+                    position: 'absolute',
+                    width: '14px',
+                    height: '1.5px',
+                    borderRadius: '999px',
+                    background: isLight ? 'rgba(100,116,139,0.5)' : 'rgba(148,163,184,0.45)'
+                }
+            }),
+            createElement('div', {
+                key: 'touchpad-indicator-y',
+                style: {
+                    position: 'absolute',
+                    width: '1.5px',
+                    height: '14px',
+                    borderRadius: '999px',
+                    background: isLight ? 'rgba(100,116,139,0.5)' : 'rgba(148,163,184,0.45)'
+                }
+            }),
+            createElement('div', {
+                key: 'touchpad-button-line',
+                style: {
+                    position: 'absolute',
+                    left: '8px',
+                    right: '8px',
+                    bottom: '8px',
+                    height: '1px',
+                    background: isLight ? 'rgba(100,116,139,0.3)' : 'rgba(148,163,184,0.28)'
+                }
+            })
+        ];
+    }
+
+    if (currentStyle === 'Trackball') {
+        return [
+            createElement('div', {
+                key: 'trackball-well',
+                style: {
+                    position: 'absolute',
+                    inset: '5px',
+                    borderRadius: '12px',
+                    background: isLight
+                        ? 'radial-gradient(circle at 50% 35%, rgba(255,255,255,0.95) 0%, rgba(226,232,240,0.92) 48%, rgba(148,163,184,0.88) 100%)'
+                        : 'radial-gradient(circle at 50% 35%, rgba(51,65,85,0.92) 0%, rgba(15,23,42,0.96) 52%, rgba(2,6,23,1) 100%)',
+                    boxShadow: isLight
+                        ? 'inset 0 2px 5px rgba(255,255,255,0.6), inset 0 -3px 6px rgba(0,0,0,0.14)'
+                        : 'inset 0 2px 4px rgba(255,255,255,0.08), inset 0 -4px 8px rgba(0,0,0,0.45)'
+                }
+            }),
+            createElement('div', {
+                key: 'trackball-ring',
+                style: {
+                    position: 'absolute',
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    border: isLight ? '2px solid rgba(148,163,184,0.88)' : '2px solid rgba(100,116,139,0.9)',
+                    background: isLight
+                        ? 'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.94) 0%, rgba(226,232,240,0.8) 68%, rgba(148,163,184,0.56) 100%)'
+                        : 'radial-gradient(circle at 35% 35%, rgba(148,163,184,0.42) 0%, rgba(51,65,85,0.38) 72%, rgba(15,23,42,0.62) 100%)',
+                    boxShadow: isLight
+                        ? '0 2px 4px rgba(0,0,0,0.12), inset 0 1px 2px rgba(255,255,255,0.55)'
+                        : '0 3px 6px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.08)'
+                }
+            }),
+            createElement('div', {
+                key: 'trackball-ball',
+                className: 'transition-all duration-200 group-hover:scale-[1.04] group-hover:brightness-110',
+                style: {
+                    position: 'relative',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: isLight
+                        ? 'radial-gradient(circle at 30% 30%, #e2e8f0 0%, #94a3b8 12%, #475569 28%, #1e293b 58%, #020617 100%)'
+                        : 'radial-gradient(circle at 30% 30%, #f8fafc 0%, #cbd5e1 16%, #94a3b8 36%, #64748b 62%, #334155 100%)',
+                    boxShadow: isLight
+                        ? '0 4px 8px rgba(15,23,42,0.28), inset 0 1px 3px rgba(255,255,255,0.42), inset -3px -4px 6px rgba(2,6,23,0.3)'
+                        : '0 6px 10px rgba(15,23,42,0.45), inset 0 1px 3px rgba(255,255,255,0.28), inset -3px -4px 7px rgba(15,23,42,0.35)'
+                }
+            }, [
+                createElement('div', {
+                    key: 'trackball-highlight',
+                    style: {
+                        position: 'absolute',
+                        left: '5px',
+                        top: '5px',
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.72)',
+                        filter: 'blur(0.2px)'
+                    }
+                })
+            ]),
+            createElement('div', {
+                key: 'trackball-socket-left',
+                style: {
+                    position: 'absolute',
+                    left: '7px',
+                    top: '50%',
+                    width: '5px',
+                    height: '5px',
+                    borderRadius: '50%',
+                    transform: 'translateY(-50%)',
+                    background: isLight ? 'rgba(100,116,139,0.72)' : 'rgba(148,163,184,0.42)',
+                    boxShadow: isLight
+                        ? 'inset 0 1px 1px rgba(255,255,255,0.4)'
+                        : 'inset 0 1px 1px rgba(255,255,255,0.12)'
+                }
+            }),
+            createElement('div', {
+                key: 'trackball-socket-right',
+                style: {
+                    position: 'absolute',
+                    right: '7px',
+                    top: '50%',
+                    width: '5px',
+                    height: '5px',
+                    borderRadius: '50%',
+                    transform: 'translateY(-50%)',
+                    background: isLight ? 'rgba(100,116,139,0.72)' : 'rgba(148,163,184,0.42)',
+                    boxShadow: isLight
+                        ? 'inset 0 1px 1px rgba(255,255,255,0.4)'
+                        : 'inset 0 1px 1px rgba(255,255,255,0.12)'
+                }
+            }),
+            createElement('div', {
+                key: 'trackball-socket-bottom',
+                style: {
+                    position: 'absolute',
+                    left: '50%',
+                    bottom: '7px',
+                    width: '5px',
+                    height: '5px',
+                    borderRadius: '50%',
+                    transform: 'translateX(-50%)',
+                    background: isLight ? 'rgba(100,116,139,0.72)' : 'rgba(148,163,184,0.42)',
+                    boxShadow: isLight
+                        ? 'inset 0 1px 1px rgba(255,255,255,0.4)'
+                        : 'inset 0 1px 1px rgba(255,255,255,0.12)'
+                }
+            })
+        ];
+    }
+
     if (currentStyle === 'VerticalWheel') {
         const wheelBg = isLight
             ? `linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(255,255,255,0.4) 15%, rgba(255,255,255,0.6) 30%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.45) 100%),
@@ -100,6 +329,7 @@ export function renderEncoderKeycap({
     fullRaw,
     onMacroClick,
     encoderStyles,
+    inputDeviceSettings,
     encodersSource,
     layer,
     keyStyle,
@@ -107,7 +337,8 @@ export function renderEncoderKeycap({
     isLight,
     isAppDark
 }) {
-    const currentStyle = (encoderStyles && encoderStyles[k.encoderIndex]) || 'Dial';
+    const currentSetting = resolveInputDeviceSetting(inputDeviceSettings, encoderStyles, k.encoderIndex);
+    const currentStyle = currentSetting.variant;
     const ccwActions = getEncoderActions(encodersSource, k.encoderIndex, layer);
     let ccwLabel = '';
     let cwLabel = '';
@@ -138,7 +369,7 @@ export function renderEncoderKeycap({
     });
 
     const displayRaw = buildDisplayRaw(fullRaw, val);
-    const containerClass = (currentStyle === 'VerticalWheel' || currentStyle === 'HorizontalWheel')
+    const containerClass = (currentStyle === 'VerticalWheel' || currentStyle === 'HorizontalWheel' || currentStyle === 'Trackball')
         ? 'encoder-wheel-container group'
         : 'key-cap encoder-knob group';
 
@@ -158,6 +389,7 @@ export function renderEncoderKeycap({
             k,
             isLayerKey: false,
             encoderStyles,
+            inputDeviceSettings,
             isLight,
             isAppDark
         })

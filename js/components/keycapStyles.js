@@ -1,4 +1,5 @@
 import { FLUENT_FONT_STACK } from '../constants.js';
+import { resolveInputDeviceSetting } from './inputDeviceSettings.js';
 
 const withAlpha = (hexColor, alpha) => {
     if (typeof hexColor !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(hexColor)) {
@@ -8,13 +9,69 @@ const withAlpha = (hexColor, alpha) => {
     return `${hexColor}${normalized.toString(16).padStart(2, '0')}`;
 };
 
-export const getKeycapFrameStyle = ({ k, isLayerKey, encoderStyles, isLight, isAppDark }) => {
+export const getKeycapFrameStyle = ({ k, isLayerKey, encoderStyles, inputDeviceSettings, isLight, isAppDark }) => {
     const paddingOffset = 20;
     const lightBorder = isAppDark ? '#94a3b8' : '#cbd5e1';
     const darkBorder = isAppDark ? '#475569' : '#334155';
 
     if (k.isEncoder) {
-        const currentStyle = (encoderStyles && encoderStyles[k.encoderIndex]) || 'Dial';
+        const currentSetting = resolveInputDeviceSetting(inputDeviceSettings, encoderStyles, k.encoderIndex);
+        const currentStyle = currentSetting.variant;
+        if (currentStyle === 'Trackball') {
+            const wellSize = 48;
+            const leftOffset = (k.w - 6) / 2 - wellSize / 2;
+            const topOffset = (k.h - 6) / 2 - wellSize / 2;
+            return {
+                left: `${k.x + paddingOffset + leftOffset}px`,
+                top: `${k.y + paddingOffset + topOffset}px`,
+                width: `${wellSize}px`,
+                height: `${wellSize}px`,
+                position: 'absolute',
+                borderRadius: '14px',
+                border: `1.5px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#1e293b' : '#334155')}`,
+                background: isLight
+                    ? 'radial-gradient(circle at 30% 30%, #f8fafc 0%, #dbe4ee 48%, #cbd5e1 100%)'
+                    : 'radial-gradient(circle at 30% 30%, #1e293b 0%, #0f172a 52%, #020617 100%)',
+                boxShadow: isLight
+                    ? 'inset 0 3px 8px rgba(0,0,0,0.14), 0 2px 4px rgba(0,0,0,0.06)'
+                    : 'inset 0 5px 10px rgba(0,0,0,0.6), 0 1px 3px rgba(255,255,255,0.04)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                overflow: 'hidden',
+                zIndex: 40
+            };
+        }
+
+        if (currentStyle === 'Touchpad') {
+            const wellW = 46;
+            const wellH = 36;
+            const leftOffset = (k.w - 6) / 2 - wellW / 2;
+            const topOffset = (k.h - 6) / 2 - wellH / 2;
+            return {
+                left: `${k.x + paddingOffset + leftOffset}px`,
+                top: `${k.y + paddingOffset + topOffset}px`,
+                width: `${wellW}px`,
+                height: `${wellH}px`,
+                position: 'absolute',
+                borderRadius: '9px',
+                border: `1.5px solid ${isLight ? (isAppDark ? '#94a3b8' : '#cbd5e1') : (isAppDark ? '#1e293b' : '#334155')}`,
+                background: isLight
+                    ? 'linear-gradient(180deg, #f8fafc 0%, #dde5ee 100%)'
+                    : 'linear-gradient(180deg, #1e293b 0%, #020617 100%)',
+                boxShadow: isLight
+                    ? 'inset 0 2px 6px rgba(255,255,255,0.55), inset 0 -3px 6px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.06)'
+                    : 'inset 0 2px 5px rgba(255,255,255,0.06), inset 0 -4px 8px rgba(0,0,0,0.4), 0 1px 2px rgba(255,255,255,0.04)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                overflow: 'hidden',
+                zIndex: 40
+            };
+        }
+
         if (currentStyle === 'VerticalWheel') {
             const wellW = 33;
             const wellH = 44;
