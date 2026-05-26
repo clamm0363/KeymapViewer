@@ -6,7 +6,10 @@ import {
     getModColor,
 } from './keycapStyles.js';
 import {
+    buildLayerDisplayModel,
+    buildModDisplayModel,
     buildDisplayRaw,
+    buildStandardDisplayModel,
     getIconRenderState,
     narrowSlash,
     normalizeTargetIconKey,
@@ -49,6 +52,14 @@ export function Keycap({
 
     const displayRawForRGB = buildDisplayRaw(fullRaw, val);
     const targetIconKey = normalizeTargetIconKey(displayRawForRGB);
+    const iconRenderState = getIconRenderState({
+        displayRaw: displayRawForRGB,
+        targetIconKey,
+        displayMode,
+        keyStyle,
+        isModKey,
+        modType
+    });
     const {
         isFluentMode,
         isRGBKey,
@@ -69,14 +80,7 @@ export function Keycap({
         isWebKey,
         isWebFluent,
         webLabel
-    } = getIconRenderState({
-        displayRaw: displayRawForRGB,
-        targetIconKey,
-        displayMode,
-        keyStyle,
-        isModKey,
-        modType
-    });
+    } = iconRenderState;
 
     const is1u = (k.w || 56) / 56 < 1.25;
     if (is1u) {
@@ -172,6 +176,59 @@ export function Keycap({
         targetScale = 1.11;
     }
 
+    const standardDisplayModel = buildStandardDisplayModel({
+        displayMode,
+        displayRaw,
+        displayRawForRGB,
+        targetIconKey,
+        finalDisplayText,
+        isFluentIcon,
+        manualWrap,
+        canWrap,
+        targetScale,
+        kWidth: (k.w || 56) / 56,
+        iconState: {
+            ...iconRenderState,
+            isMagicFluent,
+            rgbLabel,
+            wirelessLabel,
+            webLabel,
+            mouseLabel,
+            macroLabel,
+            magicLabel
+        }
+    });
+
+    const modDisplayModel = buildModDisplayModel({
+        modType,
+        finalDisplayText,
+        displayMode,
+        kWidth: (k.w || 56) / 56,
+        targetScale,
+        targetIconKey,
+        modKeys,
+        canWrap,
+        baseLabel,
+        baseIsFluent,
+        keyStyle,
+        modLabel,
+        iconState: {
+            actuallyShowingSvg,
+            isWirelessKey,
+            isMouseKey
+        }
+    });
+
+    const layerDisplayModel = buildLayerDisplayModel({
+        layerNum2,
+        layerType,
+        layerNum,
+        tapIsFluent,
+        tapLabel,
+        kWidth: (k.w || 56) / 56,
+        targetScale
+    });
+
     const jisSvg = k.isJIS && (() => {
         const W = k.w - 6;
         const H = k.h - 6;
@@ -248,65 +305,21 @@ export function Keycap({
 
         isLayerKey ? (
             renderLayerKeycap({
-                layerNum2,
-                layerType,
-                layerNum,
-                tapIsFluent,
-                tapLabel,
+                model: layerDisplayModel,
                 isLight,
                 isAppDark,
-                kWidth: (k.w || 56) / 56,
-                targetScale
             })
         ) : isModKey ? (
             renderModKeycap({
-                modType,
-                finalDisplayText,
-                displayMode,
-                kWidth: (k.w || 56) / 56,
-                actuallyShowingSvg,
-                isWirelessKey,
-                isMouseKey,
-                targetScale,
-                targetIconKey,
-                modKeys,
+                model: modDisplayModel,
                 isLight,
-                canWrap,
-                baseLabel,
-                baseIsFluent,
-                keyStyle,
                 isAppDark,
-                modLabel
             })
         ) : (
             renderStandardKeycap({
                 k,
-                isRGBFluent,
-                displayRawForRGB,
-                rgbLabel,
+                model: standardDisplayModel,
                 isLight,
-                isMagicFluent,
-                magicLabel,
-                isWirelessFluent,
-                wirelessLabel,
-                isWebFluent,
-                webLabel,
-                isMouseFluent,
-                mouseLabel,
-                isMacroFluent,
-                macroLabel,
-                manualWrap,
-                finalDisplayText,
-                isFluentIcon,
-                isWirelessKey,
-                isMouseKey,
-                isWebKey,
-                targetScale,
-                targetIconKey,
-                displayRaw,
-                displayMode,
-                canWrap,
-                kWidth: (k.w || 56) / 56
             })
         )
     );
