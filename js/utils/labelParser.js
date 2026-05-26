@@ -9,6 +9,27 @@ import {
 } from '../keymap-dictionary.js';
 
 export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, isJIS = false) {
+    if (val === null || val === undefined || val === '') {
+        return {
+            fullRaw: '',
+            displayText: '',
+            isFluentIcon: false,
+            isLayerKey: false,
+            layerType: null,
+            layerNum: null,
+            tapLabel: '',
+            tapIsFluent: false,
+            visualWeight: 0,
+            layerNum2: null,
+            isModKey: false,
+            modType: null,
+            modLabel: '',
+            modKeys: [],
+            baseLabel: '',
+            baseIsFluent: false
+        };
+    }
+
     const safeKeyId = keyId || '';
     const fullRaw = getRawLabel(val || (safeKeyId.includes('\n') ? safeKeyId.split('\n').pop() : safeKeyId));
     
