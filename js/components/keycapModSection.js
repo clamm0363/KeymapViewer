@@ -15,38 +15,24 @@ import {
 } from './keycapRenderers.js';
 
 export function renderModKeycap({
-    modType,
-    finalDisplayText,
-    displayMode,
-    kWidth,
-    actuallyShowingSvg,
-    isWirelessKey,
-    isMouseKey,
-    targetScale,
-    targetIconKey,
-    modKeys,
+    model,
     isLight,
-    canWrap,
-    baseLabel,
-    baseIsFluent,
-    keyStyle,
     isAppDark,
-    modLabel
 }) {
-    const primaryModColor = getModColor(modKeys[0], isLight, isAppDark);
-    const shouldCompactTapPrimary = !baseIsFluent && baseLabel && baseLabel.length >= 3;
+    const primaryModColor = getModColor(model.modKeys[0], isLight, isAppDark);
+    const shouldCompactTapPrimary = !model.baseIsFluent && model.baseLabel && model.baseLabel.length >= 3;
 
-    if (modType === 'base') {
-        let textScale = getTextScale(finalDisplayText, kWidth, actuallyShowingSvg);
-        if (isWirelessKey || isMouseKey) {
-            textScale = 0.62;
+    if (model.variant === 'base') {
+        let textScale = getTextScale(model.centerText, model.kWidth, model.actuallyShowingSvg);
+        if (model.textScalePreset) {
+            textScale = model.textScalePreset;
         }
-        const combinedScale = targetScale * textScale * 0.9;
+        const combinedScale = model.targetScale * textScale * 0.9;
 
-        if (actuallyShowingSvg) {
+        if (model.actuallyShowingSvg) {
             const effectiveSvgSize = Math.max(8, Math.round(24 * combinedScale));
             const iconElement = renderInlineFluentIcon({
-                iconKey: targetIconKey,
+                iconKey: model.iconKey,
                 size: effectiveSvgSize,
                 color: primaryModColor
             });
@@ -96,7 +82,7 @@ export function renderModKeycap({
         },
         createElement('div', {
             className: 'legend-text',
-            style: getMainLegendStyle(isLight, finalDisplayText, actuallyShowingSvg, kWidth, {
+            style: getMainLegendStyle(isLight, model.centerText, model.actuallyShowingSvg, model.kWidth, {
                 color: primaryModColor,
                 transform: 'none',
                 fontSize: needsScaleBypass ? '16px' : `${effectiveFontSize}px`,
@@ -105,19 +91,19 @@ export function renderModKeycap({
                 justifyContent: 'center',
                 height: '100%',
                 maxHeight: 'none',
-                ...(canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
+                ...(model.canWrap ? { whiteSpace: 'pre-wrap', lineHeight: '1.1' } : {})
             })
-        }, finalDisplayText ? createElement('span', {
+        }, model.centerText ? createElement('span', {
             style: needsScaleBypass ? {
                 transform: `scale(${effectiveFontSize / 16})`,
                 transformOrigin: 'center center',
                 display: 'inline-block',
                 whiteSpace: 'nowrap'
             } : null
-        }, finalDisplayText) : null)));
+        }, model.centerText) : null)));
     }
 
-    if (modType === 'tap') {
+    if (model.variant === 'tap') {
         return createElement('div', {
             className: 'key-mod-split-container',
             style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }
@@ -140,7 +126,7 @@ export function renderModKeycap({
                     style: {
                         ...getOffsetPrimaryContentStyle(
                             isLight,
-                            baseIsFluent,
+                            model.baseIsFluent,
                             shouldCompactTapPrimary ? '16px' : null
                         ),
                         ...(shouldCompactTapPrimary ? {
@@ -151,14 +137,14 @@ export function renderModKeycap({
                             transformOrigin: 'left bottom'
                         } : {})
                     }
-                }, baseLabel)),
+                }, model.baseLabel)),
                 renderModifierSupplement({
-                    modKeys,
-                    label: modLabel,
+                    modKeys: model.modKeys,
+                    label: model.modLabel,
                     isLight,
                     color: primaryModColor,
-                    keyStyle,
-                    displayMode,
+                    keyStyle: model.keyStyle,
+                    displayMode: model.displayMode,
                     placement: 'offset'
                 })
             ])
@@ -169,15 +155,15 @@ export function renderModKeycap({
         className: 'key-mod-split-container',
         style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }
     }, [(() => {
-        const textScale = getTextScale(baseLabel, kWidth, baseIsFluent);
-        const combinedScale = targetScale * textScale * 0.9;
+        const textScale = getTextScale(model.baseLabel, model.kWidth, model.baseIsFluent);
+        const combinedScale = model.targetScale * textScale * 0.9;
         const effectiveFontSize = 22 * combinedScale;
         const needsScaleBypass = effectiveFontSize < 14;
 
         return createElement('div', {
             key: 'mod-main',
             className: 'key-mod-main',
-            style: getMainLegendStyle(isLight, baseLabel, baseIsFluent, kWidth, {
+            style: getMainLegendStyle(isLight, model.baseLabel, model.baseIsFluent, model.kWidth, {
                 flex: 1,
                 transform: 'none',
                 fontSize: needsScaleBypass ? '16px' : `${effectiveFontSize}px`,
@@ -187,22 +173,22 @@ export function renderModKeycap({
                 height: '100%',
                 maxHeight: 'none'
             })
-        }, baseLabel ? createElement('span', {
+        }, model.baseLabel ? createElement('span', {
             style: needsScaleBypass ? {
                 transform: `scale(${effectiveFontSize / 16})`,
                 transformOrigin: 'center center',
                 display: 'inline-block',
-                whiteSpace: 'nowrap'
-            } : null
-        }, baseLabel) : null);
+                    whiteSpace: 'nowrap'
+                } : null
+        }, model.baseLabel) : null);
     })(),
         renderModifierSupplement({
-            modKeys,
-            label: modLabel,
+            modKeys: model.modKeys,
+            label: model.modLabel,
             isLight,
             color: primaryModColor,
-            keyStyle,
-            displayMode
+            keyStyle: model.keyStyle,
+            displayMode: model.displayMode
         })
     ]);
 }

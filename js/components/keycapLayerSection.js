@@ -15,32 +15,22 @@ import {
 } from './keycapRenderers.js';
 
 export function renderLayerKeycap({
-    layerNum2,
-    layerType,
-    layerNum,
-    tapIsFluent,
-    tapLabel,
+    model,
     isLight,
     isAppDark,
-    kWidth,
-    targetScale
 }) {
-    const accentColor = getLayerFooterColor(Number(layerNum || 0), isLight, isAppDark);
-    const bottomCaptionLabel = layerNum2
-        ? `FN${layerNum}+${layerNum2}`
-        : null;
-    const singleLayerLabel = `L${layerNum}`;
+    const accentColor = getLayerFooterColor(Number(model.layerNum || 0), isLight, isAppDark);
 
     return createElement('div', {
         className: 'key-layer-container',
         style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }
     }, [
         renderTopTag({
-            label: layerNum2 ? 'FN' : layerType,
+            label: model.topTag,
             isLight,
             accentColor
         }),
-        layerNum2 ? (
+        model.variant === 'fn-offset' ? (
             createElement('div', {
                 key: 'layer-main-fn',
                 className: 'key-layer-main relative',
@@ -52,14 +42,14 @@ export function renderLayerKeycap({
                     style: getOffsetPrimarySlotStyle()
                 }, createElement('span', {
                     style: getOffsetPrimaryContentStyle(isLight, false, '24px')
-                }, `L${layerNum}`)),
+                }, model.primaryText)),
                 createElement('div', {
                     key: 'layer-secondary',
                     className: 'layer-secondary',
                     style: getOffsetSecondaryStyle(isLight)
-                }, `L${layerNum2}`)
+                }, model.secondaryText)
             ])
-        ) : layerType === 'LT' ? (
+        ) : model.variant === 'lt-offset' ? (
             createElement('div', {
                 key: 'layer-main-lt',
                 className: 'key-layer-main relative',
@@ -70,25 +60,25 @@ export function renderLayerKeycap({
                     className: 'layer-primary',
                     style: getOffsetPrimarySlotStyle()
                 }, createElement('span', {
-                    style: getOffsetPrimaryContentStyle(isLight, tapIsFluent)
-                }, tapLabel)),
+                    style: getOffsetPrimaryContentStyle(isLight, model.primaryIsFluent)
+                }, model.primaryText)),
                 createElement('div', {
                     key: 'layer-secondary',
                     className: 'layer-secondary',
                     style: getOffsetSecondaryStyle(isLight)
-                }, `L${layerNum}`)
+                }, model.secondaryText)
             ])
         ) : (
             (() => {
-                const textScale = getTextScale(singleLayerLabel, kWidth, false);
-                const combinedScale = targetScale * textScale * 0.9;
+                const textScale = getTextScale(model.primaryText, model.kWidth, false);
+                const combinedScale = model.targetScale * textScale * 0.9;
                 const effectiveFontSize = 22 * combinedScale;
                 const needsScaleBypass = effectiveFontSize < 14;
 
                 return createElement('div', {
                     key: 'layer-main-single',
                     className: 'key-layer-main',
-                    style: getMainLegendStyle(isLight, singleLayerLabel, false, kWidth, {
+                    style: getMainLegendStyle(isLight, model.primaryText, false, model.kWidth, {
                         flex: 1,
                         transform: 'none',
                         fontSize: needsScaleBypass ? '16px' : `${effectiveFontSize}px`,
@@ -105,11 +95,11 @@ export function renderLayerKeycap({
                         display: 'inline-block',
                         whiteSpace: 'nowrap'
                     } : null
-                }, singleLayerLabel));
+                }, model.primaryText));
             })()
         ),
-        layerNum2 ? renderBottomCaption({
-            label: bottomCaptionLabel,
+        model.bottomCaption ? renderBottomCaption({
+            label: model.bottomCaption,
             isLight,
             color: accentColor
         }) : null

@@ -282,3 +282,106 @@ export function getIconRenderState({ displayRaw, targetIconKey, displayMode, key
         webLabel
     };
 }
+
+export function buildStandardDisplayModel({
+    displayMode,
+    displayRaw,
+    displayRawForRGB,
+    targetIconKey,
+    finalDisplayText,
+    isFluentIcon,
+    manualWrap,
+    canWrap,
+    targetScale,
+    kWidth,
+    iconState
+}) {
+    const resolvedIconKey = targetIconKey || displayRawForRGB || displayRaw;
+    const bottomLabelDescriptor = [
+        { matches: iconState.isRGBFluent, label: iconState.rgbLabel, labelKey: 'rgb' },
+        { matches: iconState.isMagicFluent, label: iconState.magicLabel, labelKey: 'magic' },
+        { matches: iconState.isWirelessFluent, label: iconState.wirelessLabel, labelKey: 'wireless' },
+        { matches: iconState.isWebFluent, label: iconState.webLabel, labelKey: 'web' },
+        { matches: iconState.isMouseFluent, label: iconState.mouseLabel, labelKey: 'mouse' },
+        { matches: iconState.isMacroFluent, label: iconState.macroLabel, labelKey: 'macro' }
+    ].find((entry) => entry.matches) || null;
+
+    const categoryCaption = displayMode === 'Text'
+        ? getKeyCategory(displayRaw)
+        : null;
+
+    return {
+        route: 'standard',
+        variant: bottomLabelDescriptor
+            ? 'icon-bottom-label'
+            : (displayMode === 'Fluent' && isSVGAvailable(targetIconKey || displayRaw) ? 'center-svg' : 'text'),
+        resolvedIconKey,
+        centerText: finalDisplayText,
+        isFluentCenter: isFluentIcon,
+        manualWrap,
+        canWrap,
+        targetScale,
+        kWidth,
+        textScalePreset: (iconState.isWirelessKey || iconState.isMouseKey || iconState.isWebKey) ? 0.62 : null,
+        bottomLabel: bottomLabelDescriptor ? bottomLabelDescriptor.label : null,
+        bottomLabelKind: bottomLabelDescriptor ? bottomLabelDescriptor.labelKey : null,
+        bottomCaption: categoryCaption
+    };
+}
+
+export function buildModDisplayModel({
+    modType,
+    finalDisplayText,
+    displayMode,
+    kWidth,
+    targetScale,
+    targetIconKey,
+    modKeys,
+    canWrap,
+    baseLabel,
+    baseIsFluent,
+    keyStyle,
+    modLabel,
+    iconState
+}) {
+    return {
+        route: 'mod',
+        variant: modType,
+        centerText: finalDisplayText,
+        displayMode,
+        kWidth,
+        targetScale,
+        iconKey: targetIconKey,
+        modKeys,
+        canWrap,
+        baseLabel,
+        baseIsFluent,
+        keyStyle,
+        modLabel,
+        actuallyShowingSvg: iconState.actuallyShowingSvg,
+        textScalePreset: (iconState.isWirelessKey || iconState.isMouseKey) ? 0.62 : null
+    };
+}
+
+export function buildLayerDisplayModel({
+    layerNum2,
+    layerType,
+    layerNum,
+    tapIsFluent,
+    tapLabel,
+    kWidth,
+    targetScale
+}) {
+    return {
+        route: 'layer',
+        variant: layerNum2 ? 'fn-offset' : (layerType === 'LT' ? 'lt-offset' : 'single'),
+        topTag: layerNum2 ? 'FN' : layerType,
+        primaryText: layerNum2 ? `L${layerNum}` : (layerType === 'LT' ? tapLabel : `L${layerNum}`),
+        secondaryText: layerNum2 ? `L${layerNum2}` : (layerType === 'LT' ? `L${layerNum}` : null),
+        primaryIsFluent: layerNum2 ? false : tapIsFluent,
+        bottomCaption: layerNum2 ? `FN${layerNum}+${layerNum2}` : null,
+        layerNum,
+        kWidth,
+        targetScale
+    };
+}
