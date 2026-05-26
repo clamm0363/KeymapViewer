@@ -220,6 +220,7 @@ export function DeviceSlot({
                 layoutOptions: dev.layoutOptions,
                 separation: dev.separation,
                 displayScale: normalizeDisplayScale(dev.displayScale),
+                displayScaleByLayout: dev.displayScaleByLayout,
                 followScale: !!dev.followScale
             };
             const compressed = window.LZString.compressToEncodedURIComponent(JSON.stringify(shareData));

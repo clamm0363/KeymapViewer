@@ -15,6 +15,10 @@ const CURRENT_VERSION = '1.2.5';
 const DEFAULT_DISPLAY_SCALE = 1;
 const MIN_DISPLAY_SCALE = 0.35;
 const MAX_DISPLAY_SCALE = 1.6;
+const DEFAULT_DISPLAY_SCALE_BY_LAYOUT = Object.freeze({
+    stack: DEFAULT_DISPLAY_SCALE,
+    grid: DEFAULT_DISPLAY_SCALE
+});
 
 function normalizeDisplayScale(value) {
     const numeric = Number(value);
@@ -23,6 +27,19 @@ function normalizeDisplayScale(value) {
 
 function clampDisplayScale(value) {
     return Math.min(MAX_DISPLAY_SCALE, Math.max(MIN_DISPLAY_SCALE, normalizeDisplayScale(value)));
+}
+
+function normalizeDisplayScaleByLayout(displayScaleByLayout, legacyDisplayScale = DEFAULT_DISPLAY_SCALE) {
+    const fallback = normalizeDisplayScale(legacyDisplayScale);
+    return {
+        stack: normalizeDisplayScale(displayScaleByLayout?.stack ?? fallback),
+        grid: normalizeDisplayScale(displayScaleByLayout?.grid ?? fallback)
+    };
+}
+
+function getDisplayScaleForLayout(device, layoutMode) {
+    const scales = normalizeDisplayScaleByLayout(device.displayScaleByLayout, device.displayScale);
+    return normalizeDisplayScale(scales[layoutMode] ?? DEFAULT_DISPLAY_SCALE_BY_LAYOUT[layoutMode] ?? device.displayScale);
 }
 
 function buildInputDeviceSettings(inputDeviceSettings = {}, encoderStyles = {}) {
@@ -50,6 +67,7 @@ function createEmptyDevice() {
         layoutOptions: {},
         separation: 'DISABLE',
         displayScale: DEFAULT_DISPLAY_SCALE,
+        displayScaleByLayout: { ...DEFAULT_DISPLAY_SCALE_BY_LAYOUT },
         followScale: false,
         showSettings: false
     };
@@ -85,6 +103,7 @@ export function App() {
                             layoutOptions: parsed.layoutOptions || {},
                             separation: parsed.separation || 'DISABLE',
                             displayScale: normalizeDisplayScale(parsed.displayScale),
+                            displayScaleByLayout: normalizeDisplayScaleByLayout(parsed.displayScaleByLayout, parsed.displayScale),
                             followScale: !!parsed.followScale,
                             macroAliases: parsed.keymapJson?.macroAliases || {},
                             showSettings: false
@@ -101,6 +120,7 @@ export function App() {
                 ...device,
                 inputDeviceSettings: buildInputDeviceSettings(device.inputDeviceSettings, device.encoderStyles),
                 displayScale: normalizeDisplayScale(device.displayScale),
+                displayScaleByLayout: normalizeDisplayScaleByLayout(device.displayScaleByLayout, device.displayScale),
                 followScale: !!device.followScale
             }));
         }
@@ -122,6 +142,26 @@ export function App() {
     const exportRef = useRef(null);
     const draggedSlotElementRef = useRef(null);
     const slotScaleMetricsRef = useRef({});
+
+    const applyDisplayScalePresetForLayout = (targetLayoutMode, targetScale = DEFAULT_DISPLAY_SCALE) => {
+        setDevices(prev => prev.map(device => {
+            const nextScale = clampDisplayScale(targetScale);
+            const nextScales = normalizeDisplayScaleByLayout(device.displayScaleByLayout, device.displayScale);
+            return {
+                ...device,
+                displayScale: nextScale,
+                displayScaleByLayout: {
+                    ...nextScales,
+                    [targetLayoutMode]: nextScale
+                }
+            };
+        }));
+    };
+
+    const handleLayoutModeChange = (nextLayoutMode) => {
+        setLayoutMode(nextLayoutMode);
+        applyDisplayScalePresetForLayout(nextLayoutMode, DEFAULT_DISPLAY_SCALE);
+    };
 
     useEffect(() => {
         // Skip loading samples if we already have a loaded device design (e.g. from saved state or URL sharing)
@@ -170,6 +210,7 @@ export function App() {
                         inputDeviceSettings: buildInputDeviceSettings(data.inputDeviceSettings, data.encoderStyles),
                         layoutOptions: {},
                         displayScale: DEFAULT_DISPLAY_SCALE,
+                        displayScaleByLayout: { ...DEFAULT_DISPLAY_SCALE_BY_LAYOUT },
                         followScale: false,
                         macroAliases: keymapJson.macroAliases,
                         showSettings: false
@@ -259,7 +300,26 @@ export function App() {
 
     const updateDevice = (id, data) => {
         setDevices(prev => {
-            const next = prev.map(d => d.id === id ? { ...d, ...data } : d);
+            const next = prev.map(d => {
+                if (d.id !== id) return d;
+
+                const nextDevice = { ...d, ...data };
+                const scales = normalizeDisplayScaleByLayout(nextDevice.displayScaleByLayout, nextDevice.displayScale);
+
+                if (Object.prototype.hasOwnProperty.call(data, 'displayScale')) {
+                    const nextScale = clampDisplayScale(data.displayScale);
+                    nextDevice.displayScaleByLayout = {
+                        ...scales,
+                        [layoutMode]: nextScale
+                    };
+                    nextDevice.displayScale = nextScale;
+                } else {
+                    nextDevice.displayScaleByLayout = scales;
+                    nextDevice.displayScale = normalizeDisplayScale(scales[layoutMode]);
+                }
+
+                return nextDevice;
+            });
             if (!Object.prototype.hasOwnProperty.call(data, 'displayScale')) {
                 return next;
             }
@@ -270,7 +330,7 @@ export function App() {
                 return next;
             }
 
-            const targetFinalScale = sourceMetrics.autoFitScale * clampDisplayScale(nextSource.displayScale);
+            const targetFinalScale = sourceMetrics.autoFitScale * getDisplayScaleForLayout(nextSource, layoutMode);
 
             return next.map(device => {
                 if (device.id === id || !device.followScale) return device;
@@ -278,9 +338,15 @@ export function App() {
                 if (!metrics || !Number.isFinite(metrics.autoFitScale) || metrics.autoFitScale <= 0) {
                     return device;
                 }
+                const nextScale = clampDisplayScale(targetFinalScale / metrics.autoFitScale);
+                const nextScales = normalizeDisplayScaleByLayout(device.displayScaleByLayout, device.displayScale);
                 return {
                     ...device,
-                    displayScale: clampDisplayScale(targetFinalScale / metrics.autoFitScale)
+                    displayScale: nextScale,
+                    displayScaleByLayout: {
+                        ...nextScales,
+                        [layoutMode]: nextScale
+                    }
                 };
             });
         });
@@ -304,9 +370,15 @@ export function App() {
             if (!device.design || !metrics || !Number.isFinite(metrics.autoFitScale) || metrics.autoFitScale <= 0) {
                 return device;
             }
+            const nextScale = clampDisplayScale(targetScale / metrics.autoFitScale);
+            const nextScales = normalizeDisplayScaleByLayout(device.displayScaleByLayout, device.displayScale);
             return {
                 ...device,
-                displayScale: clampDisplayScale(targetScale / metrics.autoFitScale)
+                displayScale: nextScale,
+                displayScaleByLayout: {
+                    ...nextScales,
+                    [layoutMode]: nextScale
+                }
             };
         }));
     };
@@ -471,7 +543,7 @@ export function App() {
             onShowHelp: () => setShowHelp(true),
             onShowLinks: () => setShowLinks(true),
             onMatchKeySize: handleMatchKeySize,
-            onSetLayoutMode: setLayoutMode,
+            onSetLayoutMode: handleLayoutModeChange,
             onSetAppTheme: setAppTheme,
             appTheme
         }),
@@ -537,7 +609,7 @@ export function App() {
                     inputDeviceSettings: dev.inputDeviceSettings || {},
                     layoutOptions: dev.layoutOptions || {},
                     forcedScale: 1.0,
-                    userScale: normalizeDisplayScale(dev.displayScale),
+                    userScale: getDisplayScaleForLayout(dev, layoutMode),
                     separation: dev.separation || 'DISABLE'
                 })
             ]);
@@ -547,7 +619,11 @@ export function App() {
             createElement('div', { key: 'main-layout', className: (layoutMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 gap-8' : 'flex flex-col gap-8') }, [
                 devices.map((dev, idx) => createElement(DeviceSlot, { 
                     key: dev.id,
-                    dev,
+                    dev: {
+                        ...dev,
+                        displayScale: getDisplayScaleForLayout(dev, layoutMode),
+                        displayScaleByLayout: normalizeDisplayScaleByLayout(dev.displayScaleByLayout, dev.displayScale)
+                    },
                     idx,
                     isLightApp,
                     layoutMode,
