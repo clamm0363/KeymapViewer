@@ -129,6 +129,115 @@ const MOD_ICON_KEY_MAP = {
     CMD: 'KC_LGUI'
 };
 
+function getModifierIconKeys(modKeys = []) {
+    if (!Array.isArray(modKeys) || modKeys.length === 0) return [];
+    return modKeys
+        .map((modKey) => MOD_ICON_KEY_MAP[String(modKey || '').toUpperCase()])
+        .filter(Boolean);
+}
+
+function renderModifierPlusSeparator({ placement, color, isLight }) {
+    const size = placement === 'offset' ? 12 : 8;
+    const strokeWidth = placement === 'offset' ? 1.5 : 1.25;
+    const separatorColor = color || (isLight ? '#64748b' : '#94a3b8');
+    const opacity = color ? (isLight ? 0.96 : 0.94) : (placement === 'offset' ? 0.82 : 0.78);
+    const half = size / 2;
+    const arm = placement === 'offset' ? 2.5 : 1.75;
+
+    return createElement('div', {
+        style: {
+            display: 'inline-flex',
+            width: `${size}px`,
+            height: `${size}px`,
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: '0 0 auto',
+            opacity
+        }
+    }, createElement('svg', {
+        width: size,
+        height: size,
+        viewBox: `0 0 ${size} ${size}`,
+        fill: 'none',
+        xmlns: 'http://www.w3.org/2000/svg'
+    }, [
+        createElement('line', {
+            key: 'plus-h',
+            x1: half - arm,
+            y1: half,
+            x2: half + arm,
+            y2: half,
+            stroke: separatorColor,
+            strokeWidth,
+            strokeLinecap: 'round'
+        }),
+        createElement('line', {
+            key: 'plus-v',
+            x1: half,
+            y1: half - arm,
+            x2: half,
+            y2: half + arm,
+            stroke: separatorColor,
+            strokeWidth,
+            strokeLinecap: 'round'
+        })
+    ]));
+}
+
+function renderModifierSvgSequence({ iconKeys, placement, color, isLight }) {
+    if (!Array.isArray(iconKeys) || iconKeys.length === 0) return null;
+
+    const size = placement === 'offset' ? 12 : 8;
+    const gap = placement === 'offset' ? '1px' : '0.5px';
+    const scale = placement === 'offset' ? 0.64 : 1;
+    const iconElements = iconKeys
+        .map((iconKey, idx) => {
+            const iconElement = renderInlineFluentIcon({
+                iconKey,
+                size,
+                color
+            });
+            if (!iconElement) return null;
+            const items = [];
+            if (idx > 0) {
+                items.push(createElement(React.Fragment, {
+                    key: `plus-${idx}`
+                }, renderModifierPlusSeparator({
+                    placement,
+                    color,
+                    isLight
+                })));
+            }
+            items.push(createElement('div', {
+                key: `${iconKey}-${idx}`,
+                style: {
+                    display: 'inline-flex',
+                    width: `${size}px`,
+                    height: `${size}px`,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flex: '0 0 auto'
+                }
+            }, iconElement));
+            return items;
+        })
+        .flat()
+        .filter(Boolean);
+
+    if (iconElements.length === 0) return null;
+
+    return createElement('div', {
+        style: {
+            display: 'inline-flex',
+            alignItems: placement === 'offset' ? 'flex-start' : 'center',
+            justifyContent: 'flex-end',
+            gap,
+            transform: scale !== 1 ? `scale(${scale})` : 'none',
+            transformOrigin: placement === 'offset' ? 'top right' : 'bottom right'
+        }
+    }, iconElements);
+}
+
 export function renderModifierSupplement({
     modKeys,
     label,
@@ -144,11 +253,10 @@ export function renderModifierSupplement({
         : label;
 
     const shouldUseModifierSvg = keyStyle === 'Mac' && displayMode === 'Fluent';
-    const normalizedModKey = shouldUseModifierSvg && Array.isArray(modKeys) && modKeys.length === 1
-        ? MOD_ICON_KEY_MAP[modKeys[0].toUpperCase()]
-        : null;
+    const modifierIconKeys = shouldUseModifierSvg ? getModifierIconKeys(modKeys) : [];
+    const hasModifierSvg = modifierIconKeys.length > 0;
 
-    if (!normalizedModKey) {
+    if (!hasModifierSvg) {
         if (placement === 'offset') {
             return createElement('div', {
                 style: getOffsetSecondarySlotStyle()
@@ -164,14 +272,14 @@ export function renderModifierSupplement({
         });
     }
 
-    const size = placement === 'offset' ? 12 : 8;
-    const iconElement = renderInlineFluentIcon({
-        iconKey: normalizedModKey,
-        size,
-        color
+    const iconSequence = renderModifierSvgSequence({
+        iconKeys: modifierIconKeys,
+        placement,
+        color,
+        isLight
     });
 
-    if (!iconElement) {
+    if (!iconSequence) {
         return placement === 'offset'
             ? createElement('div', {
                 style: getOffsetSecondarySlotStyle()
@@ -194,11 +302,5 @@ export function renderModifierSupplement({
 
     return createElement('div', {
         style: containerStyle
-    }, placement === 'offset' ? createElement('div', {
-        style: {
-            display: 'inline-flex',
-            transform: 'scale(0.64)',
-            transformOrigin: 'top right'
-        }
-    }, iconElement) : iconElement);
+    }, iconSequence);
 }

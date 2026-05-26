@@ -155,6 +155,11 @@ QMK 公式ドキュメントの `Key` / `Aliases` / `Description` 情報を本�
 - `KC_LEFT_GUI` / `LGUI_T(KC_TAB)` / `MT(MOD_LALT, KC_ESC)`
   - Windows と Mac で tooltip 説明文が適切に変化すること
   - Windows では `GUI` ではなく `Win` 表記になること
+- Mac + Fluent の修飾キー補助表示
+  - 単入力と複合入力で右下の修飾アイコン形状が一貫すること
+  - 複合入力でもフォント記号ではなく SVG アイコン列が使われること
+  - 複合入力ではアイコン間の `+` 区切りが維持されること
+  - `+` 区切りを含めて、アイコン列全体の位置が安定すること
 - `MACRO(n)`
   - ツールチップにマクロ内容が自然言語の英語で表示されること
 - Description 未登録のキー
