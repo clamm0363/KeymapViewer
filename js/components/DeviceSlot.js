@@ -152,10 +152,10 @@ export function DeviceSlot({
         onDragOver: (e) => onDragOver(e, dev.id),
         onDragLeave: onDragLeave,
         onDrop: (e) => onDrop(e, dev.id),
-        className: (isLightApp ? 'bg-white/80 border-slate-200' : 'bg-slate-900/40 border-slate-800') + ' relative flex flex-col rounded-[2rem] border-2 transition-all p-6 ' + (dragOverTarget === dev.id ? 'border-blue-400 scale-[1.01]' : '')
+        className: (isLightApp ? 'bg-white/80 border-slate-200' : 'bg-slate-900/40 border-slate-800') + ' relative min-w-0 flex flex-col rounded-[2rem] border-2 transition-all p-4 sm:p-6 ' + (dragOverTarget === dev.id ? 'border-blue-400 scale-[1.01]' : '')
     }, [
-        createElement('div', { key: 'slot-header', className: 'flex justify-between items-start mb-4' }, [
-            createElement('div', { key: 'title-grp', className: 'flex items-center gap-3 flex-1 min-w-0' }, [
+        createElement('div', { key: 'slot-header', className: 'mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between' }, [
+            createElement('div', { key: 'title-grp', className: 'flex min-w-0 flex-1 items-start gap-3' }, [
                 createElement('span', { key: 'slot-idx', className: 'inline-flex items-center justify-center text-[10px] font-black px-2 h-5 rounded-md bg-blue-600 text-white uppercase tracking-wider pt-[1px] flex-shrink-0 whitespace-nowrap' }, 'Slot ' + (idx + 1)),
                 editingDeviceId === dev.id ? 
                     createElement('input', { 
@@ -173,20 +173,22 @@ export function DeviceSlot({
                         ref: (el) => el && el.focus() 
                     }) :
                     createElement(Fragment, { key: 'name-static' }, [
-                        createElement('h2', { 
-                            key: 'h2', 
-                            className: 'text-lg font-black tracking-tight uppercase ' + (isLightApp ? 'text-slate-900' : 'text-slate-100'),
-                            style: { wordSpacing: '0.25em' } 
-                        }, dev.name || 'No Device'),
-                        createElement('button', { key: 'edit-btn', onClick: () => onStartEditing(dev), className: 'p-1 text-slate-400 hover:text-blue-400 transition-colors' }, 
-                            createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, [
-                                createElement('path', { key: 'edit-body', d: 'M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' }),
-                                createElement('path', { key: 'edit-line', d: 'm15 5 4 4' })
-                            ])
-                        )
+                        createElement('div', { key: 'title-stack', className: 'flex min-w-0 flex-1 items-start gap-2' }, [
+                            createElement('h2', { 
+                                key: 'h2', 
+                                className: 'min-w-0 break-words text-lg font-black leading-tight tracking-tight uppercase ' + (isLightApp ? 'text-slate-900' : 'text-slate-100'),
+                                style: { wordSpacing: '0.25em' } 
+                            }, dev.name || 'No Device'),
+                            createElement('button', { key: 'edit-btn', onClick: () => onStartEditing(dev), className: 'flex-shrink-0 p-1 text-slate-400 hover:text-blue-400 transition-colors' }, 
+                                createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, [
+                                    createElement('path', { key: 'edit-body', d: 'M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' }),
+                                    createElement('path', { key: 'edit-line', d: 'm15 5 4 4' })
+                                ])
+                            )
+                        ])
                     ])
             ]),
-            createElement('div', { key: 'header-controls', className: 'flex items-center gap-1' }, [
+            createElement('div', { key: 'header-controls', className: 'flex flex-shrink-0 items-center gap-1 self-end sm:self-start' }, [
                 createElement('button', { key: 'del-btn', onClick: () => onRemoveDevice(dev.id), className: 'p-2 text-slate-400 hover:text-red-400 transition-colors', title: 'Remove Slot' }, 
                     createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, [
                         createElement('path', { key: 'trash-top', d: 'M3 6h18' }),
@@ -294,36 +296,38 @@ export function DeviceSlot({
                         { value: INPUT_DEVICE_KINDS.POINTING_DEVICE, label: 'Pointing' }
                     ];
                     const variantOptions = getVariantOptions(currentSetting.kind);
-                    return createElement('div', { key: 'encoder-sect-' + idx, className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
-                        createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'INPUT e' + idx + ':'),
-                        createElement('div', { key: 'device-kind-btns', className: 'flex gap-4' }, kindOptions.map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
-                            createElement('input', { 
-                                key: 'i', 
-                                type: 'radio', 
-                                name: 'inputDeviceKind-' + idx + '-' + dev.id, 
-                                checked: currentSetting.kind === opt.value,
-                                onChange: () => onUpdateDevice(dev.id, updateInputDeviceSetting(dev, idx, getDefaultInputDeviceSetting(opt.value))),
-                                className: 'hidden' 
-                            }),
-                            createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentSetting.kind === opt.value ? 'border-blue-500' : '') }, 
-                                currentSetting.kind === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
-                            ),
-                            createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentSetting.kind === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
-                        ]))),
-                        createElement('div', { key: 'device-variant-btns', className: 'flex gap-4' }, variantOptions.map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
-                            createElement('input', {
-                                key: 'i',
-                                type: 'radio',
-                                name: 'inputDeviceVariant-' + idx + '-' + dev.id,
-                                checked: currentSetting.variant === opt.value,
-                                onChange: () => onUpdateDevice(dev.id, updateInputDeviceSetting(dev, idx, { variant: opt.value })),
-                                className: 'hidden'
-                            }),
-                            createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentSetting.variant === opt.value ? 'border-blue-500' : '') },
-                                currentSetting.variant === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
-                            ),
-                            createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentSetting.variant === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
-                        ])))
+                    return createElement('div', { key: 'encoder-sect-' + idx, className: 'flex w-full flex-col items-start gap-3 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border md:flex-row md:items-center md:gap-4 ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
+                        createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest md:flex-shrink-0' }, 'INPUT e' + idx + ':'),
+                        createElement('div', { key: 'device-option-groups', className: 'flex w-full flex-wrap items-center gap-3 md:gap-4' }, [
+                            createElement('div', { key: 'device-kind-btns', className: 'flex flex-wrap items-center gap-4' }, kindOptions.map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
+                                createElement('input', { 
+                                    key: 'i', 
+                                    type: 'radio', 
+                                    name: 'inputDeviceKind-' + idx + '-' + dev.id, 
+                                    checked: currentSetting.kind === opt.value,
+                                    onChange: () => onUpdateDevice(dev.id, updateInputDeviceSetting(dev, idx, getDefaultInputDeviceSetting(opt.value))),
+                                    className: 'hidden' 
+                                }),
+                                createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentSetting.kind === opt.value ? 'border-blue-500' : '') }, 
+                                    currentSetting.kind === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                                ),
+                                createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentSetting.kind === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
+                            ]))),
+                            createElement('div', { key: 'device-variant-btns', className: 'flex flex-wrap items-center gap-4' }, variantOptions.map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
+                                createElement('input', {
+                                    key: 'i',
+                                    type: 'radio',
+                                    name: 'inputDeviceVariant-' + idx + '-' + dev.id,
+                                    checked: currentSetting.variant === opt.value,
+                                    onChange: () => onUpdateDevice(dev.id, updateInputDeviceSetting(dev, idx, { variant: opt.value })),
+                                    className: 'hidden'
+                                }),
+                                createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentSetting.variant === opt.value ? 'border-blue-500' : '') },
+                                    currentSetting.variant === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                                ),
+                                createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentSetting.variant === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
+                            ])))
+                        ])
                     ]);
                 }),
 

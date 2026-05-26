@@ -369,7 +369,10 @@ export function App() {
 
     const isLightApp = appTheme === 'light';
     return createElement('div', {
-        className: (isLightApp ? 'app-light' : 'app-dark') + ' min-h-screen min-w-full w-fit px-6 pb-6 md:px-8 md:pb-8 flex flex-col transition-colors duration-300'
+        className: (isLightApp ? 'app-light' : 'app-dark') + ' min-h-screen w-full max-w-full px-4 pb-4 sm:px-6 sm:pb-6 md:px-8 md:pb-8 flex flex-col transition-colors duration-300',
+        style: {
+            overflowX: 'clip'
+        }
     }, [
         createElement(Header, {
             key: 'header',
