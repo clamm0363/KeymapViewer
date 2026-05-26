@@ -12,6 +12,18 @@ import { ExportModal } from './components/Modals/ExportModal.js';
 import { Keyboard } from './components/Keyboard.js';
 
 const CURRENT_VERSION = '1.2.5';
+const DEFAULT_DISPLAY_SCALE = 1;
+const MIN_DISPLAY_SCALE = 0.35;
+const MAX_DISPLAY_SCALE = 1.6;
+
+function normalizeDisplayScale(value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : DEFAULT_DISPLAY_SCALE;
+}
+
+function clampDisplayScale(value) {
+    return Math.min(MAX_DISPLAY_SCALE, Math.max(MIN_DISPLAY_SCALE, normalizeDisplayScale(value)));
+}
 
 function buildInputDeviceSettings(inputDeviceSettings = {}, encoderStyles = {}) {
     const next = { ...inputDeviceSettings };
@@ -37,6 +49,8 @@ function createEmptyDevice() {
         inputDeviceSettings: {},
         layoutOptions: {},
         separation: 'DISABLE',
+        displayScale: DEFAULT_DISPLAY_SCALE,
+        followScale: false,
         showSettings: false
     };
 }
@@ -70,6 +84,8 @@ export function App() {
                             inputDeviceSettings: buildInputDeviceSettings(parsed.inputDeviceSettings, parsed.encoderStyles),
                             layoutOptions: parsed.layoutOptions || {},
                             separation: parsed.separation || 'DISABLE',
+                            displayScale: normalizeDisplayScale(parsed.displayScale),
+                            followScale: !!parsed.followScale,
                             macroAliases: parsed.keymapJson?.macroAliases || {},
                             showSettings: false
                         }];
@@ -83,7 +99,9 @@ export function App() {
         if (saved && saved.devices && saved.devices.length > 0) {
             return saved.devices.map(device => ({
                 ...device,
-                inputDeviceSettings: buildInputDeviceSettings(device.inputDeviceSettings, device.encoderStyles)
+                inputDeviceSettings: buildInputDeviceSettings(device.inputDeviceSettings, device.encoderStyles),
+                displayScale: normalizeDisplayScale(device.displayScale),
+                followScale: !!device.followScale
             }));
         }
         return [createEmptyDevice()];
@@ -102,6 +120,8 @@ export function App() {
     const [isExporting, setIsExporting] = useState(false);
     const isInitialMount = useRef(true);
     const exportRef = useRef(null);
+    const draggedSlotElementRef = useRef(null);
+    const slotScaleMetricsRef = useRef({});
 
     useEffect(() => {
         // Skip loading samples if we already have a loaded device design (e.g. from saved state or URL sharing)
@@ -149,6 +169,8 @@ export function App() {
                         encoderStyles: data.encoderStyles || {},
                         inputDeviceSettings: buildInputDeviceSettings(data.inputDeviceSettings, data.encoderStyles),
                         layoutOptions: {},
+                        displayScale: DEFAULT_DISPLAY_SCALE,
+                        followScale: false,
                         macroAliases: keymapJson.macroAliases,
                         showSettings: false
                     };
@@ -236,7 +258,57 @@ export function App() {
     };
 
     const updateDevice = (id, data) => {
-        setDevices(prev => prev.map(d => d.id === id ? { ...d, ...data } : d));
+        setDevices(prev => {
+            const next = prev.map(d => d.id === id ? { ...d, ...data } : d);
+            if (!Object.prototype.hasOwnProperty.call(data, 'displayScale')) {
+                return next;
+            }
+
+            const sourceMetrics = slotScaleMetricsRef.current[id];
+            const nextSource = next.find(d => d.id === id);
+            if (!sourceMetrics || !nextSource || !Number.isFinite(sourceMetrics.autoFitScale) || sourceMetrics.autoFitScale <= 0) {
+                return next;
+            }
+
+            const targetFinalScale = sourceMetrics.autoFitScale * clampDisplayScale(nextSource.displayScale);
+
+            return next.map(device => {
+                if (device.id === id || !device.followScale) return device;
+                const metrics = slotScaleMetricsRef.current[device.id];
+                if (!metrics || !Number.isFinite(metrics.autoFitScale) || metrics.autoFitScale <= 0) {
+                    return device;
+                }
+                return {
+                    ...device,
+                    displayScale: clampDisplayScale(targetFinalScale / metrics.autoFitScale)
+                };
+            });
+        });
+    };
+
+    const handleMatchKeySize = () => {
+        const metricsEntries = devices
+            .filter(dev => !!dev.design)
+            .map(dev => ({
+                id: dev.id,
+                metrics: slotScaleMetricsRef.current[dev.id]
+            }))
+            .filter(entry => entry.metrics && Number.isFinite(entry.metrics.autoFitScale) && entry.metrics.autoFitScale > 0);
+
+        if (metricsEntries.length < 2) return;
+
+        const targetScale = Math.min(...metricsEntries.map(entry => entry.metrics.autoFitScale));
+
+        setDevices(prev => prev.map(device => {
+            const metrics = slotScaleMetricsRef.current[device.id];
+            if (!device.design || !metrics || !Number.isFinite(metrics.autoFitScale) || metrics.autoFitScale <= 0) {
+                return device;
+            }
+            return {
+                ...device,
+                displayScale: clampDisplayScale(targetScale / metrics.autoFitScale)
+            };
+        }));
     };
 
     const handleFile = (e, id, type) => {
@@ -289,11 +361,28 @@ export function App() {
         setDraggedSlotId(devId);
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('application/slot-id', devId.toString());
-        requestAnimationFrame(() => { e.target.style.opacity = '0.4'; });
+        const slotElement = e.currentTarget.closest('[data-slot-root="true"]');
+        draggedSlotElementRef.current = slotElement || null;
+        if (slotElement) {
+            const rect = slotElement.getBoundingClientRect();
+            e.dataTransfer.setDragImage(
+                slotElement,
+                Math.min(Math.max(e.clientX - rect.left, 24), rect.width - 24),
+                Math.min(Math.max(e.clientY - rect.top, 24), rect.height - 24)
+            );
+        }
+        requestAnimationFrame(() => {
+            if (draggedSlotElementRef.current) {
+                draggedSlotElementRef.current.style.opacity = '0.4';
+            }
+        });
     };
 
-    const handleSlotDragEnd = (e) => {
-        if (e.target) e.target.style.opacity = '1';
+    const handleSlotDragEnd = () => {
+        if (draggedSlotElementRef.current) {
+            draggedSlotElementRef.current.style.opacity = '1';
+            draggedSlotElementRef.current = null;
+        }
         setDraggedSlotId(null);
         setDragOverTarget(null);
     };
@@ -381,7 +470,7 @@ export function App() {
             deviceCount: devices.length,
             onShowHelp: () => setShowHelp(true),
             onShowLinks: () => setShowLinks(true),
-            onAddSlot: addSlot,
+            onMatchKeySize: handleMatchKeySize,
             onSetLayoutMode: setLayoutMode,
             onSetAppTheme: setAppTheme,
             appTheme
@@ -448,6 +537,7 @@ export function App() {
                     inputDeviceSettings: dev.inputDeviceSettings || {},
                     layoutOptions: dev.layoutOptions || {},
                     forcedScale: 1.0,
+                    userScale: normalizeDisplayScale(dev.displayScale),
                     separation: dev.separation || 'DISABLE'
                 })
             ]);
@@ -476,12 +566,15 @@ export function App() {
                     onSetEditingName: setEditingName,
                     onFileHandle: handleFile,
                     onSetMacroModal: setMacroModalState,
+                    onScaleMetricsChange: (metrics) => {
+                        slotScaleMetricsRef.current[dev.id] = metrics;
+                    },
                     onSetExportModal: (d) => { 
                         setExportModalDevId(d.id); 
                         setExportSettings({ layers: [d.layer], includeMacros: true, background: isLightApp ? 'Light' : 'Dark' }); 
                     }
                 })),
-                
+
                 devices.length < 4 ? createElement('div', { 
                     key: 'add-slot',
                     onClick: addSlot,

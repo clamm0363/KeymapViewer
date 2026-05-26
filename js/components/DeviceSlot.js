@@ -9,6 +9,15 @@ import {
     toLegacyEncoderStyle
 } from './inputDeviceSettings.js';
 
+const MIN_DISPLAY_SCALE = 0.35;
+const MAX_DISPLAY_SCALE = 1.6;
+const DEFAULT_DISPLAY_SCALE = 1;
+
+const normalizeDisplayScale = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : DEFAULT_DISPLAY_SCALE;
+};
+
 const getEncoderIndices = (design) => {
     if (!design || !design.layouts || !design.layouts.keymap) return [];
     const indices = new Set();
@@ -103,7 +112,8 @@ export function DeviceSlot({
     onSetEditingName,
     onFileHandle,
     onSetMacroModal,
-    onSetExportModal
+    onSetExportModal,
+    onScaleMetricsChange
 }) {
     const [copied, setCopied] = useState(false);
     const hasData = !!dev.design;
@@ -113,6 +123,8 @@ export function DeviceSlot({
     const hasEncoders = encoderIndices.length > 0;
     const hasLayoutOptions = !!(dev.design && dev.design.layouts && dev.design.layouts.labels && dev.design.layouts.labels.length > 0);
     const hasDeviceSpecificOptions = showSeparation || hasEncoders || hasLayoutOptions;
+    const currentDisplayScale = normalizeDisplayScale(dev.displayScale);
+    const isScaleFollowing = !!dev.followScale;
 
     const handleShare = () => {
         if (!hasData) return;
@@ -127,7 +139,9 @@ export function DeviceSlot({
                 encoderStyles: dev.encoderStyles,
                 inputDeviceSettings: dev.inputDeviceSettings,
                 layoutOptions: dev.layoutOptions,
-                separation: dev.separation
+                separation: dev.separation,
+                displayScale: normalizeDisplayScale(dev.displayScale),
+                followScale: !!dev.followScale
             };
             const compressed = window.LZString.compressToEncodedURIComponent(JSON.stringify(shareData));
             const shareUrl = window.location.origin + window.location.pathname + '?data=' + compressed;
@@ -146,14 +160,47 @@ export function DeviceSlot({
 
     return createElement('div', { 
         key: dev.id,
-        draggable: true,
-        onDragStart: (e) => onDragStart(e, dev.id),
-        onDragEnd: onDragEnd,
+        'data-slot-root': 'true',
         onDragOver: (e) => onDragOver(e, dev.id),
         onDragLeave: onDragLeave,
         onDrop: (e) => onDrop(e, dev.id),
-        className: (isLightApp ? 'bg-white/80 border-slate-200' : 'bg-slate-900/40 border-slate-800') + ' relative min-w-0 flex flex-col rounded-[2rem] border-2 transition-all p-4 sm:p-6 ' + (dragOverTarget === dev.id ? 'border-blue-400 scale-[1.01]' : '')
+        className: (isLightApp ? 'bg-white/80 border-slate-200' : 'bg-slate-900/40 border-slate-800') + ' relative min-w-0 flex flex-col rounded-[2rem] border-2 transition-all px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-8 ' + (dragOverTarget === dev.id ? 'border-blue-400 scale-[1.01]' : '')
     }, [
+        createElement('div', {
+            key: 'drag-handle-wrap',
+            className: 'pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2'
+        }, createElement('div', {
+            draggable: true,
+            onDragStart: (e) => onDragStart(e, dev.id),
+            onDragEnd: onDragEnd,
+            title: 'Drag Slot',
+            className: 'pointer-events-auto flex h-9 min-w-[132px] cursor-grab active:cursor-grabbing items-center justify-center gap-3 rounded-full border px-4 shadow-lg backdrop-blur-sm transition-colors ' + (
+                isLightApp
+                    ? 'border-slate-200 bg-white/95 text-slate-500 hover:border-blue-300 hover:text-blue-600'
+                    : 'border-slate-700 bg-slate-950/90 text-slate-500 hover:border-blue-500/60 hover:text-blue-300'
+            )
+        }, [
+            createElement('span', {
+                key: 'drag-grip',
+                className: 'inline-flex items-center gap-1'
+            }, [
+                createElement('span', { key: 'dot-1', className: 'h-1.5 w-1.5 rounded-full bg-current opacity-70' }),
+                createElement('span', { key: 'dot-2', className: 'h-1.5 w-1.5 rounded-full bg-current opacity-70' }),
+                createElement('span', { key: 'dot-3', className: 'h-1.5 w-1.5 rounded-full bg-current opacity-70' })
+            ]),
+            createElement('span', {
+                key: 'drag-label',
+                className: 'text-[9px] font-black uppercase tracking-[0.28em]'
+            }, 'Move Slot'),
+            createElement('span', {
+                key: 'drag-grip-2',
+                className: 'inline-flex items-center gap-1'
+            }, [
+                createElement('span', { key: 'dot-1', className: 'h-1.5 w-1.5 rounded-full bg-current opacity-70' }),
+                createElement('span', { key: 'dot-2', className: 'h-1.5 w-1.5 rounded-full bg-current opacity-70' }),
+                createElement('span', { key: 'dot-3', className: 'h-1.5 w-1.5 rounded-full bg-current opacity-70' })
+            ])
+        ])),
         createElement('div', { key: 'slot-header', className: 'mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between' }, [
             createElement('div', { key: 'title-grp', className: 'flex min-w-0 flex-1 items-start gap-3' }, [
                 createElement('span', { key: 'slot-idx', className: 'inline-flex items-center justify-center text-[10px] font-black px-2 h-5 rounded-md bg-blue-600 text-white uppercase tracking-wider pt-[1px] flex-shrink-0 whitespace-nowrap' }, 'Slot ' + (idx + 1)),
@@ -238,6 +285,62 @@ export function DeviceSlot({
                         ),
                         createElement('span', { key: 's', className: 'text-[9px] font-bold ' + ((dev.keyStyle || 'Windows') === opt ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
                     ])))
+                ]),
+                createElement('div', { key: 'scale-sect', className: 'flex min-w-[260px] flex-1 items-center gap-3 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
+                    createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest whitespace-nowrap' }, 'SCALE:'),
+                    createElement('input', {
+                        key: 'slider',
+                        type: 'range',
+                        min: String(MIN_DISPLAY_SCALE * 100),
+                        max: String(MAX_DISPLAY_SCALE * 100),
+                        step: '5',
+                        value: String(Math.round(currentDisplayScale * 100)),
+                        disabled: isScaleFollowing,
+                        onInput: (e) => onUpdateDevice(dev.id, { displayScale: Number(e.target.value) / 100 }),
+                        className: 'flex-1 min-w-[120px] accent-blue-500 ' + (isScaleFollowing ? 'opacity-40 cursor-not-allowed' : '')
+                    }),
+                    createElement('span', { key: 'value', className: 'w-12 text-right text-[10px] font-black ' + (isScaleFollowing ? 'text-slate-400' : (isLightApp ? 'text-slate-700' : 'text-slate-200')) + ' uppercase tracking-widest' }, `${Math.round(currentDisplayScale * 100)}%`),
+                    createElement('button', {
+                        key: 'reset',
+                        disabled: isScaleFollowing,
+                        onClick: () => onUpdateDevice(dev.id, { displayScale: DEFAULT_DISPLAY_SCALE }),
+                        className: ((isScaleFollowing
+                            ? (isLightApp ? 'bg-slate-100 text-slate-400' : 'bg-slate-900/60 text-slate-500')
+                            : (isLightApp ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'))
+                            + ' px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ' + (isScaleFollowing ? 'cursor-not-allowed' : ''))
+                    }, '100%'),
+                    createElement('label', { key: 'follow-lbl', className: 'flex items-center gap-2 cursor-pointer select-none' }, [
+                        createElement('input', {
+                            key: 'follow-input',
+                            type: 'checkbox',
+                            checked: isScaleFollowing,
+                            onChange: (e) => onUpdateDevice(dev.id, { followScale: e.target.checked }),
+                            className: 'sr-only'
+                        }),
+                        createElement('span', {
+                            key: 'follow-box',
+                            className: 'flex h-5 w-5 items-center justify-center rounded-md border transition-all ' + (
+                                isScaleFollowing
+                                    ? 'border-blue-500 bg-blue-500 text-white'
+                                    : (isLightApp ? 'border-slate-300 bg-white text-transparent' : 'border-slate-600 bg-slate-900/60 text-transparent')
+                            )
+                        }, createElement('svg', {
+                            width: 12,
+                            height: 12,
+                            viewBox: '0 0 16 16',
+                            fill: 'none',
+                            stroke: 'currentColor',
+                            strokeWidth: 2.4,
+                            strokeLinecap: 'round',
+                            strokeLinejoin: 'round'
+                        }, [
+                            createElement('path', { key: 'check', d: 'M3.5 8.5 6.5 11.5 12.5 4.5' })
+                        ])),
+                        createElement('span', {
+                            key: 'follow-text',
+                            className: 'text-[9px] font-black uppercase tracking-widest ' + (isScaleFollowing ? (isLightApp ? 'text-blue-600' : 'text-blue-300') : (isLightApp ? 'text-slate-500' : 'text-slate-400'))
+                        }, 'FOLLOW SIZE')
+                    ])
                 ])
             ]),
 
@@ -420,10 +523,12 @@ export function DeviceSlot({
                     macroAliases: dev.macroAliases || {},
                     onMacroClick: (macroId) => onSetMacroModal({ deviceId: dev.id, macroId }),
                     keyStyle: dev.keyStyle || 'Windows',
+                    userScale: currentDisplayScale,
                     separation: dev.separation || 'DISABLE',
                     encoderStyles: dev.encoderStyles || {},
                     inputDeviceSettings: dev.inputDeviceSettings || {},
-                    layoutOptions: dev.layoutOptions || {}
+                    layoutOptions: dev.layoutOptions || {},
+                    onScaleMetricsChange
                 })
             )
         ]) : createElement('div', { key: 'empty-area', className: 'py-20 text-center opacity-20' }, [

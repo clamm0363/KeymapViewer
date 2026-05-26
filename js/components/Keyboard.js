@@ -4,10 +4,10 @@ const html = htm.bind(createElement);
 import { findSplitX } from '../utils/helpers.js';
 import { Keycap } from './Keycap.js';
 
-export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, keyStyle = 'Windows', separation = 'DISABLE', encoderStyles = {}, inputDeviceSettings = {}, layoutOptions = {} }) {
+export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 'Fluent', theme = 'System', appTheme = 'dark', macroAliases = {}, onMacroClick = null, forcedScale = null, userScale = 1, keyStyle = 'Windows', separation = 'DISABLE', encoderStyles = {}, inputDeviceSettings = {}, layoutOptions = {}, onScaleMetricsChange = null }) {
     const [codes, setCodes] = useState({});
     const containerRef = useRef(null);
-    const [scale, setScale] = useState(1);
+    const [autoFitScale, setAutoFitScale] = useState(1);
     
     const isLight = theme === 'Light' || (theme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
     const isAppDark = (appTheme === 'dark' || (appTheme === 'System' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
@@ -114,7 +114,7 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
 
     useEffect(() => {
         if (forcedScale !== null) {
-            setScale(forcedScale);
+            setAutoFitScale(1);
             return;
         }
 
@@ -124,8 +124,8 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
                 const containerWidth = entry.contentRect.width;
                 const available = Math.max(0, containerWidth - 48);
                 let nextScale = available / maxWidth;
-                if (nextScale > 1.4) nextScale = 1.4;
-                setScale(nextScale);
+                if (nextScale > 1) nextScale = 1;
+                setAutoFitScale(Math.max(0.35, nextScale));
             }
         });
         observer.observe(containerRef.current);
@@ -144,7 +144,22 @@ export function Keyboard({ design, layer = 0, externalMap = null, displayMode = 
         }
     }, [design, layer, externalMap]);
 
-    const finalScale = forcedScale !== null ? forcedScale : scale;
+    const normalizedUserScale = Number.isFinite(Number(userScale)) && Number(userScale) > 0
+        ? Number(userScale)
+        : 1;
+    const baseScale = forcedScale !== null ? forcedScale : autoFitScale;
+    const finalScale = baseScale * normalizedUserScale;
+
+    useEffect(() => {
+        if (typeof onScaleMetricsChange === 'function') {
+            onScaleMetricsChange({
+                autoFitScale,
+                finalScale,
+                maxWidth,
+                maxHeight
+            });
+        }
+    }, [autoFitScale, finalScale, maxWidth, maxHeight, onScaleMetricsChange]);
 
     if (filteredKeys.length === 0) return null;
 
