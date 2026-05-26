@@ -112,8 +112,7 @@ export function App() {
                 { file: 'SampleLayouts/sample_tkl_jp.json', keyStyle: 'Windows' },
                 { file: 'SampleLayouts/sample_100_win.json', keyStyle: 'Windows' },
                 { file: 'SampleLayouts/sample_hhkb_mac.json', keyStyle: 'Mac' },
-                { file: 'SampleLayouts/sample_numpad.json', keyStyle: 'Windows' },
-                { file: 'SampleLayouts/sample_dual_encoder.json', keyStyle: 'Windows' }
+                { file: 'SampleLayouts/sample_numpad.json', keyStyle: 'Windows' }
             ];
 
             try {
