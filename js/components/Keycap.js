@@ -1,7 +1,6 @@
 const { createElement } = React;
 
 import { parseKeyLabel } from '../utils/labelParser.js';
-import { toCanonicalKeycodeDisplay } from '../keymap-dictionary.js';
 import {
     getKeycapFrameStyle,
     getModColor,
@@ -16,6 +15,7 @@ import {
     normalizeTargetIconKey,
     shortenLabel
 } from './keycapIconUtils.js';
+import { buildStandardKeyTooltip } from './keycapTooltip.js';
 import { renderEncoderKeycap } from './keycapEncoder.js';
 import {
     renderLayerKeycap,
@@ -171,7 +171,7 @@ export function Keycap({
     if (manualWrap) targetScale = Math.min(0.9, targetScale);
 
     const displayRaw = displayRawForRGB;
-    const tooltipKeycode = toCanonicalKeycodeDisplay(val || fullRaw);
+    const tooltipText = buildStandardKeyTooltip(val || fullRaw, keyStyle);
 
     if (actuallyShowingSvg) {
         targetScale = 1.11;
@@ -274,7 +274,7 @@ export function Keycap({
     return createElement('div', {
         key: i,
         className: `key-cap group${k.isJIS ? ' jis-key' : ''}`,
-        title: tooltipKeycode,
+        title: tooltipText,
         'data-key-raw': displayRaw,
         onClick: (e) => {
             const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);

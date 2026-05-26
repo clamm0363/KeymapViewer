@@ -1,8 +1,8 @@
 const { createElement } = React;
 
-import { toCanonicalKeycodeDisplay } from '../keymap-dictionary.js';
 import { parseKeyLabel } from '../utils/labelParser.js';
 import { buildDisplayRaw } from './keycapIconUtils.js';
+import { buildEncoderTooltip } from './keycapTooltip.js';
 import { getEncoderActions, getKeycapFrameStyle } from './keycapStyles.js';
 import { resolveInputDeviceSetting } from './inputDeviceSettings.js';
 
@@ -35,69 +35,28 @@ function getPointingKeyMeta(keycode) {
     return pointingMap[normalized] || null;
 }
 
-function buildTrackballTooltipLines({ ccwLabel, cwLabel, ccwCode, cwCode }) {
+function getTrackballTooltipPrefixes(cwCode, ccwCode) {
     const cwMeta = getPointingKeyMeta(cwCode);
     const ccwMeta = getPointingKeyMeta(ccwCode);
-    const canonicalCwCode = toCanonicalKeycodeDisplay(cwCode);
-    const canonicalCcwCode = toCanonicalKeycodeDisplay(ccwCode);
 
-    if (cwMeta && ccwMeta && (cwMeta.kind === 'cursor' || cwMeta.kind === 'wheel') && cwMeta.kind === ccwMeta.kind) {
-        return [
-            `${cwMeta.axisLabel}: ${cwLabel || 'None'} (${canonicalCwCode})`,
-            `${ccwMeta.axisLabel}: ${ccwLabel || 'None'} (${canonicalCcwCode})`
-        ];
+    if (!cwMeta || !ccwMeta || cwMeta.kind !== ccwMeta.kind) {
+        return {
+            cwPrefix: 'CW-MAPPED',
+            ccwPrefix: 'CCW-MAPPED'
+        };
     }
 
-    if (cwMeta && ccwMeta && cwMeta.kind === ccwMeta.kind && (cwMeta.kind === 'button' || cwMeta.kind === 'accel')) {
-        return [
-            `${cwMeta.axisLabel}: ${cwLabel || 'None'} (${canonicalCwCode})`,
-            `${ccwMeta.axisLabel}: ${ccwLabel || 'None'} (${canonicalCcwCode})`
-        ];
+    if (cwMeta.kind === 'cursor' || cwMeta.kind === 'wheel' || cwMeta.kind === 'button' || cwMeta.kind === 'accel') {
+        return {
+            cwPrefix: cwMeta.axisLabel,
+            ccwPrefix: ccwMeta.axisLabel
+        };
     }
 
-    return [
-        `CW-MAPPED: ${cwLabel || 'None'} (${canonicalCwCode})`,
-        `CCW-MAPPED: ${ccwLabel || 'None'} (${canonicalCcwCode})`
-    ];
-}
-
-function buildEncoderTooltipText({ encoderIndex, currentStyle, pushText, val, ccwActions, ccwLabel, cwLabel, ccwCode, cwCode }) {
-    const canonicalPushCode = toCanonicalKeycodeDisplay(val || 'KC_NO');
-    const canonicalCwCode = toCanonicalKeycodeDisplay(cwCode);
-    const canonicalCcwCode = toCanonicalKeycodeDisplay(ccwCode);
-    let tooltipText = `Encoder e${encoderIndex}\n`;
-    tooltipText += `Push: ${pushText || 'None'} (${canonicalPushCode})`;
-
-    if (!ccwActions) {
-        return tooltipText;
-    }
-
-    if (currentStyle === 'VerticalWheel') {
-        tooltipText += `\nUP: ${cwLabel || 'None'} (${canonicalCwCode})`;
-        tooltipText += `\nDOWN: ${ccwLabel || 'None'} (${canonicalCcwCode})`;
-        return tooltipText;
-    }
-
-    if (currentStyle === 'HorizontalWheel') {
-        tooltipText += `\nRIGHT: ${cwLabel || 'None'} (${canonicalCwCode})`;
-        tooltipText += `\nLEFT: ${ccwLabel || 'None'} (${canonicalCcwCode})`;
-        return tooltipText;
-    }
-
-    if (currentStyle === 'Trackball' || currentStyle === 'Touchpad') {
-        const trackballLines = buildTrackballTooltipLines({
-            ccwLabel,
-            cwLabel,
-            ccwCode,
-            cwCode
-        });
-        tooltipText += `\n${trackballLines.join('\n')}`;
-        return tooltipText;
-    }
-
-    tooltipText += `\nCW (Clockwise): ${cwLabel || 'None'} (${canonicalCwCode})`;
-    tooltipText += `\nCCW (Counter-Clockwise): ${ccwLabel || 'None'} (${canonicalCcwCode})`;
-    return tooltipText;
+    return {
+        cwPrefix: 'CW-MAPPED',
+        ccwPrefix: 'CCW-MAPPED'
+    };
 }
 
 function getEncoderChildElements(currentStyle, isLight) {
@@ -362,16 +321,20 @@ export function renderEncoderKeycap({
 
     const parsedPush = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases);
     const pushText = parsedPush.displayText;
-    const tooltipText = buildEncoderTooltipText({
+    const { cwPrefix, ccwPrefix } = getTrackballTooltipPrefixes(cwCode, ccwCode);
+    const tooltipText = buildEncoderTooltip({
         encoderIndex: k.encoderIndex,
-        currentStyle,
         pushText,
-        val,
+        pushCode: val,
+        keyStyle,
+        currentStyle,
         ccwActions,
         ccwLabel,
         cwLabel,
         ccwCode,
-        cwCode
+        cwCode,
+        trackballCwPrefix: cwPrefix,
+        trackballCcwPrefix: ccwPrefix
     });
 
     const displayRaw = buildDisplayRaw(fullRaw, val);

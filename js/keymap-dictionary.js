@@ -1,5 +1,7 @@
 // js/keymap-dictionary.js
 
+import { QMK_KEYCODE_METADATA } from './qmk-keycode-metadata.js';
+
 const MODIFIER_LABEL_ALIASES = {
   SHIFT: 'SHFT',
   SHFT: 'SHFT',
@@ -863,6 +865,20 @@ const phraseTextOverrides = {
 };
 
 const preferredOfficialKeycodeDisplay = new Map([
+  ['KC_ENT', 'KC_ENTER'],
+  ['KC_ESC', 'KC_ESCAPE'],
+  ['KC_BSPC', 'KC_BACKSPACE'],
+  ['KC_SPC', 'KC_SPACE'],
+  ['KC_MINS', 'KC_MINUS'],
+  ['KC_EQL', 'KC_EQUAL'],
+  ['KC_LBRC', 'KC_LEFT_BRACKET'],
+  ['KC_RBRC', 'KC_RIGHT_BRACKET'],
+  ['KC_BSLS', 'KC_BACKSLASH'],
+  ['KC_NUHS', 'KC_NONUS_HASH'],
+  ['KC_SCLN', 'KC_SEMICOLON'],
+  ['KC_QUOT', 'KC_QUOTE'],
+  ['KC_GRV', 'KC_GRAVE'],
+  ['KC_COMM', 'KC_COMMA'],
   ['KC_LCTL', 'KC_LEFT_CTRL'],
   ['KC_RCTL', 'KC_RIGHT_CTRL'],
   ['KC_LSFT', 'KC_LEFT_SHIFT'],
@@ -1046,6 +1062,34 @@ const tooltipWrapperTokens = new Set([
   'RAG',
   'MEH',
   'HYPR',
+  'LCTL_T',
+  'LSFT_T',
+  'LALT_T',
+  'LGUI_T',
+  'LCS_T',
+  'LCA_T',
+  'LCG_T',
+  'LSA_T',
+  'LSG_T',
+  'LAG_T',
+  'LCSG_T',
+  'LCAG_T',
+  'LSAG_T',
+  'RCTL_T',
+  'RSFT_T',
+  'RALT_T',
+  'RGUI_T',
+  'RCS_T',
+  'RCA_T',
+  'RCG_T',
+  'RSA_T',
+  'RSG_T',
+  'RAG_T',
+  'RCSG_T',
+  'RCAG_T',
+  'RSAG_T',
+  'MEH_T',
+  'HYPR_T',
   'MACRO',
   'CUSTOM',
   'MOD_LCTL',
@@ -1077,6 +1121,92 @@ const tooltipWrapperAliasMap = new Map([
   ['HYPR', ['LCTL', 'LALT', 'LSFT', 'LGUI']]
 ]);
 
+const tooltipTemplateAliasMap = new Map([
+  ['CTL_T', 'LCTL_T'],
+  ['SFT_T', 'LSFT_T'],
+  ['ALT_T', 'LALT_T'],
+  ['LOPT_T', 'LALT_T'],
+  ['OPT_T', 'LALT_T'],
+  ['GUI_T', 'LGUI_T'],
+  ['LCMD_T', 'LGUI_T'],
+  ['LWIN_T', 'LGUI_T'],
+  ['CMD_T', 'LGUI_T'],
+  ['WIN_T', 'LGUI_T'],
+  ['ROPT_T', 'RALT_T'],
+  ['ALGR_T', 'RALT_T'],
+  ['RCMD_T', 'RGUI_T'],
+  ['RWIN_T', 'RGUI_T']
+]);
+
+const tooltipWrapperDescriptions = {
+  LCTL: 'Hold Left Control and press',
+  LSFT: 'Hold Left Shift and press',
+  LALT: 'Hold Left Alt and press',
+  LGUI: 'Hold Left GUI and press',
+  RCTL: 'Hold Right Control and press',
+  RSFT: 'Hold Right Shift and press',
+  RALT: 'Hold Right Alt and press',
+  RGUI: 'Hold Right GUI and press'
+};
+
+const tooltipModTapDescriptions = {
+  LCTL_T: 'Left Control when held',
+  LSFT_T: 'Left Shift when held',
+  LALT_T: 'Left Alt when held',
+  LGUI_T: 'Left GUI when held',
+  LCS_T: 'Left Control and Left Shift when held',
+  LCA_T: 'Left Control and Left Alt when held',
+  LCG_T: 'Left Control and Left GUI when held',
+  LSA_T: 'Left Shift and Left Alt when held',
+  LSG_T: 'Left Shift and Left GUI when held',
+  LAG_T: 'Left Alt and Left GUI when held',
+  LCSG_T: 'Left Control, Left Shift and Left GUI when held',
+  LCAG_T: 'Left Control, Left Alt and Left GUI when held',
+  LSAG_T: 'Left Shift, Left Alt and Left GUI when held',
+  RCTL_T: 'Right Control when held',
+  RSFT_T: 'Right Shift when held',
+  RALT_T: 'Right Alt when held',
+  RGUI_T: 'Right GUI when held',
+  RCS_T: 'Right Control and Right Shift when held',
+  RCA_T: 'Right Control and Right Alt when held',
+  RCG_T: 'Right Control and Right GUI when held',
+  RSA_T: 'Right Shift and Right Alt when held',
+  RSG_T: 'Right Shift and Right GUI when held',
+  RAG_T: 'Right Alt and Right GUI when held',
+  RCSG_T: 'Right Control, Right Shift and Right GUI when held',
+  RCAG_T: 'Right Control, Right Alt and Right GUI when held',
+  RSAG_T: 'Right Shift, Right Alt and Right GUI when held',
+  MEH_T: 'Left Control, Left Shift and Left Alt when held',
+  HYPR_T: 'Left Control, Left Shift, Left Alt and Left GUI when held'
+};
+
+const tooltipModifierNameByStyle = {
+  Windows: {
+    LCTL: 'Left Control',
+    LSFT: 'Left Shift',
+    LALT: 'Left Alt',
+    LGUI: 'Left GUI',
+    RCTL: 'Right Control',
+    RSFT: 'Right Shift',
+    RALT: 'Right Alt',
+    RGUI: 'Right GUI',
+    MEH: 'Left Control, Left Shift and Left Alt',
+    HYPR: 'Left Control, Left Shift, Left Alt and Left GUI'
+  },
+  Mac: {
+    LCTL: 'Left Control',
+    LSFT: 'Left Shift',
+    LALT: 'Left Option',
+    LGUI: 'Left Command',
+    RCTL: 'Right Control',
+    RSFT: 'Right Shift',
+    RALT: 'Right Option',
+    RGUI: 'Right Command',
+    MEH: 'Left Control, Left Shift and Left Option',
+    HYPR: 'Left Control, Left Shift, Left Option and Left Command'
+  }
+};
+
 function splitTopLevelArgs(source) {
   const args = [];
   let depth = 0;
@@ -1101,8 +1231,143 @@ function canonicalizeTooltipAtom(token) {
   if (tooltipWrapperTokens.has(upper)) {
     return upper;
   }
+  if (tooltipTemplateAliasMap.has(upper)) {
+    return tooltipTemplateAliasMap.get(upper);
+  }
   const canonical = resolveKeycodeAlias(upper) || upper;
   return preferredOfficialKeycodeDisplay.get(canonical) || canonical;
+}
+
+function normalizeKeyStyle(keyStyle = 'Windows') {
+  return keyStyle === 'Mac' ? 'Mac' : 'Windows';
+}
+
+function getStyledModifierName(token, keyStyle = 'Windows') {
+  const styleKey = normalizeKeyStyle(keyStyle);
+  const normalizedToken = token.replace(/^MOD_/, '').replace(/^KC_/, '');
+  return tooltipModifierNameByStyle[styleKey][normalizedToken] || normalizedToken;
+}
+
+function formatDirectDescriptionForKeyStyle(officialCode, description, keyStyle = 'Windows') {
+  if (!description) return '';
+  const styleKey = normalizeKeyStyle(keyStyle);
+  if (styleKey === 'Windows') return description;
+
+  const macOverrides = {
+    KC_LEFT_ALT: 'Left Option',
+    KC_RIGHT_ALT: 'Right Option',
+    KC_LEFT_GUI: 'Left Command',
+    KC_RIGHT_GUI: 'Right Command',
+    KC_APPLICATION: 'Application (context menu key)',
+    KC_MISSION_CONTROL: 'Open Mission Control',
+    KC_LAUNCHPAD: 'Open Launchpad'
+  };
+
+  if (macOverrides[officialCode]) {
+    return macOverrides[officialCode];
+  }
+
+  return description
+    .replace(/\bLeft Alt\b/g, 'Left Option')
+    .replace(/\bRight Alt\b/g, 'Right Option')
+    .replace(/\bLeft GUI\b/g, 'Left Command')
+    .replace(/\bRight GUI\b/g, 'Right Command');
+}
+
+function extractWrappedExpressionParts(source) {
+  if (!isWrappedExpression(source)) return null;
+  const openIndex = source.indexOf('(');
+  return {
+    token: source.slice(0, openIndex).trim().toUpperCase(),
+    args: splitTopLevelArgs(source.slice(openIndex + 1, -1))
+  };
+}
+
+function getDirectKeycodeDescription(code, keyStyle = 'Windows') {
+  const officialCode = toCanonicalKeycodeDisplay(code);
+  const description = QMK_KEYCODE_METADATA[officialCode]?.description || '';
+  return formatDirectDescriptionForKeyStyle(officialCode, description, keyStyle);
+}
+
+function getViaSpecificDescription(code) {
+  const normalized = String(code || '').trim().toUpperCase();
+  const fnMoMatch = normalized.match(/^FN_MO(\d)(\d)$/);
+  if (!fnMoMatch) return '';
+
+  const targetLayer = fnMoMatch[1];
+  const triLayer = fnMoMatch[2];
+  return `VIA custom Fn key: activates layer ${targetLayer} while held and updates tri-layer state for layers 1, 2, and ${triLayer}`;
+}
+
+function getCompositeKeycodeDescription(code, keyStyle = 'Windows') {
+  const viaSpecificDescription = getViaSpecificDescription(code);
+  if (viaSpecificDescription) {
+    return viaSpecificDescription;
+  }
+
+  const wrapped = extractWrappedExpressionParts(String(code || '').trim());
+  if (!wrapped) return '';
+
+  const { token, args } = wrapped;
+  const canonicalToken = canonicalizeTooltipAtom(token);
+
+  if (tooltipWrapperDescriptions[canonicalToken] && args.length === 1) {
+    const childDescription = getKeycodeDescription(args[0], keyStyle) || toCanonicalKeycodeDisplay(args[0]);
+    return `Hold ${getStyledModifierName(canonicalToken, keyStyle)} and press ${childDescription}`;
+  }
+
+  if (tooltipModTapDescriptions[canonicalToken] && args.length === 1) {
+    const tapDescription = getKeycodeDescription(args[0], keyStyle) || toCanonicalKeycodeDisplay(args[0]);
+    return `${getStyledModifierName(canonicalToken.replace(/_T$/, ''), keyStyle)} when held, ${tapDescription} when tapped`;
+  }
+
+  if (token === 'LT' && args.length === 2) {
+    const tapDescription = getKeycodeDescription(args[1], keyStyle) || toCanonicalKeycodeDisplay(args[1]);
+    return `Momentarily activates layer ${args[0]} when held, sends ${tapDescription} when tapped`;
+  }
+
+  if (token === 'MO' && args.length === 1) {
+    return `Momentarily activates layer ${args[0]}`;
+  }
+
+  if (token === 'TG' && args.length === 1) {
+    return `Toggles layer ${args[0]} on and off`;
+  }
+
+  if (token === 'TT' && args.length === 1) {
+    return `Momentarily activates layer ${args[0]} when held, toggles it when tapped repeatedly`;
+  }
+
+  if (token === 'OSL' && args.length === 1) {
+    return `Momentarily activates layer ${args[0]} until the next key is pressed`;
+  }
+
+  if (token === 'TO' && args.length === 1) {
+    return `Activates layer ${args[0]} and deactivates all other layers`;
+  }
+
+  if (token === 'DF' && args.length === 1) {
+    return `Sets the default layer to ${args[0]}`;
+  }
+
+  if (token === 'MT' && args.length === 2) {
+    const holdPart = args[0]
+      .split('|')
+      .map((part) => getStyledModifierName(part.trim(), keyStyle))
+      .join(' + ');
+    const tapDescription = getKeycodeDescription(args[1], keyStyle) || toCanonicalKeycodeDisplay(args[1]);
+    return `Mod-Tap: holds ${holdPart} when held, sends ${tapDescription} when tapped`;
+  }
+
+  if (token === 'MACRO' && args.length === 1) {
+    return `Triggers macro ${args[0]}`;
+  }
+
+  if (token === 'CUSTOM' && args.length === 1) {
+    return `Triggers custom keycode ${args[0]}`;
+  }
+
+  return '';
 }
 
 function isWrappedExpression(source) {
@@ -1152,5 +1417,32 @@ export function toCanonicalKeycodeDisplay(code) {
   }
 
   return source.replace(/\b[A-Z][A-Z0-9_]*\b/gi, (token) => canonicalizeTooltipAtom(token));
+}
+
+export function getKeycodeDescription(code, keyStyle = 'Windows') {
+  const directDescription = getDirectKeycodeDescription(code, keyStyle);
+  if (directDescription) return directDescription;
+
+  const compositeDescription = getCompositeKeycodeDescription(code, keyStyle);
+  if (compositeDescription) return compositeDescription;
+
+  return '';
+}
+
+export function getKeycodeTooltipInfo(code, originalInput = code, keyStyle = 'Windows') {
+  const officialCode = toCanonicalKeycodeDisplay(code);
+  const description = getKeycodeDescription(code, keyStyle);
+  const metadata = QMK_KEYCODE_METADATA[officialCode] || null;
+  const normalizedInput = String(originalInput || '').trim().toUpperCase();
+  const inputCode = normalizedInput || officialCode;
+
+  return {
+    officialCode,
+    description,
+    section: metadata?.section || '',
+    aliases: metadata?.aliases || [],
+    inputCode,
+    isAliasInput: !!inputCode && inputCode !== officialCode
+  };
 }
 
