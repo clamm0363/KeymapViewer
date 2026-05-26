@@ -2,147 +2,171 @@
 
 ## 目的
 
-キーキャップ描画の分岐ロジックを整理し、実際にこのアプリで使われている複数の表示パターンが、同じ正規化済みの表示状態を参照する構造へ改める。今回の狙いは、表示条件の重複を減らし、正式キーコード対応や空キー表示、SVG 表示条件の修正が一箇所で完結するようにすること。
+QMK 公式ドキュメントの `Key` / `Aliases` / `Description` 情報を本サービス内へ取り込み、キーキャップのツールチップで表示できるようにする。
+既存の「公式キーコードへ正規化して見せる」方針を維持しつつ、キーコードの意味がユーザーに伝わる情報設計へ拡張する。
 
 ## ブランチ
 
-- `refactor/keycap-display-routing`
+- `feature/qmk-via-official-keycodes`
 
 ## 今回の対象
 
+- `js/keymap-dictionary.js`
+- 追加データファイル
+  - 例: `js/qmk-keycode-metadata.js` または `js/qmk-keycode-metadata.json`
+- 必要に応じて生成スクリプト
+  - 例: `scripts/extract-qmk-keycodes.js`
 - `js/components/Keycap.js`
-- `js/components/keycapIconUtils.js`
-- `js/components/keycapStandardSection.js`
-- `js/components/keycapModSection.js`
-- `js/components/keycapLayerSection.js`
-- `js/components/keycapRenderers.js`
+- `js/components/keycapEncoder.js`
+- 必要に応じて tooltip 表示用の小さな共通 helper
 
 ## 今回の非対象
 
-- `js/components/keycapEncoder.js`
-  - エンコーダーは `Keycap` から別ルートで描画されており、今回の共通表示モデルには含めない。
-- `js/utils/labelParser.js`
-  - 既存の解析結果は活用するが、今回の主眼は描画ルーティングの整理であり、ラベル解析仕様の変更は行わない。
+- SVG アイコンの新規追加
+- キーキャップ本体のレイアウト刷新
+- QMK 公式に存在しない独自キーコードへの説明文付与
+- 多言語翻訳基盤の導入
 
-## 現状把握
+## QMK 公式情報の前提
 
-- `Keycap.js` が表示解析、カテゴリ判定、スケール計算、表示パターン分岐、レンダラ引数の組み立てを同時に担っている。
-- `standard` / `mod` / `layer` / `renderer` 各層に「SVG を出すか」「下ラベルを付けるか」「どの icon key を使うか」という判断が分散している。
-- 同じキーでも、中央 SVG、下ラベル付き SVG、オフセット表示でそれぞれ別の条件分岐があり、修正漏れが起きやすい。
-- 今回発生した `KC_MS_UP` の SVG 欠落や未割当キーの座標表示は、この分散した分岐の不整合が直接の原因と考えられる。
+- QMK 公式 `Keycodes Overview` にはセクションごとに `Key` / `Aliases` / `Description` の表が存在する。
+- 代表例
+  - Mouse Keys
+    - `QK_MOUSE_CURSOR_UP` / alias `MS_UP` / description `Mouse cursor up`
+  - Quantum Keycodes
+    - `QK_CLEAR_EEPROM` / alias `EE_CLR` / description `Reinitializes the keyboard's EEPROM (persistent memory)`
+- Basic Keycodes は OS 列も持つが、今回の主眼はまず `Description` の取得と表示である。
 
-## 現在実装されている表示パターン
+## 現状認識
 
-- 標準キー
-  - 通常テキスト中央表示
-  - 通常 SVG 中央表示
-  - RGB 系の SVG + 下ラベル表示
-  - Magic 系の SVG + 下ラベル表示
-  - Wireless 系の SVG + 下ラベル表示
-  - Web 系の SVG + 下ラベル表示
-  - Mouse 系の SVG + 下ラベル表示
-  - Macro 系の SVG + 下ラベル表示
-  - `Text` モード時のカテゴリ下ラベル表示
-  - 長いラベルの手動改行表示
-- Mod キー
-  - 単独修飾キーの中央表示
-  - 単独修飾キーの SVG 中央表示
-  - Mod-Tap のオフセット表示
-  - 複合修飾キーの中央 + 下部補助表示
-- Layer キー
-  - 単独レイヤーキーの中央表示
-  - `LT(...)` のオフセット表示
-  - `FN_MOxy` の 2 段レイヤー表示
-  - `FN_MOxy` の下部キャプション表示
-- 形状・ルート差分
-  - JIS Enter 専用外形オーバーレイ
-  - Encoder 専用描画ルート
+- 現在のツールチップはネイティブ `title` 属性ベースで、単一行または改行文字列を直接埋め込んでいる。
+- 標準キーは `Keycap.js` で `title` にキーコード文字列を入れている。
+- Encoder 系は `keycapEncoder.js` で複数行テキストを構築している。
+- 公式キーコードへの正規化はすでに導入済みだが、意味説明のデータソースはまだ持っていない。
+- `keymap-dictionary.js` は表示ラベル・icon・alias 解決を担っており、説明文まで混在させると責務が肥大化しやすい。
+- Windows / Mac の `keyStyle` はキーキャップ表示には反映されているが、tooltip 文言はまだ OS モード連動していない。
 
-## この一覧に対する今回の扱い
+## Tooltip 構造の方針
 
-- 共通表示モデルの対象
-  - 標準キー
-  - Mod キー
-  - Layer キー
-  - JIS 外形に必要な補助情報
-- 今回は対象外
-  - Encoder 専用描画の内部整理
+### 第1段階の推奨構造
 
-## 課題
+- まずは既存の `title` ベースを維持し、内容だけ構造化する。
+- 標準キーの tooltip は以下の 2 行構成を基本とする。
+  - 1 行目: 正規のキーコード
+  - 2 行目: QMK 公式 Description
+- alias 入力だった場合のみ、必要に応じて 3 行目を追加する。
+  - `Alias input: KC_TRNS`
+- Description が無い場合は、無理に独自文言を生成せず、キーコードのみ表示する。
 
-- 表示用の正規化データが「レンダラに渡る前」と「レンダラ内部」で二重に組み立てられている。
-- `displayRaw`、`targetIconKey`、`displayText`、カテゴリ別ラベル群の責務が曖昧で、どの値を正として使うべきかが場所ごとに異なる。
-- `renderStandardKeycap()`、`renderModKeycap()`、`renderLayerKeycap()` がそれぞれ独自の表示種別判定を持っており、今後の追加表示パターンに弱い。
+### Encoder の推奨構造
 
-## 改善方針
+- 既存の方向別 tooltip を維持しつつ、各行を以下へ拡張する。
+  - `UP: Volume Up (KC_AUDIO_VOL_UP)`
+  - `Description: Audio volume up`
+- ただし 1 行ごとに説明を増やすと縦に長くなりすぎるため、まずは次のどちらかで統一する。
+  - 推奨案 A
+    - 各行を `表示ラベル (正規キーコード)` に留める
+    - 最上段または末尾に対象キーの Description を補足する
+  - 推奨案 B
+    - 各行を 2 行ブロック化する
+- 初回実装では案 A を優先する。
+  - 理由: ネイティブ `title` の可読性限界に収まりやすい。
 
-- `Keycap` 直下で「キー1個ぶんの表示モデル」を確定させ、各レンダラはそれを消費するだけにする。
-- 表示モデルには少なくとも以下を含める。
-  - canonical key 情報
-  - ルート種別
-  - 中央表示テキスト
-  - 中央表示種別
-  - 補助表示種別
-  - SVG 可用性
-  - 下ラベル文字列
-  - 上部タグ文字列
-  - オフセット配置の主表示・副表示
-  - スケール計算に必要な要約値
-- カテゴリ別の `isMouseFluent` / `isWirelessFluent` のような個別ブール群は、`standardVariant`、`bottomLabelKind`、`captionLabel` のような列挙寄りの表現へ寄せる。
-- `renderStandardKeycap()` は「表示モデルに応じて適切な描画ヘルパーへ委譲する」薄いルータにする。
-- `renderModKeycap()` と `renderLayerKeycap()` も、表示モデルに基づく分岐だけを持つ形へ寄せる。
-- 下ラベル付き SVG、中央 SVG、テキスト表示の icon key 選択は共通関数へ集約する。
+### 将来の拡張余地
+
+- ネイティブ `title` ではレイアウト制御が弱いため、将来的にはカスタム tooltip コンポーネントへ移行できる構造にしておく。
+- そのため、UI 文字列はコンポーネント内で直接組み立てず、`tooltip model` を返す helper を用意する。
+
+## データ構造の方針
+
+### 推奨配置
+
+- QMK 公式 metadata は `keymap-dictionary.js` から分離する。
+- 候補
+  - `js/qmk-keycode-metadata.js`
+    - コメント付きで管理しやすい
+  - `js/qmk-keycode-metadata.json`
+    - 自動生成しやすい
+- 今後の更新容易性を考えると、生成元は `json`、利用時は `js` import でもよい。
+
+### 推奨スキーマ
+
+- key を「公式の非エイリアス keycode」に統一した map を持つ。
+- 値の最小構成
+  - `description`
+  - `aliases`
+  - `section`
+- 例
+  - `QK_MOUSE_CURSOR_UP`
+    - `description: "Mouse cursor up"`
+    - `aliases: ["MS_UP"]`
+    - `section: "Mouse Keys"`
+
+### lookup 方針
+
+- tooltip 表示前に、入力キーコードを既存の canonical 化ロジックで「公式表示 keycode」へ変換する。
+- その結果を metadata lookup key に使う。
+- ただし現在の canonical が `KC_*` 系へ寄る箇所と、公式表の `QK_*` / 長名 `KC_*` へ寄せる箇所が混在するため、tooltip 用 metadata lookup は以下の二段構えにする。
+  1. `toCanonicalKeycodeDisplay()` の結果で引く
+  2. 必要なら内部 canonical から公式表示 key へ変換する補助 map で引く
+
+## データ取得方式の方針
+
+### 推奨案
+
+- QMK docs からの抽出はオフライン生成スクリプトで行い、成果物を repo にコミットする。
+- 実行時に docs へアクセスする構造にはしない。
+
+### 理由
+
+- ツールチップ表示のたびに外部依存させたくない。
+- GitHub Pages 配信やローカル利用で安定する。
+- QMK docs の更新取り込みも「生成スクリプト再実行 + 差分確認」で管理しやすい。
+
+### 生成スクリプトの責務
+
+1. QMK docs の対象ページを入力として受ける。
+2. 表から `Key` / `Aliases` / `Description` を抽出する。
+3. セクション名付き metadata を生成する。
+4. 既存の alias 解決ルールと照合し、未対応の keycode を洗い出せるようにする。
 
 ## 実施手順
 
-1. 現在の表示分岐を `解析`、`正規化`、`レイアウト計算`、`描画` の責務に分解する。
-2. `Keycap` から渡す共通表示モデルの項目を定義する。
-3. `keycapIconUtils.js` に標準キー用・mod 用・layer 用の表示モデル生成ヘルパーを寄せる。
-4. `Keycap.js` から各セクションへ個別ブール群ではなく表示モデルを渡す。
-5. `keycapStandardSection.js` の条件分岐を、表示モデルベースの薄いルーティングへ置き換える。
-6. `keycapModSection.js` と `keycapLayerSection.js` も表示モデル消費型へそろえる。
-7. `keycapRenderers.js` で再利用できる共通描画部品を整理する。
-8. 既存の表示パターンが崩れていないか、代表キーで静的確認を行う。
+1. tooltip に必要な metadata スキーマを定義する。
+2. QMK 公式 docs の表構造に合わせた抽出元フォーマットを決める。
+3. metadata ファイルの置き場所と import 経路を確定する。
+4. tooltip 用の metadata lookup helper を実装する。
+5. tooltip helper に `keyStyle` を通し、OS 依存語彙を動的化する。
+6. 標準キー tooltip を 2 行構成へ更新する。
+7. Encoder tooltip は既存構造を保ったまま、正規 keycode と Description を段階的に追加する。
+8. Description 未登録時のフォールバックを決める。
+9. 代表キーで静的確認を行う。
 
-## 今回まず確認する代表パターン
+## 確認観点
 
-- 通常テキストキー
-- 通常 SVG キー
-- 中央 SVG キー
-- 下ラベル付き SVG キー
-- `Text` モード時のカテゴリ下ラベル
-- 単独修飾キー
-- 修飾キーのオフセット表示
-- 複合修飾キー
-- 単独レイヤーキー
-- MT / LT など複合キー
-- `FN_MOxy` 系
-- 未割当キー
-- 正式名とエイリアスが混在するマウス系キー
-- JIS Enter 外形付きキー
-
-## 実施状況
-
-- [x] 問題の再発要因になっている分岐の散在箇所を確認した。
-- [x] 実装済み表示パターンの棚卸しを行った。
-- [x] 改善方針と作業手順を現行コード準拠に更新した。
-- [x] 表示モデルのスキーマを定義した。
-- [x] 共通表示モデルの生成処理を実装した。
-- [x] `Keycap` から各セクションへの受け渡しを表示モデルベースに置き換えた。
-- [x] 各レンダラを表示モデル消費型へ段階的に移行した。
-- [x] 代表パターンを意識した静的確認を行った。
-- [ ] ブラウザ上で主要パターンの見た目確認を行う。
-
-## 追加対応メモ
-
-- `QK_CLEAR_EEPROM` について、QMK 公式の意味に沿って `eraser_24` を維持しつつ表示文言を調整する。
-- `Fluent` モードでは下部付加情報を `EE CLR` とする。
-- `Text` モードでは中央表示を `EE CLR`、カテゴリ下ラベルを `QK` とする。
-- `QK_` 接頭辞の keycode が SVG 解決経路でも正しく正規化されることを確認する。
+- `QK_MOUSE_CURSOR_UP`
+  - keycode と description が正しく出ること
+- `QK_CLEAR_EEPROM`
+  - alias 入力でも official key と official description が出ること
+- `KC_TRANSPARENT`
+  - `TRNS` 入力時でも tooltip が official key 基準で表示されること
+- `KC_AUDIO_VOL_UP`
+  - `KC_VOLU` 入力時でも official description に到達できること
+- `KC_LEFT_GUI` / `LGUI_T(KC_TAB)` / `MT(MOD_LALT, KC_ESC)`
+  - Windows と Mac で tooltip 説明文が適切に変化すること
+  - Windows では `GUI` ではなく `Win` 表記になること
+- `MACRO(n)`
+  - ツールチップにマクロ内容が自然言語の英語で表示されること
+- Description 未登録のキー
+  - ツールチップが壊れず、キーコードのみで成立すること
+- Encoder tooltip
+  - 高さが過剰にならず、主要情報が読めること
 
 ## 完了条件
 
-- keycap ごとの表示判定が一箇所で追える。
-- `standard` / `mod` / `renderer` 間で icon key や表示種別の重複判定が大幅に減る。
-- 正式キーコード対応や空キー表示の修正が複数箇所修正にならない。
-- 主要表示パターンで既存表示が維持される。
+- QMK 公式 Description をローカルデータとして参照できる。
+- 標準キー tooltip に official keycode と official description が表示される。
+- alias 入力でも official keycode / description へ一貫して到達できる。
+- Windows / Mac モード切替に応じて tooltip 文言が追従する。
+- tooltip 文言生成がコンポーネント直書きではなく、再利用可能な helper 経由になっている。
+- 今後の QMK docs 更新を追従しやすい構造になっている。

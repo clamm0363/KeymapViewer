@@ -15,6 +15,7 @@ import {
     normalizeTargetIconKey,
     shortenLabel
 } from './keycapIconUtils.js';
+import { buildStandardKeyTooltip } from './keycapTooltip.js';
 import { renderEncoderKeycap } from './keycapEncoder.js';
 import {
     renderLayerKeycap,
@@ -111,6 +112,7 @@ export function Keycap({
             layer,
             keyStyle,
             macroAliases,
+            macros: (externalMap && externalMap.macros) || [],
             isLight,
             isAppDark
         });
@@ -169,10 +171,12 @@ export function Keycap({
     targetScale = Math.max(minScaleLimit, Math.min(1.1, targetScale));
     if (manualWrap) targetScale = Math.min(0.9, targetScale);
 
-    const cleanRaw = fullRaw ? fullRaw.toUpperCase() : '';
-    const displayRaw = (val && typeof val === 'string' && val.toUpperCase().startsWith('KC_'))
-        ? val.toUpperCase()
-        : (cleanRaw.startsWith('KC_') ? cleanRaw : 'KC_' + cleanRaw);
+    const displayRaw = displayRawForRGB;
+    const tooltipText = buildStandardKeyTooltip(
+        val || fullRaw,
+        keyStyle,
+        (externalMap && externalMap.macros) || []
+    );
 
     if (actuallyShowingSvg) {
         targetScale = 1.11;
@@ -275,7 +279,7 @@ export function Keycap({
     return createElement('div', {
         key: i,
         className: `key-cap group${k.isJIS ? ' jis-key' : ''}`,
-        title: val || fullRaw,
+        title: tooltipText,
         'data-key-raw': displayRaw,
         onClick: (e) => {
             const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);

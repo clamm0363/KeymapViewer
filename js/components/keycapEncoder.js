@@ -2,6 +2,7 @@ const { createElement } = React;
 
 import { parseKeyLabel } from '../utils/labelParser.js';
 import { buildDisplayRaw } from './keycapIconUtils.js';
+import { buildEncoderTooltip } from './keycapTooltip.js';
 import { getEncoderActions, getKeycapFrameStyle } from './keycapStyles.js';
 import { resolveInputDeviceSetting } from './inputDeviceSettings.js';
 
@@ -34,64 +35,28 @@ function getPointingKeyMeta(keycode) {
     return pointingMap[normalized] || null;
 }
 
-function buildTrackballTooltipLines({ ccwLabel, cwLabel, ccwCode, cwCode }) {
+function getTrackballTooltipPrefixes(cwCode, ccwCode) {
     const cwMeta = getPointingKeyMeta(cwCode);
     const ccwMeta = getPointingKeyMeta(ccwCode);
 
-    if (cwMeta && ccwMeta && (cwMeta.kind === 'cursor' || cwMeta.kind === 'wheel') && cwMeta.kind === ccwMeta.kind) {
-        return [
-            `${cwMeta.axisLabel}: ${cwLabel || 'None'} (${cwCode})`,
-            `${ccwMeta.axisLabel}: ${ccwLabel || 'None'} (${ccwCode})`
-        ];
+    if (!cwMeta || !ccwMeta || cwMeta.kind !== ccwMeta.kind) {
+        return {
+            cwPrefix: 'CW-MAPPED',
+            ccwPrefix: 'CCW-MAPPED'
+        };
     }
 
-    if (cwMeta && ccwMeta && cwMeta.kind === ccwMeta.kind && (cwMeta.kind === 'button' || cwMeta.kind === 'accel')) {
-        return [
-            `${cwMeta.axisLabel}: ${cwLabel || 'None'} (${cwCode})`,
-            `${ccwMeta.axisLabel}: ${ccwLabel || 'None'} (${ccwCode})`
-        ];
+    if (cwMeta.kind === 'cursor' || cwMeta.kind === 'wheel' || cwMeta.kind === 'button' || cwMeta.kind === 'accel') {
+        return {
+            cwPrefix: cwMeta.axisLabel,
+            ccwPrefix: ccwMeta.axisLabel
+        };
     }
 
-    return [
-        `CW-MAPPED: ${cwLabel || 'None'} (${cwCode})`,
-        `CCW-MAPPED: ${ccwLabel || 'None'} (${ccwCode})`
-    ];
-}
-
-function buildEncoderTooltipText({ encoderIndex, currentStyle, pushText, val, ccwActions, ccwLabel, cwLabel, ccwCode, cwCode }) {
-    let tooltipText = `Encoder e${encoderIndex}\n`;
-    tooltipText += `Push: ${pushText || 'None'} (${val || 'KC_NO'})`;
-
-    if (!ccwActions) {
-        return tooltipText;
-    }
-
-    if (currentStyle === 'VerticalWheel') {
-        tooltipText += `\nUP: ${cwLabel || 'None'} (${cwCode})`;
-        tooltipText += `\nDOWN: ${ccwLabel || 'None'} (${ccwCode})`;
-        return tooltipText;
-    }
-
-    if (currentStyle === 'HorizontalWheel') {
-        tooltipText += `\nRIGHT: ${cwLabel || 'None'} (${cwCode})`;
-        tooltipText += `\nLEFT: ${ccwLabel || 'None'} (${ccwCode})`;
-        return tooltipText;
-    }
-
-    if (currentStyle === 'Trackball' || currentStyle === 'Touchpad') {
-        const trackballLines = buildTrackballTooltipLines({
-            ccwLabel,
-            cwLabel,
-            ccwCode,
-            cwCode
-        });
-        tooltipText += `\n${trackballLines.join('\n')}`;
-        return tooltipText;
-    }
-
-    tooltipText += `\nCW (Clockwise): ${cwLabel || 'None'} (${cwCode})`;
-    tooltipText += `\nCCW (Counter-Clockwise): ${ccwLabel || 'None'} (${ccwCode})`;
-    return tooltipText;
+    return {
+        cwPrefix: 'CW-MAPPED',
+        ccwPrefix: 'CCW-MAPPED'
+    };
 }
 
 function getEncoderChildElements(currentStyle, isLight) {
@@ -334,6 +299,7 @@ export function renderEncoderKeycap({
     layer,
     keyStyle,
     macroAliases,
+    macros = [],
     isLight,
     isAppDark
 }) {
@@ -356,16 +322,21 @@ export function renderEncoderKeycap({
 
     const parsedPush = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases);
     const pushText = parsedPush.displayText;
-    const tooltipText = buildEncoderTooltipText({
+    const { cwPrefix, ccwPrefix } = getTrackballTooltipPrefixes(cwCode, ccwCode);
+    const tooltipText = buildEncoderTooltip({
         encoderIndex: k.encoderIndex,
-        currentStyle,
         pushText,
-        val,
+        pushCode: val,
+        macros,
+        keyStyle,
+        currentStyle,
         ccwActions,
         ccwLabel,
         cwLabel,
         ccwCode,
-        cwCode
+        cwCode,
+        trackballCwPrefix: cwPrefix,
+        trackballCcwPrefix: ccwPrefix
     });
 
     const displayRaw = buildDisplayRaw(fullRaw, val);
