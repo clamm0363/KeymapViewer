@@ -122,10 +122,10 @@ export function narrowSlash(str) {
 }
 
 export function buildDisplayRaw(fullRaw, val) {
-    const cleanRaw = fullRaw ? fullRaw.toUpperCase() : '';
-    return (val && typeof val === 'string' && /^(KC_|QK_)/.test(val.toUpperCase()))
-        ? val.toUpperCase()
-        : (/^(KC_|QK_)/.test(cleanRaw) ? cleanRaw : 'KC_' + cleanRaw);
+    if (typeof val === 'string' && val.trim()) {
+        return val.trim().toUpperCase();
+    }
+    return fullRaw ? fullRaw.toUpperCase() : '';
 }
 
 export function normalizeTargetIconKey(displayRaw) {
@@ -150,7 +150,7 @@ export function shortenLabel(label) {
 
 export function getKeyCategory(kCode) {
     if (!kCode) return null;
-    const upper = kCode.toUpperCase();
+    const upper = resolveKeycodeAlias(kCode) || kCode.toUpperCase();
     if (upper === 'QK_CLEAR_EEPROM' || upper === 'KC_EE_CLR' || upper === 'EE_CLR') return 'QK';
     if (upper.startsWith('KC_RGB_')) return 'RGB';
 

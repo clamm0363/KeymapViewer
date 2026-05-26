@@ -1,5 +1,6 @@
 const { createElement } = React;
 
+import { toCanonicalKeycodeDisplay } from '../keymap-dictionary.js';
 import { parseKeyLabel } from '../utils/labelParser.js';
 import { buildDisplayRaw } from './keycapIconUtils.js';
 import { getEncoderActions, getKeycapFrameStyle } from './keycapStyles.js';
@@ -37,44 +38,49 @@ function getPointingKeyMeta(keycode) {
 function buildTrackballTooltipLines({ ccwLabel, cwLabel, ccwCode, cwCode }) {
     const cwMeta = getPointingKeyMeta(cwCode);
     const ccwMeta = getPointingKeyMeta(ccwCode);
+    const canonicalCwCode = toCanonicalKeycodeDisplay(cwCode);
+    const canonicalCcwCode = toCanonicalKeycodeDisplay(ccwCode);
 
     if (cwMeta && ccwMeta && (cwMeta.kind === 'cursor' || cwMeta.kind === 'wheel') && cwMeta.kind === ccwMeta.kind) {
         return [
-            `${cwMeta.axisLabel}: ${cwLabel || 'None'} (${cwCode})`,
-            `${ccwMeta.axisLabel}: ${ccwLabel || 'None'} (${ccwCode})`
+            `${cwMeta.axisLabel}: ${cwLabel || 'None'} (${canonicalCwCode})`,
+            `${ccwMeta.axisLabel}: ${ccwLabel || 'None'} (${canonicalCcwCode})`
         ];
     }
 
     if (cwMeta && ccwMeta && cwMeta.kind === ccwMeta.kind && (cwMeta.kind === 'button' || cwMeta.kind === 'accel')) {
         return [
-            `${cwMeta.axisLabel}: ${cwLabel || 'None'} (${cwCode})`,
-            `${ccwMeta.axisLabel}: ${ccwLabel || 'None'} (${ccwCode})`
+            `${cwMeta.axisLabel}: ${cwLabel || 'None'} (${canonicalCwCode})`,
+            `${ccwMeta.axisLabel}: ${ccwLabel || 'None'} (${canonicalCcwCode})`
         ];
     }
 
     return [
-        `CW-MAPPED: ${cwLabel || 'None'} (${cwCode})`,
-        `CCW-MAPPED: ${ccwLabel || 'None'} (${ccwCode})`
+        `CW-MAPPED: ${cwLabel || 'None'} (${canonicalCwCode})`,
+        `CCW-MAPPED: ${ccwLabel || 'None'} (${canonicalCcwCode})`
     ];
 }
 
 function buildEncoderTooltipText({ encoderIndex, currentStyle, pushText, val, ccwActions, ccwLabel, cwLabel, ccwCode, cwCode }) {
+    const canonicalPushCode = toCanonicalKeycodeDisplay(val || 'KC_NO');
+    const canonicalCwCode = toCanonicalKeycodeDisplay(cwCode);
+    const canonicalCcwCode = toCanonicalKeycodeDisplay(ccwCode);
     let tooltipText = `Encoder e${encoderIndex}\n`;
-    tooltipText += `Push: ${pushText || 'None'} (${val || 'KC_NO'})`;
+    tooltipText += `Push: ${pushText || 'None'} (${canonicalPushCode})`;
 
     if (!ccwActions) {
         return tooltipText;
     }
 
     if (currentStyle === 'VerticalWheel') {
-        tooltipText += `\nUP: ${cwLabel || 'None'} (${cwCode})`;
-        tooltipText += `\nDOWN: ${ccwLabel || 'None'} (${ccwCode})`;
+        tooltipText += `\nUP: ${cwLabel || 'None'} (${canonicalCwCode})`;
+        tooltipText += `\nDOWN: ${ccwLabel || 'None'} (${canonicalCcwCode})`;
         return tooltipText;
     }
 
     if (currentStyle === 'HorizontalWheel') {
-        tooltipText += `\nRIGHT: ${cwLabel || 'None'} (${cwCode})`;
-        tooltipText += `\nLEFT: ${ccwLabel || 'None'} (${ccwCode})`;
+        tooltipText += `\nRIGHT: ${cwLabel || 'None'} (${canonicalCwCode})`;
+        tooltipText += `\nLEFT: ${ccwLabel || 'None'} (${canonicalCcwCode})`;
         return tooltipText;
     }
 
@@ -89,8 +95,8 @@ function buildEncoderTooltipText({ encoderIndex, currentStyle, pushText, val, cc
         return tooltipText;
     }
 
-    tooltipText += `\nCW (Clockwise): ${cwLabel || 'None'} (${cwCode})`;
-    tooltipText += `\nCCW (Counter-Clockwise): ${ccwLabel || 'None'} (${ccwCode})`;
+    tooltipText += `\nCW (Clockwise): ${cwLabel || 'None'} (${canonicalCwCode})`;
+    tooltipText += `\nCCW (Counter-Clockwise): ${ccwLabel || 'None'} (${canonicalCcwCode})`;
     return tooltipText;
 }
 

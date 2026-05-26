@@ -475,8 +475,8 @@ const aliasPairs = [
   ['KC_PWR',  'KC_SYSTEM_POWER'],
   ['KC_SLEP', 'KC_SYSTEM_SLEEP'],
   ['KC_WAKE', 'KC_SYSTEM_WAKE'],
-  ['KC_BRIU', 'KC_KB_BRIGHTNESS_UP'],
-  ['KC_BRID', 'KC_KB_BRIGHTNESS_DOWN'],
+  ['KC_BRIU', 'KC_BRIGHTNESS_UP'],
+  ['KC_BRID', 'KC_BRIGHTNESS_DOWN'],
   ['KC_CPNL', 'KC_CONTROL_PANEL'],
   ['KC_ASST', 'KC_ASSISTANT'],
   ['KC_MCTL', 'KC_MISSION_CONTROL'],
@@ -501,6 +501,19 @@ const aliasPairs = [
   ['EE_CLR',                            'KC_EE_CLR'],
   ['QK_DEBUG_TOGGLE',                   'KC_DEBUG'],
   ['DB_TOGG',                           'KC_DEBUG'],
+
+  // RGB official aliases without KC_ prefix
+  ['RGB_TOG',                           'KC_RGB_TOG'],
+  ['RGB_MOD',                           'KC_RGB_MOD'],
+  ['RGB_RMOD',                          'KC_RGB_RMOD'],
+  ['RGB_HUI',                           'KC_RGB_HUI'],
+  ['RGB_HUD',                           'KC_RGB_HUD'],
+  ['RGB_SAI',                           'KC_RGB_SAI'],
+  ['RGB_SAD',                           'KC_RGB_SAD'],
+  ['RGB_VAI',                           'KC_RGB_VAI'],
+  ['RGB_VAD',                           'KC_RGB_VAD'],
+  ['RGB_SPI',                           'KC_RGB_SPI'],
+  ['RGB_SPD',                           'KC_RGB_SPD'],
 
   // Wireless standard aliases mapping
   ['OUT_AUTO',                          'KC_OUT_AUTO'],
@@ -615,6 +628,66 @@ const aliasPairs = [
   ['QK_MOUSE_ACCELERATION_2',           'KC_ACL2']
 ];
 
+const legacyAliasKeys = new Set([
+  'OUT_AUTO',
+  'OUT_USB',
+  'OUT_BT',
+  'OUT_2G4',
+  'BT_SEL_0',
+  'BT_SEL_1',
+  'BT_SEL_2',
+  'BT_SEL_3',
+  'BT_SEL_4',
+  'BT_CLR',
+  'BT_CLR_ALL',
+  'BT_TOGG',
+  'BT_NXT',
+  'BT_PRV',
+  'BT_ON',
+  'BT_OFF',
+  'OUT_TOG',
+  'OUT_BLE',
+  'BT_SEL0',
+  'BT_SEL1',
+  'BT_SEL2',
+  'BT_SEL3',
+  'BT_SEL4',
+  'MS_U',
+  'MS_D',
+  'MS_L',
+  'MS_R',
+  'MS_DN',
+  'MS_LT',
+  'MS_RT',
+  'MOVE_UP',
+  'MOVE_DOWN',
+  'MOVE_LEFT',
+  'MOVE_RIGHT',
+  'BTN1',
+  'BTN2',
+  'BTN3',
+  'BTN4',
+  'BTN5',
+  'WH_U',
+  'WH_D',
+  'WH_L',
+  'WH_R',
+  'WHL_UP',
+  'WHL_DN',
+  'WHL_LT',
+  'WHL_RT',
+  'SCROLL_UP',
+  'SCROLL_DOWN',
+  'SCROLL_LEFT',
+  'SCROLL_RIGHT',
+  'ACL0',
+  'ACL1',
+  'ACL2'
+]);
+
+const officialAliasPairs = aliasPairs.filter(([aliasKey]) => !legacyAliasKeys.has(aliasKey));
+const legacyAliasPairs = aliasPairs.filter(([aliasKey]) => legacyAliasKeys.has(aliasKey));
+
 function registerAliases(target, pairs) {
   pairs.forEach(([aliasKey, canonicalKey]) => {
     if (target[canonicalKey]) {
@@ -623,12 +696,17 @@ function registerAliases(target, pairs) {
   });
 }
 
-registerAliases(KeymapDictionary.keys, aliasPairs);
+registerAliases(KeymapDictionary.keys, officialAliasPairs);
 registerAliases(KeymapDictionary.modifiers, modifierAliasPairs);
 
 const keyAliasLookup = new Map();
-aliasPairs.forEach(([aliasKey, canonicalKey]) => {
+officialAliasPairs.forEach(([aliasKey, canonicalKey]) => {
   keyAliasLookup.set(normalizeKeycodeToken(aliasKey), canonicalKey);
+});
+
+const legacyKeyAliasLookup = new Map();
+legacyAliasPairs.forEach(([aliasKey, canonicalKey]) => {
+  legacyKeyAliasLookup.set(normalizeKeycodeToken(aliasKey), canonicalKey);
 });
 
 const modifierAliasLookup = new Map();
@@ -784,6 +862,63 @@ const phraseTextOverrides = {
   MOUSE_ACCELERATION_2: 'ACL2'
 };
 
+const preferredOfficialKeycodeDisplay = new Map([
+  ['KC_LCTL', 'KC_LEFT_CTRL'],
+  ['KC_RCTL', 'KC_RIGHT_CTRL'],
+  ['KC_LSFT', 'KC_LEFT_SHIFT'],
+  ['KC_RSFT', 'KC_RIGHT_SHIFT'],
+  ['KC_LALT', 'KC_LEFT_ALT'],
+  ['KC_RALT', 'KC_RIGHT_ALT'],
+  ['KC_LGUI', 'KC_LEFT_GUI'],
+  ['KC_RGUI', 'KC_RIGHT_GUI'],
+  ['KC_CAPS', 'KC_CAPS_LOCK'],
+  ['KC_SLCK', 'KC_SCROLL_LOCK'],
+  ['KC_PSCR', 'KC_PRINT_SCREEN'],
+  ['KC_PAUS', 'KC_PAUSE'],
+  ['KC_INS', 'KC_INSERT'],
+  ['KC_PGUP', 'KC_PAGE_UP'],
+  ['KC_DEL', 'KC_DELETE'],
+  ['KC_PGDN', 'KC_PAGE_DOWN'],
+  ['KC_RGHT', 'KC_RIGHT'],
+  ['KC_APP', 'KC_APPLICATION'],
+  ['KC_NUM', 'KC_NUM_LOCK'],
+  ['KC_PSLS', 'KC_KP_SLASH'],
+  ['KC_PAST', 'KC_KP_ASTERISK'],
+  ['KC_PMNS', 'KC_KP_MINUS'],
+  ['KC_PPLS', 'KC_KP_PLUS'],
+  ['KC_PENT', 'KC_KP_ENTER'],
+  ['KC_P0', 'KC_KP_0'],
+  ['KC_P1', 'KC_KP_1'],
+  ['KC_P2', 'KC_KP_2'],
+  ['KC_P3', 'KC_KP_3'],
+  ['KC_P4', 'KC_KP_4'],
+  ['KC_P5', 'KC_KP_5'],
+  ['KC_P6', 'KC_KP_6'],
+  ['KC_P7', 'KC_KP_7'],
+  ['KC_P8', 'KC_KP_8'],
+  ['KC_P9', 'KC_KP_9'],
+  ['KC_TRNS', 'KC_TRANSPARENT'],
+  ['KC_RESET', 'QK_BOOTLOADER'],
+  ['KC_EE_CLR', 'QK_CLEAR_EEPROM'],
+  ['KC_DEBUG', 'QK_DEBUG_TOGGLE'],
+  ['KC_MS_U', 'QK_MOUSE_CURSOR_UP'],
+  ['KC_MS_D', 'QK_MOUSE_CURSOR_DOWN'],
+  ['KC_MS_L', 'QK_MOUSE_CURSOR_LEFT'],
+  ['KC_MS_R', 'QK_MOUSE_CURSOR_RIGHT'],
+  ['KC_BTN1', 'QK_MOUSE_BUTTON_1'],
+  ['KC_BTN2', 'QK_MOUSE_BUTTON_2'],
+  ['KC_BTN3', 'QK_MOUSE_BUTTON_3'],
+  ['KC_BTN4', 'QK_MOUSE_BUTTON_4'],
+  ['KC_BTN5', 'QK_MOUSE_BUTTON_5'],
+  ['KC_WH_U', 'QK_MOUSE_WHEEL_UP'],
+  ['KC_WH_D', 'QK_MOUSE_WHEEL_DOWN'],
+  ['KC_WH_L', 'QK_MOUSE_WHEEL_LEFT'],
+  ['KC_WH_R', 'QK_MOUSE_WHEEL_RIGHT'],
+  ['KC_ACL0', 'QK_MOUSE_ACCELERATION_0'],
+  ['KC_ACL1', 'QK_MOUSE_ACCELERATION_1'],
+  ['KC_ACL2', 'QK_MOUSE_ACCELERATION_2']
+]);
+
 function deriveTextFromKeycode(code) {
   const normalized = normalizeKeycodeToken(code);
   if (!normalized) return '';
@@ -806,16 +941,62 @@ function deriveTextFromKeycode(code) {
   return compact.length <= 10 ? compact : compact.slice(0, 10);
 }
 
-export function resolveModifierKeycode(code) {
-  const normalized = normalizeKeycodeToken(code);
-  if (!normalized) return '';
-  return modifierAliasLookup.get(normalized) || normalized;
+function hasKnownDefinition(code) {
+  return !!(KeymapDictionary.keys[code] || KeymapDictionary.modifiers[code]);
 }
 
-export function resolveKeycodeAlias(code) {
+function canImplicitlyPrefixOfficialKeycode(token) {
+  if (!token) return false;
+  if (/^(MS_|BTN\d|WH_|ACL\d|OUT_|BT_)/.test(token)) return false;
+  return /^[A-Z0-9_]+$/.test(token);
+}
+
+function resolveOfficialKeycode(code, { allowLegacy = false } = {}) {
   const normalized = normalizeKeycodeToken(code);
   if (!normalized) return '';
-  return keyAliasLookup.get(normalized) || normalized;
+
+  const modifierAlias = modifierAliasLookup.get(normalized);
+  if (modifierAlias) {
+    return modifierAlias;
+  }
+
+  const keyAlias = keyAliasLookup.get(normalized);
+  if (keyAlias) {
+    return keyAlias;
+  }
+
+  if (hasKnownDefinition(normalized)) {
+    return normalized;
+  }
+
+  if (!/^(KC_|QK_)/.test(normalized) && canImplicitlyPrefixOfficialKeycode(normalized)) {
+    const prefixed = `KC_${normalized}`;
+    if (hasKnownDefinition(prefixed)) {
+      return prefixed;
+    }
+    const prefixedAlias = keyAliasLookup.get(prefixed);
+    if (prefixedAlias) {
+      return prefixedAlias;
+    }
+    const prefixedModifierAlias = modifierAliasLookup.get(prefixed);
+    if (prefixedModifierAlias) {
+      return prefixedModifierAlias;
+    }
+  }
+
+  if (allowLegacy) {
+    return legacyKeyAliasLookup.get(normalized) || normalized;
+  }
+
+  return normalized;
+}
+
+export function resolveModifierKeycode(code) {
+  return resolveOfficialKeycode(code);
+}
+
+export function resolveKeycodeAlias(code, options = {}) {
+  return resolveOfficialKeycode(code, options);
 }
 
 export function getModifierDefinition(code) {
@@ -828,6 +1009,148 @@ export function getKeyDefinition(code) {
   const explicit = KeymapDictionary.keys[canonical];
   if (explicit) return explicit;
   if (!canonical) return null;
+  if (!/^(KC_|QK_|JP_|MAGIC_)/.test(canonical)) return null;
   return { text: deriveTextFromKeycode(canonical) };
+}
+
+const tooltipWrapperTokens = new Set([
+  'LT',
+  'MT',
+  'MO',
+  'TG',
+  'TT',
+  'OSL',
+  'TO',
+  'DF',
+  'LCTL',
+  'LSFT',
+  'LALT',
+  'LGUI',
+  'RCTL',
+  'RSFT',
+  'RALT',
+  'RGUI',
+  'A',
+  'C',
+  'S',
+  'G',
+  'LCA',
+  'LSA',
+  'RSA',
+  'RCS',
+  'LCG',
+  'RCG',
+  'LSG',
+  'RSG',
+  'LAG',
+  'RAG',
+  'MEH',
+  'HYPR',
+  'MACRO',
+  'CUSTOM',
+  'MOD_LCTL',
+  'MOD_RCTL',
+  'MOD_LSFT',
+  'MOD_RSFT',
+  'MOD_LALT',
+  'MOD_RALT',
+  'MOD_LGUI',
+  'MOD_RGUI'
+]);
+
+const tooltipWrapperAliasMap = new Map([
+  ['C', ['LCTL']],
+  ['S', ['LSFT']],
+  ['A', ['LALT']],
+  ['G', ['LGUI']],
+  ['LCA', ['LCTL', 'LALT']],
+  ['LSA', ['LSFT', 'LALT']],
+  ['RSA', ['RSFT', 'LALT']],
+  ['RCS', ['RCTL', 'LSFT']],
+  ['LCG', ['LCTL', 'LGUI']],
+  ['RCG', ['RCTL', 'RGUI']],
+  ['LSG', ['LSFT', 'LGUI']],
+  ['RSG', ['RSFT', 'RGUI']],
+  ['LAG', ['LALT', 'LGUI']],
+  ['RAG', ['RALT', 'RGUI']],
+  ['MEH', ['LCTL', 'LALT', 'LSFT']],
+  ['HYPR', ['LCTL', 'LALT', 'LSFT', 'LGUI']]
+]);
+
+function splitTopLevelArgs(source) {
+  const args = [];
+  let depth = 0;
+  let start = 0;
+
+  for (let i = 0; i < source.length; i += 1) {
+    const ch = source[i];
+    if (ch === '(') depth += 1;
+    if (ch === ')') depth -= 1;
+    if (ch === ',' && depth === 0) {
+      args.push(source.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+
+  args.push(source.slice(start).trim());
+  return args.filter((arg) => arg.length > 0);
+}
+
+function canonicalizeTooltipAtom(token) {
+  const upper = token.toUpperCase();
+  if (tooltipWrapperTokens.has(upper)) {
+    return upper;
+  }
+  const canonical = resolveKeycodeAlias(upper) || upper;
+  return preferredOfficialKeycodeDisplay.get(canonical) || canonical;
+}
+
+function isWrappedExpression(source) {
+  const openIndex = source.indexOf('(');
+  if (openIndex <= 0 || !source.endsWith(')')) return false;
+
+  let depth = 0;
+  for (let i = openIndex; i < source.length; i += 1) {
+    const ch = source[i];
+    if (ch === '(') depth += 1;
+    if (ch === ')') {
+      depth -= 1;
+      if (depth === 0 && i !== source.length - 1) {
+        return false;
+      }
+    }
+  }
+
+  return depth === 0;
+}
+
+export function toCanonicalKeycodeDisplay(code) {
+  const source = String(code || '').trim();
+  if (!source) return '';
+
+  if (/^FN_MO\d{2}$/i.test(source)) {
+    return source.toUpperCase();
+  }
+
+  if (/^[A-Z0-9_]+$/i.test(source)) {
+    return canonicalizeTooltipAtom(source);
+  }
+
+  if (isWrappedExpression(source)) {
+    const openIndex = source.indexOf('(');
+    const token = source.slice(0, openIndex).trim().toUpperCase();
+    const inner = source.slice(openIndex + 1, -1);
+    const args = splitTopLevelArgs(inner).map((arg) => toCanonicalKeycodeDisplay(arg));
+
+    if (tooltipWrapperAliasMap.has(token) && args.length === 1) {
+      return tooltipWrapperAliasMap.get(token).reduceRight((acc, wrapperToken) => {
+        return `${wrapperToken}(${acc})`;
+      }, args[0]);
+    }
+
+    return `${canonicalizeTooltipAtom(token)}(${args.join(',')})`;
+  }
+
+  return source.replace(/\b[A-Z][A-Z0-9_]*\b/gi, (token) => canonicalizeTooltipAtom(token));
 }
 

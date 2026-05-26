@@ -178,7 +178,7 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
             if (displayMode === 'Fluent') {
                 isFluentIcon = true;
             }
-        } else if (displayMode === 'Fluent' && (cleanRawForNo === 'KC_NO' || cleanRawForNo === 'KC_NONE' || raw === 'None')) {
+        } else if (cleanRawForNo === 'KC_NO' || cleanRawForNo === 'KC_NONE' || raw === 'None') {
             displayText = "";
         } else {
             const dictLabel = getDictLabel(raw);
