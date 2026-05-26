@@ -13,6 +13,7 @@ json_mapped/
 Thumbs.db
 .DS_Store
 desktop.ini
+.vscode/
 
 # FluentUI and temporary files
 fluentui-system-icons/
