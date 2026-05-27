@@ -1,4 +1,5 @@
 import { getKeycodeTooltipInfo } from '../keymap-dictionary.js';
+import { buildKeyInspectorTooltipLines } from '../utils/keyInspector.js';
 
 function joinTooltipLines(lines) {
     return lines.filter(Boolean).join('\n');
@@ -101,7 +102,7 @@ function formatActionLine(prefix, label, tooltipInfo, code, macros = []) {
     return lines.join('\n');
 }
 
-export function buildStandardKeyTooltip(code, keyStyle = 'Windows', macros = []) {
+export function buildStandardKeyTooltip(code, keyStyle = 'Windows', macros = [], inspectorData = null) {
     const tooltipInfo = getKeycodeTooltipInfo(code, code, keyStyle);
     const lines = [tooltipInfo.officialCode];
 
@@ -113,6 +114,12 @@ export function buildStandardKeyTooltip(code, keyStyle = 'Windows', macros = [])
 
     if (tooltipInfo.isAliasInput) {
         lines.push(`Input: ${tooltipInfo.inputCode}`);
+    }
+
+    const inspectorLines = buildKeyInspectorTooltipLines(inspectorData);
+    if (inspectorLines.length > 0) {
+        lines.push('');
+        inspectorLines.forEach((line) => lines.push(line));
     }
 
     return joinTooltipLines(lines);

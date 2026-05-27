@@ -1,6 +1,7 @@
 const { createElement } = React;
 
 import { parseKeyLabel } from '../utils/labelParser.js';
+import { buildKeyInspectorData } from '../utils/keyInspector.js';
 import {
     getKeycapFrameStyle,
     getModColor,
@@ -85,11 +86,14 @@ export function Keycap({
         utilityLabel
     } = iconRenderState;
 
+    const textModeParsed = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases);
+    let textFallback = narrowSlash(textModeParsed.displayText);
     const is1u = (k.w || 56) / 56 < 1.25;
     if (is1u) {
         displayText = shortenLabel(displayText);
         tapLabel = shortenLabel(tapLabel);
         baseLabel = shortenLabel(baseLabel);
+        textFallback = shortenLabel(textFallback);
     }
 
     const isFluentCenter = isFluentIcon || (isModKey && baseIsFluent);
@@ -172,11 +176,6 @@ export function Keycap({
     if (manualWrap) targetScale = Math.min(0.9, targetScale);
 
     const displayRaw = displayRawForRGB;
-    const tooltipText = buildStandardKeyTooltip(
-        val || fullRaw,
-        keyStyle,
-        (externalMap && externalMap.macros) || []
-    );
 
     if (actuallyShowingSvg) {
         targetScale = 1.11;
@@ -236,6 +235,31 @@ export function Keycap({
         kWidth: (k.w || 56) / 56,
         targetScale
     });
+
+    const activeDisplayModel = isLayerKey
+        ? layerDisplayModel
+        : (isModKey ? modDisplayModel : standardDisplayModel);
+    const inspectorData = buildKeyInspectorData({
+        code: val || fullRaw,
+        keyStyle,
+        displayRaw,
+        targetIconKey,
+        parsed: {
+            displayText,
+            modLabel,
+            baseLabel,
+            textFallback
+        },
+        iconRenderState,
+        displayModel: activeDisplayModel,
+        macros: (externalMap && externalMap.macros) || []
+    });
+    const tooltipText = buildStandardKeyTooltip(
+        val || fullRaw,
+        keyStyle,
+        (externalMap && externalMap.macros) || [],
+        inspectorData
+    );
 
     const jisSvg = k.isJIS && (() => {
         const W = k.w - 6;
