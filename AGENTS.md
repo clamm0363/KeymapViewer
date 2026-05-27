@@ -15,6 +15,8 @@ Do not treat it as a temporary task memo, phase log, or scratchpad.
 - Preserve existing user changes unless explicitly asked to revert them.
 - Avoid speculative refactors. Make changes that match the current architecture and verified needs.
 - Keep instructions here general and durable. Task-specific notes belong in `implementation_plan.md`, commit messages, or PR descriptions.
+- No Rushing or Impatience: Do not urge the user to implement things quickly in code comments or chat. Progress at the user's pace.
+- Explain First, Implement Second: For complex logic, explicitly explain the architectural approach and get user confirmation before modifying multiple files.
 
 ## Project Overview
 
@@ -23,6 +25,11 @@ It renders keyboard layouts, legends, layers, encoder behavior, and category-spe
 The UI supports both text-based and SVG-based icon rendering.
 
 ## Current Architecture
+
+- js/utils/
+  - Helper functions, label parsers, and validation logic. Always separate pure logic into this directory rather than bloating components.
+- js/utils/hid/ (Future extension)
+  - Reserved for hardware communication modules (e.g., WebHID and protocol parsers).
 
 ### Entry And App Structure
 
@@ -171,6 +178,7 @@ The UI supports both text-based and SVG-based icon rendering.
 - Use `SampleLayouts/` for manual display checks.
 - When verifying icon rendering, prefer checking representative categories rather than only one key type.
 - If browser testing is performed by the user rather than the agent, record that clearly in the handoff or summary.
+- When checking UI additions (like tooltips or inspectors), ensure they support both Light and Dark/AppDark themes correctly without hardcoding color values.
 
 ### Test Scripts
 
