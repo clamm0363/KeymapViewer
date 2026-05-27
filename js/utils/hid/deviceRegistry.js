@@ -1,6 +1,7 @@
 const DEVICE_LAYOUT_REGISTRY = [
     { vendorId: 0x3434, productId: 0x0A06, layoutPath: 'json/k0_max_v1.1_20250904.json' },
     { vendorId: 0x3434, productId: 0x0131, layoutPath: 'json/q0_plus_v1.0.json' },
+    { vendorId: 0x36b0, productId: 0x3083, layoutPath: 'json/ZUOYA_GMK26.json' },
     { vendorId: 0x342d, productId: 0xe491, layoutPath: 'json/ZUOYA+GMK70.json' },
     { vendorId: 0x388d, productId: 0x0002, layoutPath: 'json/OE927 flow2 84-json-20251114.json' }
 ];
