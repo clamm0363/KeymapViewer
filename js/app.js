@@ -15,6 +15,7 @@ const CURRENT_VERSION = '1.2.5';
 const DEFAULT_DISPLAY_SCALE = 1;
 const MIN_DISPLAY_SCALE = 0.35;
 const MAX_DISPLAY_SCALE = 1.6;
+const EXPORT_KEYBOARD_SCALE = 1;
 const DEFAULT_DISPLAY_SCALE_BY_LAYOUT = Object.freeze({
     stack: DEFAULT_DISPLAY_SCALE,
     grid: DEFAULT_DISPLAY_SCALE
@@ -608,8 +609,8 @@ export function App() {
                     encoderStyles: dev.encoderStyles || {},
                     inputDeviceSettings: dev.inputDeviceSettings || {},
                     layoutOptions: dev.layoutOptions || {},
-                    forcedScale: 1.0,
-                    userScale: getDisplayScaleForLayout(dev, layoutMode),
+                    forcedScale: EXPORT_KEYBOARD_SCALE,
+                    userScale: EXPORT_KEYBOARD_SCALE,
                     separation: dev.separation || 'DISABLE'
                 })
             ]);

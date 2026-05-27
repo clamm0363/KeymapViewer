@@ -161,6 +161,225 @@ export function DeviceSlot({
     const primaryActionButtonClass = actionButtonClass + ' ' + (isLightApp
         ? 'bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200'
         : 'bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border-blue-500/30');
+    const settingsPanel = createElement('div', {
+        key: 'settings-panel-body',
+        className: 'flex flex-col gap-4'
+    }, [
+        createElement('div', { key: 'global-opts', className: 'flex flex-wrap items-stretch gap-4' }, [
+            createElement('div', { key: 'mode-sect', className: 'flex w-full flex-wrap items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
+                createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'DISPLAY MODE:'),
+                createElement('div', { key: 'btns', className: 'flex flex-wrap gap-4' }, ['Fluent', 'Text'].map(opt => createElement('label', { key: opt, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
+                    createElement('input', { key: 'i', type: 'radio', name: 'displayMode-' + dev.id, checked: dev.displayMode === opt, onChange: () => onUpdateDevice(dev.id, { displayMode: opt }), className: 'hidden' }),
+                    createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (dev.displayMode === opt ? 'border-blue-500' : '') },
+                        dev.displayMode === opt ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                    ),
+                    createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (dev.displayMode === opt ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
+                ])))
+            ]),
+            createElement('div', { key: 'theme-sect', className: 'flex w-full flex-wrap items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
+                createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'THEME:'),
+                createElement('div', { key: 'btns', className: 'flex flex-wrap gap-4' }, ['Dark', 'Light', 'System'].map(opt => createElement('label', { key: opt, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
+                    createElement('input', { key: 'i', type: 'radio', name: 'theme-' + dev.id, checked: (dev.theme || 'System') === opt, onChange: () => onUpdateDevice(dev.id, { theme: opt }), className: 'hidden' }),
+                    createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + ((dev.theme || 'System') === opt ? 'border-blue-500' : '') },
+                        (dev.theme || 'System') === opt ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                    ),
+                    createElement('span', { key: 's', className: 'text-[9px] font-bold ' + ((dev.theme || 'System') === opt ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
+                ])))
+            ]),
+            createElement('div', { key: 'style-sect', className: 'flex w-full flex-wrap items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
+                createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'STYLE:'),
+                createElement('div', { key: 'btns', className: 'flex flex-wrap gap-4' }, ['Windows', 'Mac'].map(opt => createElement('label', { key: opt, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
+                    createElement('input', { key: 'i', type: 'radio', name: 'keyStyle-' + dev.id, checked: (dev.keyStyle || 'Windows') === opt, onChange: () => onUpdateDevice(dev.id, { keyStyle: opt }), className: 'hidden' }),
+                    createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + ((dev.keyStyle || 'Windows') === opt ? 'border-blue-500' : '') },
+                        (dev.keyStyle || 'Windows') === opt ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                    ),
+                    createElement('span', { key: 's', className: 'text-[9px] font-bold ' + ((dev.keyStyle || 'Windows') === opt ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
+                ])))
+            ]),
+            createElement('div', { key: 'scale-sect', className: 'flex min-w-0 w-full flex-wrap items-center gap-3 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
+                createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest whitespace-nowrap' }, 'SCALE:'),
+                createElement('input', {
+                    key: 'slider',
+                    type: 'range',
+                    min: String(MIN_DISPLAY_SCALE * 100),
+                    max: String(MAX_DISPLAY_SCALE * 100),
+                    step: '5',
+                    value: String(Math.round(currentDisplayScale * 100)),
+                    disabled: isScaleFollowing,
+                    onInput: (e) => onUpdateDevice(dev.id, { displayScale: Number(e.target.value) / 100 }),
+                    className: 'min-w-[180px] flex-1 accent-blue-500 ' + (isScaleFollowing ? 'opacity-40 cursor-not-allowed' : '')
+                }),
+                createElement('span', { key: 'value', className: 'w-12 text-right text-[10px] font-black ' + (isScaleFollowing ? 'text-slate-400' : (isLightApp ? 'text-slate-700' : 'text-slate-200')) + ' uppercase tracking-widest' }, `${Math.round(currentDisplayScale * 100)}%`),
+                createElement('button', {
+                    key: 'reset',
+                    disabled: isScaleFollowing,
+                    onClick: () => onUpdateDevice(dev.id, { displayScale: DEFAULT_DISPLAY_SCALE }),
+                    className: ((isScaleFollowing
+                        ? (isLightApp ? 'bg-slate-100 text-slate-400' : 'bg-slate-900/60 text-slate-500')
+                        : (isLightApp ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'))
+                        + ' px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ' + (isScaleFollowing ? 'cursor-not-allowed' : ''))
+                }, '100%'),
+                createElement('label', { key: 'follow-lbl', className: 'flex items-center gap-2 cursor-pointer select-none' }, [
+                    createElement('input', {
+                        key: 'follow-input',
+                        type: 'checkbox',
+                        checked: isScaleFollowing,
+                        onChange: (e) => onUpdateDevice(dev.id, { followScale: e.target.checked }),
+                        className: 'sr-only'
+                    }),
+                    createElement('span', {
+                        key: 'follow-box',
+                        className: 'flex h-5 w-5 items-center justify-center rounded-md border transition-all ' + (
+                            isScaleFollowing
+                                ? 'border-blue-500 bg-blue-500 text-white'
+                                : (isLightApp ? 'border-slate-300 bg-white text-transparent' : 'border-slate-600 bg-slate-900/60 text-transparent')
+                        )
+                    }, createElement('svg', {
+                        width: 12,
+                        height: 12,
+                        viewBox: '0 0 16 16',
+                        fill: 'none',
+                        stroke: 'currentColor',
+                        strokeWidth: 2.4,
+                        strokeLinecap: 'round',
+                        strokeLinejoin: 'round'
+                    }, [
+                        createElement('path', { key: 'check', d: 'M3.5 8.5 6.5 11.5 12.5 4.5' })
+                    ])),
+                    createElement('span', {
+                        key: 'follow-text',
+                        className: 'text-[9px] font-black uppercase tracking-widest ' + (isScaleFollowing ? (isLightApp ? 'text-blue-600' : 'text-blue-300') : (isLightApp ? 'text-slate-500' : 'text-slate-400'))
+                    }, 'FOLLOW SIZE')
+                ])
+            ])
+        ]),
+        hasDeviceSpecificOptions ? createElement('div', {
+            key: 'device-opts-divider',
+            className: 'w-full h-[1px] ' + (isLightApp ? 'bg-slate-200' : 'bg-slate-800')
+        }) : null,
+        hasDeviceSpecificOptions ? createElement('div', { key: 'device-opts', className: 'flex flex-wrap items-stretch gap-4' }, [
+            showSeparation ? createElement('div', { key: 'separation-sect', className: 'flex w-full flex-wrap items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
+                createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'SEPARATION:'),
+                createElement('div', { key: 'btns', className: 'flex flex-wrap gap-4' }, ['Disable', 'Enable'].map(opt => {
+                    const isChecked = (opt === 'Enable' ? dev.separation === 'ENABLE' : (!dev.separation || dev.separation === 'DISABLE'));
+                    return createElement('label', {
+                        key: opt,
+                        onClick: (e) => {
+                            e.preventDefault();
+                            if (opt === 'Enable') {
+                                const hasGap = findSplitX(dev.design) !== null;
+                                if (hasGap) {
+                                    onUpdateDevice(dev.id, { separation: 'ENABLE' });
+                                } else {
+                                    alert('有効なギャップが検出できませんでした。');
+                                    onUpdateDevice(dev.id, { separation: 'DISABLE' });
+                                }
+                            } else {
+                                onUpdateDevice(dev.id, { separation: 'DISABLE' });
+                            }
+                        },
+                        className: 'flex items-center gap-1.5 cursor-pointer group'
+                    }, [
+                        createElement('input', {
+                            key: 'i',
+                            type: 'radio',
+                            name: 'separation-' + dev.id,
+                            checked: isChecked,
+                            readOnly: true,
+                            className: 'hidden'
+                        }),
+                        createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (isChecked ? 'border-blue-500' : '') },
+                            isChecked ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                        ),
+                        createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (isChecked ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
+                    ]);
+                }))
+            ]) : null,
+            ...encoderIndices.map(idx => {
+                const currentSetting = resolveInputDeviceSetting(dev.inputDeviceSettings, dev.encoderStyles, idx);
+                const kindOptions = [
+                    { value: INPUT_DEVICE_KINDS.ENCODER, label: 'Encoder' },
+                    { value: INPUT_DEVICE_KINDS.POINTING_DEVICE, label: 'Pointing' }
+                ];
+                const variantOptions = getVariantOptions(currentSetting.kind);
+                return createElement('div', { key: 'encoder-sect-' + idx, className: 'flex w-full flex-col items-start gap-3 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border md:flex-row md:items-center md:gap-4 ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
+                    createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest md:flex-shrink-0' }, 'INPUT e' + idx + ':'),
+                    createElement('div', { key: 'device-option-groups', className: 'flex w-full flex-wrap items-center gap-3 md:gap-4' }, [
+                        createElement('div', { key: 'device-kind-btns', className: 'flex flex-wrap items-center gap-4' }, kindOptions.map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
+                            createElement('input', {
+                                key: 'i',
+                                type: 'radio',
+                                name: 'inputDeviceKind-' + idx + '-' + dev.id,
+                                checked: currentSetting.kind === opt.value,
+                                onChange: () => onUpdateDevice(dev.id, updateInputDeviceSetting(dev, idx, getDefaultInputDeviceSetting(opt.value))),
+                                className: 'hidden'
+                            }),
+                            createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentSetting.kind === opt.value ? 'border-blue-500' : '') },
+                                currentSetting.kind === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                            ),
+                            createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentSetting.kind === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
+                        ]))),
+                        createElement('div', { key: 'device-variant-btns', className: 'flex flex-wrap items-center gap-4' }, variantOptions.map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
+                            createElement('input', {
+                                key: 'i',
+                                type: 'radio',
+                                name: 'inputDeviceVariant-' + idx + '-' + dev.id,
+                                checked: currentSetting.variant === opt.value,
+                                onChange: () => onUpdateDevice(dev.id, updateInputDeviceSetting(dev, idx, { variant: opt.value })),
+                                className: 'hidden'
+                            }),
+                            createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentSetting.variant === opt.value ? 'border-blue-500' : '') },
+                                currentSetting.variant === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
+                            ),
+                            createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentSetting.variant === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
+                        ])))
+                    ])
+                ]);
+            }),
+            ...((dev.design && dev.design.layouts && dev.design.layouts.labels) || []).map((lbl, idx) => {
+                const { labelName, originalLabel, choices } = parseLayoutOption(lbl, idx);
+                const activeOptions = dev.layoutOptions || {};
+                const currentValue = activeOptions[idx] !== undefined ? activeOptions[idx] : 0;
+
+                return createElement('div', {
+                    key: 'layout-opt-sect-' + idx,
+                    title: originalLabel ? `Original Label: ${originalLabel}` : null,
+                    className: 'flex w-full flex-wrap items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') + (originalLabel ? ' cursor-help' : '')
+                }, [
+                    createElement('span', {
+                        key: 't',
+                        className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest'
+                    }, labelName + ':'),
+                    createElement('div', { key: 'btns', className: 'flex flex-wrap gap-4' }, choices.map(opt => createElement('label', {
+                        key: opt.value,
+                        className: 'flex items-center gap-1.5 cursor-pointer group'
+                    }, [
+                        createElement('input', {
+                            key: 'i',
+                            type: 'radio',
+                            name: 'layoutOption-' + idx + '-' + dev.id,
+                            checked: currentValue === opt.value,
+                            onChange: () => onUpdateDevice(dev.id, {
+                                layoutOptions: {
+                                    ...activeOptions,
+                                    [idx]: opt.value
+                                }
+                            }),
+                            className: 'hidden'
+                        }),
+                        createElement('div', {
+                            key: 'v',
+                            className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentValue === opt.value ? 'border-blue-500' : '')
+                        }, currentValue === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null),
+                        createElement('span', {
+                            key: 's',
+                            className: 'text-[9px] font-bold ' + (currentValue === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase'
+                        }, opt.label)
+                    ])))
+                ]);
+            })
+        ]) : null
+    ]);
 
     useEffect(() => {
         const nextPage = Math.min(totalLayerPages - 1, Math.floor((Number(dev.layer) || 0) / MAX_VISIBLE_LAYER_BUTTONS));
@@ -373,235 +592,20 @@ export function DeviceSlot({
             ])
         ]),
 
-        dev.showSettings ? createElement('div', { key: 'settings-panel', className: 'flex flex-col gap-4 mb-6 ' + (isLightApp ? 'bg-slate-50 border-slate-200' : 'bg-slate-900/80 border-slate-700') + ' p-4 rounded-xl border w-full animate-in fade-in slide-in-from-top-2' }, [
-            // Row 1: Global Options
-            createElement('div', { key: 'global-opts', className: 'flex flex-wrap items-center gap-4' }, [
-                createElement('div', { key: 'mode-sect', className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
-                    createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'DISPLAY MODE:'),
-                    createElement('div', { key: 'btns', className: 'flex gap-4' }, ['Fluent', 'Text'].map(opt => createElement('label', { key: opt, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
-                        createElement('input', { key: 'i', type: 'radio', name: 'displayMode-' + dev.id, checked: dev.displayMode === opt, onChange: () => onUpdateDevice(dev.id, { displayMode: opt }), className: 'hidden' }),
-                        createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (dev.displayMode === opt ? 'border-blue-500' : '') }, 
-                            dev.displayMode === opt ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
-                        ),
-                        createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (dev.displayMode === opt ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
-                    ])))
-                ]),
-                createElement('div', { key: 'theme-sect', className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
-                    createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'THEME:'),
-                    createElement('div', { key: 'btns', className: 'flex gap-4' }, ['Dark', 'Light', 'System'].map(opt => createElement('label', { key: opt, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
-                        createElement('input', { key: 'i', type: 'radio', name: 'theme-' + dev.id, checked: (dev.theme || 'System') === opt, onChange: () => onUpdateDevice(dev.id, { theme: opt }), className: 'hidden' }),
-                        createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + ((dev.theme || 'System') === opt ? 'border-blue-500' : '') }, 
-                            (dev.theme || 'System') === opt ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
-                        ),
-                        createElement('span', { key: 's', className: 'text-[9px] font-bold ' + ((dev.theme || 'System') === opt ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
-                    ])))
-                ]),
-                createElement('div', { key: 'style-sect', className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
-                    createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'STYLE:'),
-                    createElement('div', { key: 'btns', className: 'flex gap-4' }, ['Windows', 'Mac'].map(opt => createElement('label', { key: opt, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
-                        createElement('input', { key: 'i', type: 'radio', name: 'keyStyle-' + dev.id, checked: (dev.keyStyle || 'Windows') === opt, onChange: () => onUpdateDevice(dev.id, { keyStyle: opt }), className: 'hidden' }),
-                        createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + ((dev.keyStyle || 'Windows') === opt ? 'border-blue-500' : '') }, 
-                            (dev.keyStyle || 'Windows') === opt ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
-                        ),
-                        createElement('span', { key: 's', className: 'text-[9px] font-bold ' + ((dev.keyStyle || 'Windows') === opt ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
-                    ])))
-                ]),
-                createElement('div', { key: 'scale-sect', className: 'flex min-w-[260px] flex-1 items-center gap-3 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
-                    createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest whitespace-nowrap' }, 'SCALE:'),
-                    createElement('input', {
-                        key: 'slider',
-                        type: 'range',
-                        min: String(MIN_DISPLAY_SCALE * 100),
-                        max: String(MAX_DISPLAY_SCALE * 100),
-                        step: '5',
-                        value: String(Math.round(currentDisplayScale * 100)),
-                        disabled: isScaleFollowing,
-                        onInput: (e) => onUpdateDevice(dev.id, { displayScale: Number(e.target.value) / 100 }),
-                        className: 'flex-1 min-w-[120px] accent-blue-500 ' + (isScaleFollowing ? 'opacity-40 cursor-not-allowed' : '')
-                    }),
-                    createElement('span', { key: 'value', className: 'w-12 text-right text-[10px] font-black ' + (isScaleFollowing ? 'text-slate-400' : (isLightApp ? 'text-slate-700' : 'text-slate-200')) + ' uppercase tracking-widest' }, `${Math.round(currentDisplayScale * 100)}%`),
-                    createElement('button', {
-                        key: 'reset',
-                        disabled: isScaleFollowing,
-                        onClick: () => onUpdateDevice(dev.id, { displayScale: DEFAULT_DISPLAY_SCALE }),
-                        className: ((isScaleFollowing
-                            ? (isLightApp ? 'bg-slate-100 text-slate-400' : 'bg-slate-900/60 text-slate-500')
-                            : (isLightApp ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'))
-                            + ' px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ' + (isScaleFollowing ? 'cursor-not-allowed' : ''))
-                    }, '100%'),
-                    createElement('label', { key: 'follow-lbl', className: 'flex items-center gap-2 cursor-pointer select-none' }, [
-                        createElement('input', {
-                            key: 'follow-input',
-                            type: 'checkbox',
-                            checked: isScaleFollowing,
-                            onChange: (e) => onUpdateDevice(dev.id, { followScale: e.target.checked }),
-                            className: 'sr-only'
-                        }),
-                        createElement('span', {
-                            key: 'follow-box',
-                            className: 'flex h-5 w-5 items-center justify-center rounded-md border transition-all ' + (
-                                isScaleFollowing
-                                    ? 'border-blue-500 bg-blue-500 text-white'
-                                    : (isLightApp ? 'border-slate-300 bg-white text-transparent' : 'border-slate-600 bg-slate-900/60 text-transparent')
-                            )
-                        }, createElement('svg', {
-                            width: 12,
-                            height: 12,
-                            viewBox: '0 0 16 16',
-                            fill: 'none',
-                            stroke: 'currentColor',
-                            strokeWidth: 2.4,
-                            strokeLinecap: 'round',
-                            strokeLinejoin: 'round'
-                        }, [
-                            createElement('path', { key: 'check', d: 'M3.5 8.5 6.5 11.5 12.5 4.5' })
-                        ])),
-                        createElement('span', {
-                            key: 'follow-text',
-                            className: 'text-[9px] font-black uppercase tracking-widest ' + (isScaleFollowing ? (isLightApp ? 'text-blue-600' : 'text-blue-300') : (isLightApp ? 'text-slate-500' : 'text-slate-400'))
-                        }, 'FOLLOW SIZE')
-                    ])
-                ])
-            ]),
-
-            // Divider Row
-            hasDeviceSpecificOptions ? createElement('div', { 
-                key: 'device-opts-divider', 
-                className: 'w-full h-[1px] ' + (isLightApp ? 'bg-slate-200' : 'bg-slate-800')
-            }) : null,
-
-            // Row 2: Device Specific Options
-            hasDeviceSpecificOptions ? createElement('div', { key: 'device-opts', className: 'flex flex-wrap items-center gap-4' }, [
-                // 1. Separation Option (Only if showSeparation is true)
-                showSeparation ? createElement('div', { key: 'separation-sect', className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
-                    createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' }, 'SEPARATION:'),
-                    createElement('div', { key: 'btns', className: 'flex gap-4' }, ['Disable', 'Enable'].map(opt => {
-                        const isChecked = (opt === 'Enable' ? dev.separation === 'ENABLE' : (!dev.separation || dev.separation === 'DISABLE'));
-                        return createElement('label', { 
-                            key: opt, 
-                            onClick: (e) => {
-                                e.preventDefault();
-                                if (opt === 'Enable') {
-                                    const hasGap = findSplitX(dev.design) !== null;
-                                    if (hasGap) {
-                                        onUpdateDevice(dev.id, { separation: 'ENABLE' });
-                                    } else {
-                                        alert('有効なギャップが検出できませんでした。');
-                                        onUpdateDevice(dev.id, { separation: 'DISABLE' });
-                                    }
-                                } else {
-                                    onUpdateDevice(dev.id, { separation: 'DISABLE' });
-                                }
-                            },
-                            className: 'flex items-center gap-1.5 cursor-pointer group' 
-                        }, [
-                            createElement('input', { 
-                                key: 'i', 
-                                type: 'radio', 
-                                name: 'separation-' + dev.id, 
-                                checked: isChecked, 
-                                readOnly: true,
-                                className: 'hidden' 
-                            }),
-                            createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (isChecked ? 'border-blue-500' : '') }, 
-                                isChecked ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
-                            ),
-                            createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (isChecked ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt)
-                        ]);
-                    }))
-                ]) : null,
-
-                // 2. Encoder Options
-                ...encoderIndices.map(idx => {
-                    const currentSetting = resolveInputDeviceSetting(dev.inputDeviceSettings, dev.encoderStyles, idx);
-                    const kindOptions = [
-                        { value: INPUT_DEVICE_KINDS.ENCODER, label: 'Encoder' },
-                        { value: INPUT_DEVICE_KINDS.POINTING_DEVICE, label: 'Pointing' }
-                    ];
-                    const variantOptions = getVariantOptions(currentSetting.kind);
-                    return createElement('div', { key: 'encoder-sect-' + idx, className: 'flex w-full flex-col items-start gap-3 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border md:flex-row md:items-center md:gap-4 ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') }, [
-                        createElement('span', { key: 't', className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest md:flex-shrink-0' }, 'INPUT e' + idx + ':'),
-                        createElement('div', { key: 'device-option-groups', className: 'flex w-full flex-wrap items-center gap-3 md:gap-4' }, [
-                            createElement('div', { key: 'device-kind-btns', className: 'flex flex-wrap items-center gap-4' }, kindOptions.map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
-                                createElement('input', { 
-                                    key: 'i', 
-                                    type: 'radio', 
-                                    name: 'inputDeviceKind-' + idx + '-' + dev.id, 
-                                    checked: currentSetting.kind === opt.value,
-                                    onChange: () => onUpdateDevice(dev.id, updateInputDeviceSetting(dev, idx, getDefaultInputDeviceSetting(opt.value))),
-                                    className: 'hidden' 
-                                }),
-                                createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentSetting.kind === opt.value ? 'border-blue-500' : '') }, 
-                                    currentSetting.kind === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
-                                ),
-                                createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentSetting.kind === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
-                            ]))),
-                            createElement('div', { key: 'device-variant-btns', className: 'flex flex-wrap items-center gap-4' }, variantOptions.map(opt => createElement('label', { key: opt.value, className: 'flex items-center gap-1.5 cursor-pointer group' }, [
-                                createElement('input', {
-                                    key: 'i',
-                                    type: 'radio',
-                                    name: 'inputDeviceVariant-' + idx + '-' + dev.id,
-                                    checked: currentSetting.variant === opt.value,
-                                    onChange: () => onUpdateDevice(dev.id, updateInputDeviceSetting(dev, idx, { variant: opt.value })),
-                                    className: 'hidden'
-                                }),
-                                createElement('div', { key: 'v', className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentSetting.variant === opt.value ? 'border-blue-500' : '') },
-                                    currentSetting.variant === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null
-                                ),
-                                createElement('span', { key: 's', className: 'text-[9px] font-bold ' + (currentSetting.variant === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' }, opt.label)
-                            ])))
-                        ])
-                    ]);
-                }),
-
-                // 3. Layout Options (Labels)
-                ...((dev.design && dev.design.layouts && dev.design.layouts.labels) || []).map((lbl, idx) => {
-                    const { labelName, originalLabel, choices } = parseLayoutOption(lbl, idx);
-                    const activeOptions = dev.layoutOptions || {};
-                    const currentValue = activeOptions[idx] !== undefined ? activeOptions[idx] : 0;
-                    
-                    return createElement('div', { 
-                        key: 'layout-opt-sect-' + idx, 
-                        title: originalLabel ? `Original Label: ${originalLabel}` : null,
-                        className: 'flex items-center gap-4 ' + (isLightApp ? 'bg-white' : 'bg-slate-950/30') + ' p-2 px-4 rounded-xl border ' + (isLightApp ? 'border-slate-200' : 'border-slate-800/50') + (originalLabel ? ' cursor-help' : '')
-                    }, [
-                        createElement('span', { 
-                            key: 't', 
-                            className: 'text-[9px] font-black ' + (isLightApp ? 'text-slate-400' : 'text-slate-600') + ' uppercase tracking-widest' 
-                        }, labelName + ':'),
-                        createElement('div', { key: 'btns', className: 'flex gap-4' }, choices.map(opt => createElement('label', { 
-                            key: opt.value, 
-                            className: 'flex items-center gap-1.5 cursor-pointer group' 
-                        }, [
-                            createElement('input', { 
-                                key: 'i', 
-                                type: 'radio', 
-                                name: 'layoutOption-' + idx + '-' + dev.id, 
-                                checked: currentValue === opt.value, 
-                                onChange: () => onUpdateDevice(dev.id, { 
-                                    layoutOptions: {
-                                        ...activeOptions,
-                                        [idx]: opt.value
-                                    } 
-                                }), 
-                                className: 'hidden' 
-                            }),
-                            createElement('div', { 
-                                key: 'v', 
-                                className: 'w-3 h-3 rounded-full border ' + (isLightApp ? 'border-slate-300' : 'border-slate-600') + ' flex items-center justify-center ' + (currentValue === opt.value ? 'border-blue-500' : '') 
-                            }, currentValue === opt.value ? createElement('div', { className: 'w-1.5 h-1.5 rounded-full bg-blue-500' }) : null),
-                            createElement('span', { 
-                                key: 's', 
-                                className: 'text-[9px] font-bold ' + (currentValue === opt.value ? (isLightApp ? 'text-slate-900' : 'text-white') : 'text-slate-500') + ' uppercase' 
-                            }, opt.label)
-                        ])))
-                    ]);
-                })
-            ]) : null
-        ]) : null,
-
-        dev.design ? createElement('div', { key: 'kbd-area', className: 'flex flex-col gap-4' }, [
-            createElement('div', { key: 'kbd-wrap', className: 'w-full flex justify-center overflow-hidden' }, 
+        dev.design ? createElement('div', {
+            key: 'kbd-area',
+            className: 'flex min-w-0 flex-col gap-4 ' + (dev.showSettings && !isGridLayout ? 'lg:flex-row lg:items-start' : '')
+        }, [
+            dev.showSettings && !isGridLayout ? createElement('aside', {
+                key: 'settings-drawer',
+                className: 'order-1 flex w-full min-w-0 flex-col gap-4 overflow-y-auto overflow-x-hidden rounded-2xl border p-4 shadow-2xl ring-1 animate-in fade-in slide-in-from-right-2 lg:order-2 lg:sticky lg:top-6 lg:max-h-[70vh] lg:min-w-[30rem] ' + (isLightApp ? 'bg-white border-slate-200 ring-slate-200/80' : 'bg-slate-950 border-slate-700 ring-slate-700/80'),
+                style: { width: 'min(100%, 32rem)' }
+            }, settingsPanel) : null,
+            createElement('div', {
+                key: 'kbd-wrap',
+                className: 'order-2 min-w-0 flex-1 overflow-hidden lg:order-1'
+            },
+                createElement('div', { className: 'w-full flex justify-center overflow-hidden' }, 
                 createElement(Keyboard, { 
                     design: dev.design, 
                     layer: dev.layer, 
@@ -619,7 +623,11 @@ export function DeviceSlot({
                     layoutOptions: dev.layoutOptions || {},
                     onScaleMetricsChange
                 })
-            )
+            )),
+            dev.showSettings && isGridLayout ? createElement('div', {
+                key: 'settings-grid-panel',
+                className: 'order-3 flex w-full min-w-0 flex-col gap-4 overflow-x-hidden rounded-2xl border p-4 shadow-2xl ring-1 animate-in fade-in slide-in-from-top-2 ' + (isLightApp ? 'bg-white border-slate-200 ring-slate-200/80' : 'bg-slate-950 border-slate-700 ring-slate-700/80')
+            }, settingsPanel) : null
         ]) : createElement('div', { key: 'empty-area', className: 'py-20 text-center opacity-20' }, [
             createElement('div', { key: 'icon', className: 'text-6xl mb-4' }, '⌨️'),
             createElement('p', { key: 'text', className: 'text-[10px] font-black uppercase tracking-widest' }, 'Waiting for Data')
