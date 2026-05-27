@@ -53,3 +53,15 @@ export function saveLocalDeviceDefinition(definition) {
     writeDefinitionIndex(index);
     return index[key];
 }
+
+export function removeLocalDeviceDefinition(vendorId, productId) {
+    const index = readDefinitionIndex();
+    const key = buildStorageKey(vendorId, productId);
+    if (!Object.prototype.hasOwnProperty.call(index, key)) {
+        return false;
+    }
+
+    delete index[key];
+    writeDefinitionIndex(index);
+    return true;
+}

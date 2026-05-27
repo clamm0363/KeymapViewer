@@ -129,8 +129,7 @@ export function DeviceSlot({
     onStartEditing,
     onFinishEditing,
     onSetEditingName,
-    onFileHandle,
-    onOpenMappingSource,
+    onOpenLoadModal,
     onSetMacroModal,
     onSetExportModal,
     onScaleMetricsChange
@@ -544,15 +543,11 @@ export function DeviceSlot({
             ]),
             createElement('div', { key: 'header-control-band', className: isGridLayout ? 'flex flex-col gap-2' : 'flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between' }, isGridLayout ? [
                 createElement('div', { key: 'action-band', className: 'flex flex-wrap items-center justify-start gap-2' }, [
-                    createElement('label', { key: 'layout-lbl', className: neutralActionButtonClass + ' cursor-pointer' }, [
-                        'LAYOUT',
-                        createElement('input', { key: 'layout-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'layout') })
-                    ]),
                     createElement('button', {
-                        key: 'map-btn',
-                        onClick: () => onOpenMappingSource(dev.id),
+                        key: 'load-btn',
+                        onClick: () => onOpenLoadModal(dev.id),
                         className: neutralActionButtonClass
-                    }, 'MAPPING'),
+                    }, 'LOAD'),
                     createElement('button', { key: 'macro-btn', onClick: () => onSetMacroModal({ deviceId: dev.id, macroId: null }), className: neutralActionButtonClass }, 'MACROS'),
                     createElement('button', { 
                         key: 'share-btn', 
@@ -570,15 +565,11 @@ export function DeviceSlot({
             ] : [
                 renderLayerBar(),
                 createElement('div', { key: 'action-band', className: 'flex flex-wrap items-center gap-2 lg:ml-auto lg:justify-end' }, [
-                    createElement('label', { key: 'layout-lbl', className: neutralActionButtonClass + ' cursor-pointer' }, [
-                        'LAYOUT',
-                        createElement('input', { key: 'layout-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'layout') })
-                    ]),
                     createElement('button', {
-                        key: 'map-btn',
-                        onClick: () => onOpenMappingSource(dev.id),
+                        key: 'load-btn',
+                        onClick: () => onOpenLoadModal(dev.id),
                         className: neutralActionButtonClass
-                    }, 'MAPPING'),
+                    }, 'LOAD'),
                     createElement('button', { key: 'macro-btn', onClick: () => onSetMacroModal({ deviceId: dev.id, macroId: null }), className: neutralActionButtonClass }, 'MACROS'),
                     createElement('button', { 
                         key: 'share-btn', 

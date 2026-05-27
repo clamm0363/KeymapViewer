@@ -12,12 +12,14 @@ export function HelpModal({ isLightApp, onClose }) {
         ja: {
             title: '使い方ガイド',
             sec1Title: '📂 キーマップの読み込み & 管理',
-            sec1_1: 'LAYOUT',
-            sec1_1Desc: ' — キーボードの物理レイアウト（配列定義）JSONを読み込みます。',
-            sec1_2: 'MAPPING',
-            sec1_2Desc: ' — レイヤーごとのキーアサインJSON（QMK/VIA形式）を読み込みます。',
+            sec1_1: 'LOAD',
+            sec1_1Desc: ' — スロットごとの読込入口です。まず「ファイルから読み込む」か「デバイスに接続して現在の情報を読む」かを選びます。',
+            sec1_2: 'ファイルから読み込む',
+            sec1_2Desc: ' — 先に LAYOUT 用 JSON を読み込み、その後必要なら続けて MAPPING 用 JSON を読み込みます。MAPPING は「後で」を選んで後回しにもできます。',
             sec1_3: 'ドラッグ＆ドロップ',
             sec1_3Desc: ' — スロットにJSONファイルをドロップして即座に適用できます。',
+            sec1_4: 'WebHID 読み込み',
+            sec1_4Desc: ' — 接続デバイスの現在の MAPPING を読み込みます。LAYOUT はブラウザ内キャッシュ、現在スロット、サービス既知定義、ユーザ指定 JSON の順で解決されます。',
             
             sec2Title: '⚙️ 表示カスタマイズ (メニューバーから切替)',
             sec2_1: 'DISPLAY MODE',
@@ -35,21 +37,23 @@ export function HelpModal({ isLightApp, onClose }) {
             
             sec4Title: '🤖 マクロ & レイヤータップ機能',
             sec4_1: 'MACROS',
-            sec4_1Desc: ' — スロットに読み込まれたマクロの確認やエイリアス（別名）の設定が可能です。',
+            sec4_1Desc: ' — スロットに読み込まれたマクロの確認やエイリアス（別名）の設定が可能です。MAPPING 未読込のスロットでは内容は空です。',
             sec4_2: '特殊表示対応',
             sec4_2Desc: ' — レイヤータップ（LT）やモディファイアタップ（MT）、JISのL字エンターキーが自動的に専用グラフィックで描画されます。',
             
-            footer: '※ 編集中の設定状態はブラウザの localStorage にリアルタイムで自動保存されるため、タブを閉じても安全に作業を継続できます。'
+            footer: '※ 編集中の設定状態に加え、接続読込に成功した LAYOUT 定義もブラウザの localStorage に保存されるため、同じブラウザでは次回以降の再接続が簡単になります。'
         },
         en: {
             title: 'Usage Guide',
             sec1Title: '📂 Load & Manage Keymaps',
-            sec1_1: 'LAYOUT',
-            sec1_1Desc: ' — Load physical keyboard layout JSON definition.',
-            sec1_2: 'MAPPING',
-            sec1_2Desc: ' — Load layer key assignment mapping JSON (QMK/VIA format).',
+            sec1_1: 'LOAD',
+            sec1_1Desc: ' — The unified entry point for each slot. Choose between loading from files or reading the current state from a connected device.',
+            sec1_2: 'Load From File',
+            sec1_2Desc: ' — Load a LAYOUT JSON first, then optionally load a MAPPING JSON. You can also choose "Later" and continue with only the layout shown.',
             sec1_3: 'Drag & Drop',
             sec1_3Desc: ' — Drop JSON files directly onto slots for instant loading.',
+            sec1_4: 'WebHID Load',
+            sec1_4Desc: ' — Reads the current MAPPING from a connected device. LAYOUT resolution falls back through browser cache, current slot layout, bundled registry, and finally a user-provided JSON.',
             
             sec2Title: '⚙️ Display Customization (Switch via Settings Menu)',
             sec2_1: 'DISPLAY MODE',
@@ -67,11 +71,11 @@ export function HelpModal({ isLightApp, onClose }) {
             
             sec4Title: '🤖 Macros & Advanced Features',
             sec4_1: 'MACROS',
-            sec4_1Desc: ' — View macros loaded into the slot and customize their aliases.',
+            sec4_1Desc: ' — View macros loaded into the slot and customize their aliases. Slots without a loaded MAPPING will remain empty here.',
             sec4_2: 'Special Renderings',
             sec4_2Desc: ' — Automatically renders advanced keycaps like Layer-Tap (LT), Mod-Tap (MT), and L-shaped JIS Enter keys in high-fidelity graphics.',
             
-            footer: '* All edits are saved automatically to the browser\'s localStorage, allowing you to resume your work safely anytime.'
+            footer: '* In addition to UI state, successfully resolved LAYOUT definitions for device reads are also saved in browser localStorage, making reconnects easier in the same browser.'
         }
     };
 
@@ -112,7 +116,8 @@ export function HelpModal({ isLightApp, onClose }) {
                     createElement('ul', { key: 'ul', className: 'space-y-1.5 list-disc list-inside text-slate-500' }, [
                         createElement('li', { key: 'li1' }, [createElement('span', { className: itemTitleClass }, t.sec1_1), t.sec1_1Desc]),
                         createElement('li', { key: 'li2' }, [createElement('span', { className: itemTitleClass }, t.sec1_2), t.sec1_2Desc]),
-                        createElement('li', { key: 'li3' }, [createElement('span', { className: itemTitleClass }, t.sec1_3), t.sec1_3Desc])
+                        createElement('li', { key: 'li3' }, [createElement('span', { className: itemTitleClass }, t.sec1_3), t.sec1_3Desc]),
+                        createElement('li', { key: 'li4' }, [createElement('span', { className: itemTitleClass }, t.sec1_4), t.sec1_4Desc])
                     ])
                 ]),
                 // ⚙️ 表示カスタマイズ
