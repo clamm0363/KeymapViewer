@@ -5,8 +5,11 @@ export function MappingSourceModal({
     slotLabel,
     isDeviceLoading,
     errorMessage,
+    canChooseDefinition,
+    pendingDeviceInfo,
     onChooseFile,
     onChooseDevice,
+    onChooseDefinition,
     onClose
 }) {
     const panelClass = (isLightApp ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-700');
@@ -84,8 +87,29 @@ export function MappingSourceModal({
                     createElement('p', {
                         key: 'device-desc',
                         className: 'mt-2 text-xs leading-relaxed text-blue-100/90'
-                    }, 'ブラウザのデバイス選択ダイアログから 1 台選び、このスロットのレイアウトとマッピングを置き換えます。')
+                    }, 'ブラウザのデバイス選択ダイアログから 1 台選び、このスロットの現在マッピングを読み込みます。定義が未知の場合は続けて定義JSONを指定できます。')
                 ]),
+                canChooseDefinition ? createElement('button', {
+                    key: 'definition-option',
+                    onClick: onChooseDefinition,
+                    disabled: isDeviceLoading,
+                    className: secondaryButtonClass + ' disabled:cursor-not-allowed disabled:opacity-50'
+                }, [
+                    createElement('div', {
+                        key: 'definition-label',
+                        className: 'text-[11px] font-black uppercase tracking-[0.2em] text-blue-500'
+                    }, 'Definition'),
+                    createElement('div', {
+                        key: 'definition-title',
+                        className: 'mt-1 text-sm font-black uppercase tracking-wide'
+                    }, '定義JSONを選択して続行'),
+                    createElement('p', {
+                        key: 'definition-desc',
+                        className: mutedTextClass + ' mt-2 text-xs leading-relaxed'
+                    }, pendingDeviceInfo
+                        ? `${pendingDeviceInfo.productName || 'Connected Device'} / ${pendingDeviceInfo.vendorId?.toString(16).toUpperCase().padStart(4, '0')} / ${pendingDeviceInfo.productId?.toString(16).toUpperCase().padStart(4, '0')} に対応する VIA 定義 JSON を選択します。`
+                        : '接続済みデバイスに対応する VIA 定義 JSON を選択して、このまま読み込みを続行します。')
+                ]) : null,
                 errorMessage ? createElement('div', {
                     key: 'error',
                     className: (isLightApp

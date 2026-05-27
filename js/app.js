@@ -13,6 +13,8 @@ import { MappingSourceModal } from './components/Modals/MappingSourceModal.js';
 import { Keyboard } from './components/Keyboard.js';
 import { findSupportedDeviceConfig, loadDeviceDefinition, SUPPORTED_HID_FILTERS } from './utils/hid/deviceRegistry.js';
 import { requestViaDevice, readViaDeviceKeymap } from './utils/hid/viaKeymapReader.js';
+import { findLocalDeviceDefinition, saveLocalDeviceDefinition } from './utils/hid/localDefinitions.js';
+import { formatUsbId, validateDefinitionForDevice } from './utils/hid/definitionUtils.js';
 
 const CURRENT_VERSION = '1.2.5';
 const DEFAULT_DISPLAY_SCALE = 1;
@@ -54,6 +56,25 @@ function buildInputDeviceSettings(inputDeviceSettings = {}, encoderStyles = {}) 
         }
     });
     return next;
+}
+
+function buildVendorProductStorageKey(vendorId, productId) {
+    return `${vendorId}:${productId}`;
+}
+
+function readJsonFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                resolve(JSON.parse(event.target.result));
+            } catch (error) {
+                reject(new Error('JSONファイルの解析に失敗しました。'));
+            }
+        };
+        reader.onerror = () => reject(new Error('JSONファイルの読み込みに失敗しました。'));
+        reader.readAsText(file);
+    });
 }
 
 function createEmptyDevice() {
@@ -149,6 +170,8 @@ export function App() {
     const slotScaleMetricsRef = useRef({});
     const mappingFileInputRef = useRef(null);
     const mappingFileTargetIdRef = useRef(null);
+    const definitionFileInputRef = useRef(null);
+    const pendingMappingDeviceRef = useRef(null);
 
     const applyDisplayScalePresetForLayout = (targetLayoutMode, targetScale = DEFAULT_DISPLAY_SCALE) => {
         setDevices(prev => prev.map(device => {
@@ -418,14 +441,18 @@ export function App() {
     };
 
     const openMappingSource = (slotId) => {
+        pendingMappingDeviceRef.current = null;
         setMappingSourceState({
             slotId,
             isDeviceLoading: false,
-            errorMessage: ''
+            errorMessage: '',
+            canChooseDefinition: false,
+            pendingDeviceInfo: null
         });
     };
 
     const closeMappingSource = () => {
+        pendingMappingDeviceRef.current = null;
         setMappingSourceState(null);
     };
 
@@ -448,11 +475,97 @@ export function App() {
         }
     };
 
+    const triggerDefinitionFilePicker = () => {
+        requestAnimationFrame(() => {
+            definitionFileInputRef.current?.click();
+        });
+    };
+
+    const applyConnectedDeviceDefinition = async (slotId, selectedDevice, definition, options = {}) => {
+        const keymapJson = await readViaDeviceKeymap(selectedDevice, definition);
+
+        updateDevice(slotId, {
+            name: sanitizeDeviceName(selectedDevice.productName || definition.name || 'Connected Device'),
+            design: definition,
+            keymapJson,
+            macroAliases: keymapJson.macroAliases || {},
+            layoutOptions: {},
+            encoderStyles: definition.encoderStyles || {},
+            inputDeviceSettings: buildInputDeviceSettings(definition.inputDeviceSettings, definition.encoderStyles)
+        });
+
+        if (options.offerLocalSave) {
+            const shouldSave = window.confirm('この定義JSONをこのブラウザに保存し、次回以降この端末では接続だけで再利用できるようにしますか？');
+            if (shouldSave) {
+                saveLocalDeviceDefinition(definition);
+            }
+        }
+
+        pendingMappingDeviceRef.current = null;
+        setMappingSourceState(null);
+    };
+
+    const prepareDefinitionFallback = (slotId, selectedDevice, baseMessage = '') => {
+        pendingMappingDeviceRef.current = selectedDevice;
+        setMappingSourceState((prev) => prev && prev.slotId === slotId ? {
+            ...prev,
+            isDeviceLoading: false,
+            canChooseDefinition: true,
+            pendingDeviceInfo: {
+                vendorId: selectedDevice.vendorId,
+                productId: selectedDevice.productId,
+                productName: selectedDevice.productName || ''
+            },
+            errorMessage: baseMessage || 'このデバイスに対応するサービス既知定義がありません。定義JSONを選択して読込を試してください。'
+        } : prev);
+    };
+
+    const handleDefinitionFileSelected = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+
+        if (!file || !mappingSourceState?.slotId) {
+            return;
+        }
+
+        const selectedDevice = pendingMappingDeviceRef.current;
+        if (!selectedDevice) {
+            setMappingSourceState((prev) => prev ? {
+                ...prev,
+                errorMessage: '接続中デバイス情報が見つかりません。もう一度 WebHID 読込をやり直してください。'
+            } : prev);
+            return;
+        }
+
+        setMappingSourceState((prev) => prev ? {
+            ...prev,
+            isDeviceLoading: true,
+            errorMessage: ''
+        } : prev);
+
+        try {
+            const parsed = await readJsonFile(file);
+            const definition = validateDefinitionForDevice(parsed, selectedDevice);
+            await applyConnectedDeviceDefinition(mappingSourceState.slotId, selectedDevice, definition, {
+                offerLocalSave: true
+            });
+        } catch (error) {
+            console.error('Failed to apply user-provided definition:', error);
+            setMappingSourceState((prev) => prev ? {
+                ...prev,
+                isDeviceLoading: false,
+                errorMessage: error instanceof Error ? error.message : '定義JSONの適用に失敗しました。'
+            } : prev);
+        }
+    };
+
     const handleMappingDeviceLoad = async (slotId) => {
         setMappingSourceState((prev) => prev && prev.slotId === slotId ? {
             ...prev,
             isDeviceLoading: true,
-            errorMessage: ''
+            errorMessage: '',
+            canChooseDefinition: false,
+            pendingDeviceInfo: null
         } : prev);
 
         try {
@@ -465,25 +578,34 @@ export function App() {
                 return;
             }
 
-            const deviceConfig = findSupportedDeviceConfig(selectedDevice.vendorId, selectedDevice.productId);
-            if (!deviceConfig) {
-                throw new Error('このデバイスに対応するレイアウト定義がまだ登録されていません。');
+            const localDefinitionKey = buildVendorProductStorageKey(selectedDevice.vendorId, selectedDevice.productId);
+            const cachedDefinitionRecord = findLocalDeviceDefinition(selectedDevice.vendorId, selectedDevice.productId);
+            if (cachedDefinitionRecord?.definition) {
+                await applyConnectedDeviceDefinition(slotId, selectedDevice, cachedDefinitionRecord.definition);
+                return;
             }
 
-            const definition = await loadDeviceDefinition(deviceConfig);
-            const keymapJson = await readViaDeviceKeymap(selectedDevice, definition);
+            const deviceConfig = findSupportedDeviceConfig(selectedDevice.vendorId, selectedDevice.productId);
+            if (!deviceConfig) {
+                prepareDefinitionFallback(
+                    slotId,
+                    selectedDevice,
+                    `このデバイス (${formatUsbId(selectedDevice.vendorId)} / ${formatUsbId(selectedDevice.productId)}) に対応するサービス既知定義がありません。定義JSONを選択して続行してください。`
+                );
+                return;
+            }
 
-            updateDevice(slotId, {
-                name: sanitizeDeviceName(selectedDevice.productName || definition.name || 'Connected Device'),
-                design: definition,
-                keymapJson,
-                macroAliases: keymapJson.macroAliases || {},
-                layoutOptions: {},
-                encoderStyles: definition.encoderStyles || {},
-                inputDeviceSettings: buildInputDeviceSettings(definition.inputDeviceSettings, definition.encoderStyles)
-            });
-
-            setMappingSourceState(null);
+            try {
+                const definition = await loadDeviceDefinition(deviceConfig);
+                await applyConnectedDeviceDefinition(slotId, selectedDevice, definition);
+            } catch (definitionError) {
+                console.warn('Failed to load bundled device definition, falling back to user-provided definition:', definitionError);
+                prepareDefinitionFallback(
+                    slotId,
+                    selectedDevice,
+                    `サービス既知定義の読み込みに失敗しました。定義JSONを選択して続行できます。 (${definitionError instanceof Error ? definitionError.message : 'unknown error'})`
+                );
+            }
         } catch (error) {
             if (error && (error.name === 'NotFoundError' || error.name === 'AbortError')) {
                 setMappingSourceState((prev) => prev && prev.slotId === slotId ? {
@@ -500,6 +622,7 @@ export function App() {
                 isDeviceLoading: false,
                 errorMessage: error instanceof Error ? error.message : '接続デバイスからの読み込みに失敗しました。'
             } : prev);
+            pendingMappingDeviceRef.current = null;
         }
     };
 
@@ -676,8 +799,11 @@ export function App() {
             slotLabel: `Slot ${devices.findIndex((device) => device.id === mappingSourceState.slotId) + 1 || ''}`.trim(),
             isDeviceLoading: !!mappingSourceState.isDeviceLoading,
             errorMessage: mappingSourceState.errorMessage || '',
+            canChooseDefinition: !!mappingSourceState.canChooseDefinition,
+            pendingDeviceInfo: mappingSourceState.pendingDeviceInfo || null,
             onChooseFile: () => triggerMappingFilePicker(mappingSourceState.slotId),
             onChooseDevice: () => handleMappingDeviceLoad(mappingSourceState.slotId),
+            onChooseDefinition: triggerDefinitionFilePicker,
             onClose: closeMappingSource
         }),
 
@@ -688,6 +814,14 @@ export function App() {
             accept: '.json,application/json',
             className: 'hidden',
             onChange: handleGlobalMappingFile
+        }),
+        createElement('input', {
+            key: 'device-definition-file-input',
+            ref: definitionFileInputRef,
+            type: 'file',
+            accept: '.json,application/json',
+            className: 'hidden',
+            onChange: handleDefinitionFileSelected
         }),
 
         // Hidden Export Container

@@ -34,6 +34,7 @@ export const FLUENT_MAP = {
 };
 
 export const STORAGE_KEY = 'keymapViewer_state';
+export const LOCAL_DEVICE_DEFINITION_STORAGE_KEY = 'keymapViewer_localDeviceDefinitions';
 
 // Fluent System Icons font family stack (for SVG migration compatibility)
 export const FLUENT_FONT_STACK = {
