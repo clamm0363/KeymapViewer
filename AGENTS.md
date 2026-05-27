@@ -91,8 +91,10 @@ The UI supports both text-based and SVG-based icon rendering.
   - Shared non-keycap helper utilities.
 - `SampleLayouts/`
   - Sample layout data for manual verification.
-- `json/`, `json_mapped/`
-  - Source and mapped JSON data.
+- `json_public/`
+  - Service-bundled public or review-cleared VIA definition JSON data.
+- `json_private/`
+  - Private local JSON data kept out of version control.
 
 ### Scripts
 

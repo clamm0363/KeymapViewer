@@ -9,10 +9,13 @@ import { HelpModal } from './components/Modals/HelpModal.js';
 import { LinksModal } from './components/Modals/LinksModal.js';
 import { MacroModal } from './components/Modals/MacroModal.js';
 import { ExportModal } from './components/Modals/ExportModal.js';
-import { MappingSourceModal } from './components/Modals/MappingSourceModal.js';
+import { LoadModal } from './components/Modals/LoadModal.js';
 import { Keyboard } from './components/Keyboard.js';
-import { findSupportedDeviceConfig, loadDeviceDefinition, SUPPORTED_HID_FILTERS } from './utils/hid/deviceRegistry.js';
+import { findSupportedDeviceConfig, loadDeviceDefinition } from './utils/hid/deviceRegistry.js';
 import { requestViaDevice, readViaDeviceKeymap } from './utils/hid/viaKeymapReader.js';
+import { findLocalDeviceDefinition, removeLocalDeviceDefinition, saveLocalDeviceDefinition } from './utils/hid/localDefinitions.js';
+import { formatUsbId, validateDefinitionForDevice } from './utils/hid/definitionUtils.js';
+import { isLayoutJson, normalizeLayoutJson, normalizeMappingJson } from './utils/loadJsonUtils.js';
 
 const CURRENT_VERSION = '1.2.5';
 const DEFAULT_DISPLAY_SCALE = 1;
@@ -54,6 +57,44 @@ function buildInputDeviceSettings(inputDeviceSettings = {}, encoderStyles = {}) 
         }
     });
     return next;
+}
+
+function normalizeNameForComparison(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '');
+}
+
+function definitionSeemsToMatchConnectedDevice(definition, selectedDevice) {
+    try {
+        validateDefinitionForDevice(definition, selectedDevice);
+    } catch (error) {
+        return false;
+    }
+
+    const deviceName = normalizeNameForComparison(selectedDevice?.productName);
+    const definitionName = normalizeNameForComparison(definition?.name);
+
+    if (!deviceName || !definitionName) {
+        return true;
+    }
+
+    return deviceName.includes(definitionName) || definitionName.includes(deviceName);
+}
+
+function readJsonFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                resolve(JSON.parse(event.target.result));
+            } catch (error) {
+                reject(new Error('JSONファイルの解析に失敗しました。'));
+            }
+        };
+        reader.onerror = () => reject(new Error('JSONファイルの読み込みに失敗しました。'));
+        reader.readAsText(file);
+    });
 }
 
 function createEmptyDevice() {
@@ -140,15 +181,17 @@ export function App() {
     const [showLinks, setShowLinks] = useState(false);
     const [macroModalState, setMacroModalState] = useState(null);
     const [exportModalDevId, setExportModalDevId] = useState(null);
-    const [mappingSourceState, setMappingSourceState] = useState(null);
+    const [loadFlowState, setLoadFlowState] = useState(null);
     const [exportSettings, setExportSettings] = useState({ layers: [], includeMacros: true, background: 'Dark' });
     const [isExporting, setIsExporting] = useState(false);
     const isInitialMount = useRef(true);
     const exportRef = useRef(null);
     const draggedSlotElementRef = useRef(null);
     const slotScaleMetricsRef = useRef({});
+    const layoutFileInputRef = useRef(null);
     const mappingFileInputRef = useRef(null);
-    const mappingFileTargetIdRef = useRef(null);
+    const pendingFileActionRef = useRef(null);
+    const pendingConnectedDeviceRef = useRef(null);
 
     const applyDisplayScalePresetForLayout = (targetLayoutMode, targetScale = DEFAULT_DISPLAY_SCALE) => {
         setDevices(prev => prev.map(device => {
@@ -390,116 +433,274 @@ export function App() {
         }));
     };
 
-    const handleFile = (e, id, type) => {
-        const f = e.target.files[0];
-        if (f) {
-            const r = new FileReader();
-            r.onload = (ev) => {
-                try {
-                    const j = JSON.parse(ev.target.result);
-                    if (type === 'layout') {
-                        if (j.layouts) updateDevice(id, {
-                            design: j,
-                            name: sanitizeDeviceName(j.name || 'Device'),
-                            layoutOptions: {},
-                            encoderStyles: j.encoderStyles || {},
-                            inputDeviceSettings: buildInputDeviceSettings(j.inputDeviceSettings, j.encoderStyles)
-                        });
-                        else alert('レイアウト情報が見つかりません');
-                    } else {
-                        if (j.layers) updateDevice(id, { keymapJson: j });
-                        else alert('マッピング情報が見つかりません');
-                    }
-                } catch (err) { alert('JSONファイルの解析に失敗しました'); }
-            };
-            r.readAsText(f);
-        }
-        e.target.value = '';
-    };
-
-    const openMappingSource = (slotId) => {
-        setMappingSourceState({
-            slotId,
-            isDeviceLoading: false,
-            errorMessage: ''
+    const applyLayoutToSlot = (slotId, layoutJson, options = {}) => {
+        const currentDevice = devices.find((device) => device.id === slotId);
+        const shouldResetMapping = options.resetMapping !== false;
+        updateDevice(slotId, {
+            name: sanitizeDeviceName(layoutJson.name || currentDevice?.name || 'Device'),
+            design: layoutJson,
+            keymapJson: shouldResetMapping ? null : (currentDevice?.keymapJson || null),
+            macroAliases: shouldResetMapping ? {} : (currentDevice?.macroAliases || {}),
+            layoutOptions: {},
+            encoderStyles: layoutJson.encoderStyles || {},
+            inputDeviceSettings: buildInputDeviceSettings(layoutJson.inputDeviceSettings, layoutJson.encoderStyles)
         });
     };
 
-    const closeMappingSource = () => {
-        setMappingSourceState(null);
+    const applyMappingToSlot = (slotId, mappingJson) => {
+        updateDevice(slotId, {
+            keymapJson: mappingJson,
+            macroAliases: mappingJson.macroAliases || {}
+        });
+    };
+
+    const openLoadModal = (slotId) => {
+        pendingFileActionRef.current = null;
+        pendingConnectedDeviceRef.current = null;
+        setLoadFlowState({
+            slotId,
+            step: 'root',
+            isBusy: false,
+            errorMessage: '',
+            pendingDeviceInfo: null
+        });
+    };
+
+    const closeLoadModal = () => {
+        pendingFileActionRef.current = null;
+        pendingConnectedDeviceRef.current = null;
+        setLoadFlowState(null);
+    };
+
+    const triggerLayoutFilePicker = (action) => {
+        pendingFileActionRef.current = action;
+        requestAnimationFrame(() => {
+            layoutFileInputRef.current?.click();
+        });
     };
 
     const triggerMappingFilePicker = (slotId) => {
-        mappingFileTargetIdRef.current = slotId;
-        setMappingSourceState(null);
+        pendingFileActionRef.current = { kind: 'mapping', slotId };
         requestAnimationFrame(() => {
             mappingFileInputRef.current?.click();
         });
     };
 
-    const handleGlobalMappingFile = (e) => {
-        const slotId = mappingFileTargetIdRef.current;
-        mappingFileTargetIdRef.current = null;
+    const startFileLoadFlow = (slotId) => {
+        setLoadFlowState((prev) => prev && prev.slotId === slotId ? {
+            ...prev,
+            errorMessage: ''
+        } : prev);
+        triggerLayoutFilePicker({ kind: 'layout-root', slotId });
+    };
 
-        if (slotId !== null && slotId !== undefined) {
-            handleFile(e, slotId, 'mapping');
-        } else {
-            e.target.value = '';
+    const cacheDefinitionForDevice = (selectedDevice, definition) => {
+        try {
+            const validatedDefinition = validateDefinitionForDevice(definition, selectedDevice);
+            saveLocalDeviceDefinition({
+                ...validatedDefinition,
+                name: validatedDefinition.name || selectedDevice.productName || 'Connected Device'
+            });
+        } catch (error) {
+            console.warn('Failed to cache layout definition locally:', error);
+        }
+    };
+
+    const applyConnectedDeviceDefinition = async (slotId, selectedDevice, definition) => {
+        const keymapJson = await readViaDeviceKeymap(selectedDevice, definition);
+
+        updateDevice(slotId, {
+            name: sanitizeDeviceName(selectedDevice.productName || definition.name || 'Connected Device'),
+            design: definition,
+            keymapJson,
+            macroAliases: keymapJson.macroAliases || {},
+            layoutOptions: {},
+            encoderStyles: definition.encoderStyles || {},
+            inputDeviceSettings: buildInputDeviceSettings(definition.inputDeviceSettings, definition.encoderStyles)
+        });
+
+        cacheDefinitionForDevice(selectedDevice, definition);
+        closeLoadModal();
+    };
+
+    const prepareLayoutFallback = (slotId, selectedDevice, baseMessage) => {
+        pendingConnectedDeviceRef.current = selectedDevice;
+        setLoadFlowState({
+            slotId,
+            step: 'device',
+            isBusy: false,
+            errorMessage: baseMessage,
+            pendingDeviceInfo: {
+                vendorId: selectedDevice.vendorId,
+                productId: selectedDevice.productId,
+                productName: selectedDevice.productName || ''
+            }
+        });
+    };
+
+    const handleLayoutFileSelected = async (e) => {
+        const file = e.target.files?.[0];
+        const action = pendingFileActionRef.current;
+        e.target.value = '';
+        pendingFileActionRef.current = null;
+
+        if (!file || !action) {
+            return;
+        }
+
+        try {
+            const parsed = await readJsonFile(file);
+            const layoutJson = normalizeLayoutJson(parsed);
+
+            if (action.kind === 'layout-root') {
+                applyLayoutToSlot(action.slotId, layoutJson, { resetMapping: true });
+                setLoadFlowState({
+                    slotId: action.slotId,
+                    step: 'post-layout',
+                    isBusy: false,
+                    errorMessage: '',
+                    pendingDeviceInfo: null
+                });
+                return;
+            }
+
+            if (action.kind === 'layout-for-device') {
+                const selectedDevice = pendingConnectedDeviceRef.current;
+                if (!selectedDevice) {
+                    setLoadFlowState((prev) => prev ? {
+                        ...prev,
+                        step: 'device',
+                        errorMessage: '接続中デバイス情報が見つかりません。もう一度 WebHID 読込をやり直してください。'
+                    } : prev);
+                    return;
+                }
+
+                setLoadFlowState((prev) => prev ? {
+                    ...prev,
+                    step: 'device',
+                    isBusy: true,
+                    errorMessage: ''
+                } : prev);
+
+                const validatedLayout = validateDefinitionForDevice(layoutJson, selectedDevice);
+                await applyConnectedDeviceDefinition(action.slotId, selectedDevice, validatedLayout);
+            }
+        } catch (error) {
+            console.error('Failed to load layout JSON:', error);
+            const errorMessage = error instanceof Error ? error.message : 'LAYOUT JSON の読み込みに失敗しました。';
+            setLoadFlowState((prev) => prev ? {
+                ...prev,
+                step: action.kind === 'layout-for-device' ? 'device' : 'root',
+                isBusy: false,
+                errorMessage
+            } : prev);
+        }
+    };
+
+    const handleMappingFileSelected = async (e) => {
+        const file = e.target.files?.[0];
+        const action = pendingFileActionRef.current;
+        e.target.value = '';
+        pendingFileActionRef.current = null;
+
+        if (!file || !action || action.kind !== 'mapping') {
+            return;
+        }
+
+        try {
+            const parsed = await readJsonFile(file);
+            const mappingJson = normalizeMappingJson(parsed);
+            applyMappingToSlot(action.slotId, mappingJson);
+            closeLoadModal();
+        } catch (error) {
+            console.error('Failed to load mapping JSON:', error);
+            setLoadFlowState((prev) => prev ? {
+                ...prev,
+                step: 'post-layout',
+                isBusy: false,
+                errorMessage: error instanceof Error ? error.message : 'MAPPING JSON の読み込みに失敗しました。'
+            } : prev);
         }
     };
 
     const handleMappingDeviceLoad = async (slotId) => {
-        setMappingSourceState((prev) => prev && prev.slotId === slotId ? {
+        setLoadFlowState((prev) => prev && prev.slotId === slotId ? {
             ...prev,
-            isDeviceLoading: true,
-            errorMessage: ''
+            step: 'root',
+            isBusy: true,
+            errorMessage: '',
+            pendingDeviceInfo: null
         } : prev);
 
         try {
-            const selectedDevice = await requestViaDevice(SUPPORTED_HID_FILTERS);
+            const selectedDevice = await requestViaDevice();
             if (!selectedDevice) {
-                setMappingSourceState((prev) => prev && prev.slotId === slotId ? {
+                setLoadFlowState((prev) => prev && prev.slotId === slotId ? {
                     ...prev,
-                    isDeviceLoading: false
+                    isBusy: false
                 } : prev);
                 return;
             }
 
-            const deviceConfig = findSupportedDeviceConfig(selectedDevice.vendorId, selectedDevice.productId);
-            if (!deviceConfig) {
-                throw new Error('このデバイスに対応するレイアウト定義がまだ登録されていません。');
+            const cachedDefinitionRecord = findLocalDeviceDefinition(selectedDevice.vendorId, selectedDevice.productId);
+            if (cachedDefinitionRecord?.definition) {
+                if (definitionSeemsToMatchConnectedDevice(cachedDefinitionRecord.definition, selectedDevice)) {
+                    await applyConnectedDeviceDefinition(slotId, selectedDevice, cachedDefinitionRecord.definition);
+                    return;
+                }
+
+                console.warn('Cached layout definition did not match connected device name, removing stale cache entry.');
+                removeLocalDeviceDefinition(selectedDevice.vendorId, selectedDevice.productId);
             }
 
-            const definition = await loadDeviceDefinition(deviceConfig);
-            const keymapJson = await readViaDeviceKeymap(selectedDevice, definition);
+            const currentDevice = devices.find((device) => device.id === slotId) || null;
+            if (currentDevice?.design && isLayoutJson(currentDevice.design)) {
+                try {
+                    const matchedLayout = validateDefinitionForDevice(normalizeLayoutJson(currentDevice.design), selectedDevice);
+                    if (!definitionSeemsToMatchConnectedDevice(matchedLayout, selectedDevice)) {
+                        throw new Error('Current slot layout name does not match connected device.');
+                    }
+                    await applyConnectedDeviceDefinition(slotId, selectedDevice, matchedLayout);
+                    return;
+                } catch (validationError) {
+                    console.warn('Current slot layout does not match connected device, skipping slot layout reuse:', validationError);
+                }
+            }
 
-            updateDevice(slotId, {
-                name: sanitizeDeviceName(selectedDevice.productName || definition.name || 'Connected Device'),
-                design: definition,
-                keymapJson,
-                macroAliases: keymapJson.macroAliases || {},
-                layoutOptions: {},
-                encoderStyles: definition.encoderStyles || {},
-                inputDeviceSettings: buildInputDeviceSettings(definition.inputDeviceSettings, definition.encoderStyles)
-            });
+            const deviceConfig = findSupportedDeviceConfig(selectedDevice.vendorId, selectedDevice.productId);
+            if (deviceConfig) {
+                try {
+                    const definition = await loadDeviceDefinition(deviceConfig);
+                    await applyConnectedDeviceDefinition(slotId, selectedDevice, definition);
+                    return;
+                } catch (definitionError) {
+                    console.warn('Failed to load bundled device definition:', definitionError);
+                }
+            }
 
-            setMappingSourceState(null);
+            prepareLayoutFallback(
+                slotId,
+                selectedDevice,
+                `このデバイス (${formatUsbId(selectedDevice.vendorId)} / ${formatUsbId(selectedDevice.productId)}) の LAYOUT を解決できませんでした。LAYOUT 用 JSON を読み込んで続行してください。`
+            );
         } catch (error) {
             if (error && (error.name === 'NotFoundError' || error.name === 'AbortError')) {
-                setMappingSourceState((prev) => prev && prev.slotId === slotId ? {
+                setLoadFlowState((prev) => prev && prev.slotId === slotId ? {
                     ...prev,
-                    isDeviceLoading: false,
+                    isBusy: false,
                     errorMessage: ''
                 } : prev);
                 return;
             }
 
             console.error('Failed to load mapping from HID device:', error);
-            setMappingSourceState((prev) => prev && prev.slotId === slotId ? {
+            setLoadFlowState((prev) => prev && prev.slotId === slotId ? {
                 ...prev,
-                isDeviceLoading: false,
+                step: 'root',
+                isBusy: false,
                 errorMessage: error instanceof Error ? error.message : '接続デバイスからの読み込みに失敗しました。'
             } : prev);
+            pendingConnectedDeviceRef.current = null;
         }
     };
 
@@ -571,26 +772,30 @@ export function App() {
         reader.onload = (ev) => {
             try {
                 const j = JSON.parse(ev.target.result);
+                const isDroppedLayout = isLayoutJson(j);
+                const isDroppedMapping = Array.isArray(j?.layers);
                 if (targetDevId) {
-                    if (j.layouts) updateDevice(targetDevId, {
-                        design: j,
-                        name: sanitizeDeviceName(j.name || 'Device'),
-                        layoutOptions: {},
-                        encoderStyles: j.encoderStyles || {},
-                        inputDeviceSettings: buildInputDeviceSettings(j.inputDeviceSettings, j.encoderStyles)
-                    });
-                    else if (j.layers) updateDevice(targetDevId, { keymapJson: j });
+                    if (isDroppedLayout) {
+                        applyLayoutToSlot(targetDevId, normalizeLayoutJson(j), { resetMapping: true });
+                    } else if (isDroppedMapping) {
+                        applyMappingToSlot(targetDevId, normalizeMappingJson(j));
+                    }
                 } else {
                     if (devices.length >= 4) return;
                     const nd = createEmptyDevice();
-                    if (j.layouts) {
-                        nd.design = j;
-                        nd.name = sanitizeDeviceName(j.name || 'Device');
+                    if (isDroppedLayout) {
+                        const layoutJson = normalizeLayoutJson(j);
+                        nd.design = layoutJson;
+                        nd.name = sanitizeDeviceName(layoutJson.name || 'Device');
                         nd.layoutOptions = {};
-                        nd.encoderStyles = j.encoderStyles || {};
-                        nd.inputDeviceSettings = buildInputDeviceSettings(j.inputDeviceSettings, j.encoderStyles);
+                        nd.encoderStyles = layoutJson.encoderStyles || {};
+                        nd.inputDeviceSettings = buildInputDeviceSettings(layoutJson.inputDeviceSettings, layoutJson.encoderStyles);
+                    } else if (isDroppedMapping) {
+                        const mappingJson = normalizeMappingJson(j);
+                        nd.keymapJson = mappingJson;
+                        nd.macroAliases = mappingJson.macroAliases || {};
+                        nd.name = sanitizeDeviceName(mappingJson.name || 'Mapping');
                     }
-                    else if (j.layers) { nd.keymapJson = j; nd.name = sanitizeDeviceName(j.name || 'Mapping'); }
                     setDevices(prev => [...prev, nd]);
                 }
             } catch (err) { alert('JSONファイルの解析に失敗しました'); }
@@ -670,15 +875,29 @@ export function App() {
             onClose: () => setExportModalDevId(null)
         }),
 
-        mappingSourceState && createElement(MappingSourceModal, {
-            key: 'mapping-source-modal',
+        loadFlowState && createElement(LoadModal, {
+            key: 'load-modal',
             isLightApp,
-            slotLabel: `Slot ${devices.findIndex((device) => device.id === mappingSourceState.slotId) + 1 || ''}`.trim(),
-            isDeviceLoading: !!mappingSourceState.isDeviceLoading,
-            errorMessage: mappingSourceState.errorMessage || '',
-            onChooseFile: () => triggerMappingFilePicker(mappingSourceState.slotId),
-            onChooseDevice: () => handleMappingDeviceLoad(mappingSourceState.slotId),
-            onClose: closeMappingSource
+            slotLabel: `Slot ${devices.findIndex((device) => device.id === loadFlowState.slotId) + 1 || ''}`.trim(),
+            step: loadFlowState.step || 'root',
+            isBusy: !!loadFlowState.isBusy,
+            errorMessage: loadFlowState.errorMessage || '',
+            pendingDeviceInfo: loadFlowState.pendingDeviceInfo || null,
+            onChooseFileFlow: () => startFileLoadFlow(loadFlowState.slotId),
+            onChooseDeviceFlow: () => handleMappingDeviceLoad(loadFlowState.slotId),
+            onChooseMappingFile: () => triggerMappingFilePicker(loadFlowState.slotId),
+            onSkipMapping: closeLoadModal,
+            onChooseLayoutForDevice: () => triggerLayoutFilePicker({ kind: 'layout-for-device', slotId: loadFlowState.slotId }),
+            onClose: closeLoadModal
+        }),
+
+        createElement('input', {
+            key: 'global-layout-file-input',
+            ref: layoutFileInputRef,
+            type: 'file',
+            accept: '.json,application/json',
+            className: 'hidden',
+            onChange: handleLayoutFileSelected
         }),
 
         createElement('input', {
@@ -687,7 +906,7 @@ export function App() {
             type: 'file',
             accept: '.json,application/json',
             className: 'hidden',
-            onChange: handleGlobalMappingFile
+            onChange: handleMappingFileSelected
         }),
 
         // Hidden Export Container
@@ -754,8 +973,7 @@ export function App() {
                     onStartEditing: startEditing,
                     onFinishEditing: finishEditing,
                     onSetEditingName: setEditingName,
-                    onFileHandle: handleFile,
-                    onOpenMappingSource: openMappingSource,
+                    onOpenLoadModal: openLoadModal,
                     onSetMacroModal: setMacroModalState,
                     onScaleMetricsChange: (metrics) => {
                         slotScaleMetricsRef.current[dev.id] = metrics;

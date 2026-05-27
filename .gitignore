@@ -5,9 +5,8 @@ implementation_plan.md
 # Legacy unused module files (Ignored and untracked)
 legacy/
 
-# Raw source JSON (mapped versions are used)
-json/
-json_mapped/
+# Private local JSON assets
+json_private/
 
 # OS generated
 Thumbs.db
