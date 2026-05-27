@@ -130,6 +130,7 @@ export function DeviceSlot({
     onFinishEditing,
     onSetEditingName,
     onFileHandle,
+    onOpenMappingSource,
     onSetMacroModal,
     onSetExportModal,
     onScaleMetricsChange
@@ -547,10 +548,11 @@ export function DeviceSlot({
                         'LAYOUT',
                         createElement('input', { key: 'layout-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'layout') })
                     ]),
-                    createElement('label', { key: 'map-lbl', className: neutralActionButtonClass + ' cursor-pointer' }, [
-                        'MAPPING',
-                        createElement('input', { key: 'map-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'mapping') })
-                    ]),
+                    createElement('button', {
+                        key: 'map-btn',
+                        onClick: () => onOpenMappingSource(dev.id),
+                        className: neutralActionButtonClass
+                    }, 'MAPPING'),
                     createElement('button', { key: 'macro-btn', onClick: () => onSetMacroModal({ deviceId: dev.id, macroId: null }), className: neutralActionButtonClass }, 'MACROS'),
                     createElement('button', { 
                         key: 'share-btn', 
@@ -572,10 +574,11 @@ export function DeviceSlot({
                         'LAYOUT',
                         createElement('input', { key: 'layout-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'layout') })
                     ]),
-                    createElement('label', { key: 'map-lbl', className: neutralActionButtonClass + ' cursor-pointer' }, [
-                        'MAPPING',
-                        createElement('input', { key: 'map-file', type: 'file', className: 'hidden', onChange: (e) => onFileHandle(e, dev.id, 'mapping') })
-                    ]),
+                    createElement('button', {
+                        key: 'map-btn',
+                        onClick: () => onOpenMappingSource(dev.id),
+                        className: neutralActionButtonClass
+                    }, 'MAPPING'),
                     createElement('button', { key: 'macro-btn', onClick: () => onSetMacroModal({ deviceId: dev.id, macroId: null }), className: neutralActionButtonClass }, 'MACROS'),
                     createElement('button', { 
                         key: 'share-btn', 
