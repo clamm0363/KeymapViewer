@@ -9,7 +9,10 @@ import { HelpModal } from './components/Modals/HelpModal.js';
 import { LinksModal } from './components/Modals/LinksModal.js';
 import { MacroModal } from './components/Modals/MacroModal.js';
 import { ExportModal } from './components/Modals/ExportModal.js';
+import { MappingSourceModal } from './components/Modals/MappingSourceModal.js';
 import { Keyboard } from './components/Keyboard.js';
+import { findSupportedDeviceConfig, loadDeviceDefinition, SUPPORTED_HID_FILTERS } from './utils/hid/deviceRegistry.js';
+import { requestViaDevice, readViaDeviceKeymap } from './utils/hid/viaKeymapReader.js';
 
 const CURRENT_VERSION = '1.2.5';
 const DEFAULT_DISPLAY_SCALE = 1;
@@ -137,12 +140,15 @@ export function App() {
     const [showLinks, setShowLinks] = useState(false);
     const [macroModalState, setMacroModalState] = useState(null);
     const [exportModalDevId, setExportModalDevId] = useState(null);
+    const [mappingSourceState, setMappingSourceState] = useState(null);
     const [exportSettings, setExportSettings] = useState({ layers: [], includeMacros: true, background: 'Dark' });
     const [isExporting, setIsExporting] = useState(false);
     const isInitialMount = useRef(true);
     const exportRef = useRef(null);
     const draggedSlotElementRef = useRef(null);
     const slotScaleMetricsRef = useRef({});
+    const mappingFileInputRef = useRef(null);
+    const mappingFileTargetIdRef = useRef(null);
 
     const applyDisplayScalePresetForLayout = (targetLayoutMode, targetScale = DEFAULT_DISPLAY_SCALE) => {
         setDevices(prev => prev.map(device => {
@@ -411,6 +417,92 @@ export function App() {
         e.target.value = '';
     };
 
+    const openMappingSource = (slotId) => {
+        setMappingSourceState({
+            slotId,
+            isDeviceLoading: false,
+            errorMessage: ''
+        });
+    };
+
+    const closeMappingSource = () => {
+        setMappingSourceState(null);
+    };
+
+    const triggerMappingFilePicker = (slotId) => {
+        mappingFileTargetIdRef.current = slotId;
+        setMappingSourceState(null);
+        requestAnimationFrame(() => {
+            mappingFileInputRef.current?.click();
+        });
+    };
+
+    const handleGlobalMappingFile = (e) => {
+        const slotId = mappingFileTargetIdRef.current;
+        mappingFileTargetIdRef.current = null;
+
+        if (slotId !== null && slotId !== undefined) {
+            handleFile(e, slotId, 'mapping');
+        } else {
+            e.target.value = '';
+        }
+    };
+
+    const handleMappingDeviceLoad = async (slotId) => {
+        setMappingSourceState((prev) => prev && prev.slotId === slotId ? {
+            ...prev,
+            isDeviceLoading: true,
+            errorMessage: ''
+        } : prev);
+
+        try {
+            const selectedDevice = await requestViaDevice(SUPPORTED_HID_FILTERS);
+            if (!selectedDevice) {
+                setMappingSourceState((prev) => prev && prev.slotId === slotId ? {
+                    ...prev,
+                    isDeviceLoading: false
+                } : prev);
+                return;
+            }
+
+            const deviceConfig = findSupportedDeviceConfig(selectedDevice.vendorId, selectedDevice.productId);
+            if (!deviceConfig) {
+                throw new Error('このデバイスに対応するレイアウト定義がまだ登録されていません。');
+            }
+
+            const definition = await loadDeviceDefinition(deviceConfig);
+            const keymapJson = await readViaDeviceKeymap(selectedDevice, definition);
+
+            updateDevice(slotId, {
+                name: sanitizeDeviceName(selectedDevice.productName || definition.name || 'Connected Device'),
+                design: definition,
+                keymapJson,
+                macroAliases: keymapJson.macroAliases || {},
+                layoutOptions: {},
+                encoderStyles: definition.encoderStyles || {},
+                inputDeviceSettings: buildInputDeviceSettings(definition.inputDeviceSettings, definition.encoderStyles)
+            });
+
+            setMappingSourceState(null);
+        } catch (error) {
+            if (error && (error.name === 'NotFoundError' || error.name === 'AbortError')) {
+                setMappingSourceState((prev) => prev && prev.slotId === slotId ? {
+                    ...prev,
+                    isDeviceLoading: false,
+                    errorMessage: ''
+                } : prev);
+                return;
+            }
+
+            console.error('Failed to load mapping from HID device:', error);
+            setMappingSourceState((prev) => prev && prev.slotId === slotId ? {
+                ...prev,
+                isDeviceLoading: false,
+                errorMessage: error instanceof Error ? error.message : '接続デバイスからの読み込みに失敗しました。'
+            } : prev);
+        }
+    };
+
     const removeDevice = (id) => {
         if (devices.length === 1) {
             updateDevice(id, { ...createEmptyDevice(), id });
@@ -578,6 +670,26 @@ export function App() {
             onClose: () => setExportModalDevId(null)
         }),
 
+        mappingSourceState && createElement(MappingSourceModal, {
+            key: 'mapping-source-modal',
+            isLightApp,
+            slotLabel: `Slot ${devices.findIndex((device) => device.id === mappingSourceState.slotId) + 1 || ''}`.trim(),
+            isDeviceLoading: !!mappingSourceState.isDeviceLoading,
+            errorMessage: mappingSourceState.errorMessage || '',
+            onChooseFile: () => triggerMappingFilePicker(mappingSourceState.slotId),
+            onChooseDevice: () => handleMappingDeviceLoad(mappingSourceState.slotId),
+            onClose: closeMappingSource
+        }),
+
+        createElement('input', {
+            key: 'global-mapping-file-input',
+            ref: mappingFileInputRef,
+            type: 'file',
+            accept: '.json,application/json',
+            className: 'hidden',
+            onChange: handleGlobalMappingFile
+        }),
+
         // Hidden Export Container
         isExporting && exportModalDevId && (() => {
             const dev = devices.find(d => d.id === exportModalDevId);
@@ -643,6 +755,7 @@ export function App() {
                     onFinishEditing: finishEditing,
                     onSetEditingName: setEditingName,
                     onFileHandle: handleFile,
+                    onOpenMappingSource: openMappingSource,
                     onSetMacroModal: setMacroModalState,
                     onScaleMetricsChange: (metrics) => {
                         slotScaleMetricsRef.current[dev.id] = metrics;

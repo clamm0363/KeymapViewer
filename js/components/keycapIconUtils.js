@@ -12,7 +12,32 @@ const RGB_LABELS = {
     KC_RGB_VAI: 'BRT+',
     KC_RGB_VAD: 'BRT-',
     KC_RGB_SPI: 'SPD+',
-    KC_RGB_SPD: 'SPD-'
+    KC_RGB_SPD: 'SPD-',
+    KC_RGB_M_P: 'RGB M P',
+    KC_RGB_M_B: 'RGB M B',
+    KC_RGB_M_R: 'RGB M R',
+    KC_RGB_M_SW: 'RGB M SW',
+    KC_RGB_M_SN: 'RGB M SN',
+    KC_RGB_M_K: 'RGB M K',
+    KC_RGB_M_X: 'RGB M X',
+    KC_RGB_M_G: 'RGB M G',
+    KC_RGB_M_T: 'RGB M T',
+    KC_RGB_M_TW: 'RGB M TW',
+    KC_RM_ON: 'RM ON',
+    KC_RM_OFF: 'RM OFF',
+    KC_RM_TOGG: 'RM TOG',
+    KC_RM_NEXT: 'RM NEXT',
+    KC_RM_PREV: 'RM PREV',
+    KC_RM_HUEU: 'HUE+',
+    KC_RM_HUED: 'HUE-',
+    KC_RM_SATU: 'SAT+',
+    KC_RM_SATD: 'SAT-',
+    KC_RM_VALU: 'BRT+',
+    KC_RM_VALD: 'BRT-',
+    KC_RM_SPDU: 'SPD+',
+    KC_RM_SPDD: 'SPD-',
+    KC_RM_FLGN: 'FLG+',
+    KC_RM_FLGP: 'FLG-'
 };
 
 const MACRO_LABELS = {
@@ -152,7 +177,7 @@ export function getKeyCategory(kCode) {
     if (!kCode) return null;
     const upper = resolveKeycodeAlias(kCode) || kCode.toUpperCase();
     if (upper === 'QK_CLEAR_EEPROM' || upper === 'KC_EE_CLR' || upper === 'EE_CLR') return 'QK';
-    if (upper.startsWith('KC_RGB_')) return 'RGB';
+    if (upper.startsWith('KC_RGB_') || upper.startsWith('KC_RM_') || upper.startsWith('KC_LM_') || upper.startsWith('KC_BL_')) return 'RGB';
 
     if (
         upper.startsWith('KC_BT_') ||
@@ -223,7 +248,10 @@ export function getIconRenderState({ displayRaw, targetIconKey, displayMode, key
     const isFluentMode = displayMode === 'Fluent';
     const normalizedDisplayRaw = resolveKeycodeAlias(displayRaw) || displayRaw;
 
-    const isRGBKey = normalizedDisplayRaw.startsWith('KC_RGB_');
+    const isRGBKey = normalizedDisplayRaw.startsWith('KC_RGB_') ||
+        normalizedDisplayRaw.startsWith('KC_RM_') ||
+        normalizedDisplayRaw.startsWith('KC_LM_') ||
+        normalizedDisplayRaw.startsWith('KC_BL_');
     const isRGBFluent = isRGBKey && isFluentMode && isSVGAvailable(targetIconKey);
     const rgbLabel = RGB_LABELS[targetIconKey] || RGB_LABELS[normalizedDisplayRaw] || '';
 
