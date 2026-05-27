@@ -314,13 +314,13 @@ export function renderEncoderKeycap({
     if (ccwActions) {
         ccwCode = ccwActions[0] || 'KC_NO';
         cwCode = ccwActions[1] || 'KC_NO';
-        const parsedCcw = parseKeyLabel(ccwCode, ccwCode, 'Text', keyStyle, macroAliases);
-        const parsedCw = parseKeyLabel(cwCode, cwCode, 'Text', keyStyle, macroAliases);
+        const parsedCcw = parseKeyLabel(ccwCode, ccwCode, 'Text', keyStyle, macroAliases, k.isJIS);
+        const parsedCw = parseKeyLabel(cwCode, cwCode, 'Text', keyStyle, macroAliases, k.isJIS);
         ccwLabel = parsedCcw.displayText;
         cwLabel = parsedCw.displayText;
     }
 
-    const parsedPush = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases);
+    const parsedPush = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases, k.isJIS);
     const pushText = parsedPush.displayText;
     const { cwPrefix, ccwPrefix } = getTrackballTooltipPrefixes(cwCode, ccwCode);
     const tooltipText = buildEncoderTooltip({

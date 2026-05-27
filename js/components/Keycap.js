@@ -40,7 +40,7 @@ export function Keycap({
     isLight,
     isAppDark
 }) {
-    const parsed = parseKeyLabel(val, k.id, displayMode, keyStyle, macroAliases);
+    const parsed = parseKeyLabel(val, k.id, displayMode, keyStyle, macroAliases, k.isJIS);
     let {
         fullRaw, displayText, isFluentIcon, isLayerKey,
         layerType, layerNum, layerNum2, tapLabel, tapIsFluent, visualWeight,
@@ -86,7 +86,7 @@ export function Keycap({
         utilityLabel
     } = iconRenderState;
 
-    const textModeParsed = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases);
+    const textModeParsed = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases, k.isJIS);
     let textFallback = narrowSlash(textModeParsed.displayText);
     const is1u = (k.w || 56) / 56 < 1.25;
     if (is1u) {
@@ -99,7 +99,7 @@ export function Keycap({
     const isFluentCenter = isFluentIcon || (isModKey && baseIsFluent);
     const centerText = (isModKey && modType !== 'base') ? baseLabel : displayText;
     const magicLabel = isMagicFluent
-        ? narrowSlash(parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases).displayText)
+        ? narrowSlash(parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases, k.isJIS).displayText)
         : '';
 
     if (k.isEncoder) {
