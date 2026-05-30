@@ -24,12 +24,47 @@ KeymapViewer is a web-based keyboard layout mapping and visualization tool.
 It renders keyboard layouts, legends, layers, encoder behavior, and category-specific icons.
 The UI supports both text-based and SVG-based icon rendering.
 
+## Development Environment
+
+### Local Development Server
+
+Start the local server with:
+
+```bash
+npm start
+```
+
+This runs `scripts/dev-static-server.js` and serves the app at `http://127.0.0.1:5501`.
+The server handles ES Module MIME types correctly and requires no additional packages.
+
+### Code Quality Tools
+
+The following tools are available via `npm run`:
+
+| Command | Description |
+|---|---|
+| `npm run lint` | ESLint static analysis |
+| `npm run format` | Prettier code formatting |
+| `npm run test` | Vitest unit tests (run once) |
+| `npm run test:watch` | Vitest unit tests (watch mode) |
+
+Run `npm run lint` and `npm run test` after any non-trivial change.
+
+### Unit Tests
+
+Test files are located under `test/`:
+
+- `test/utils/labelParser.test.js` — Tests for key label parsing logic
+- `test/utils/helpers.test.js` — Tests for shared helper utilities
+
+When adding new pure logic to `js/utils/`, add corresponding test cases.
+
 ## Current Architecture
 
-- js/utils/
+- `js/utils/`
   - Helper functions, label parsers, and validation logic. Always separate pure logic into this directory rather than bloating components.
-- js/utils/hid/ (Future extension)
-  - Reserved for hardware communication modules (e.g., WebHID and protocol parsers).
+- `js/utils/hid/`
+  - Hardware communication modules (WebHID and protocol parsers). Currently in active development.
 
 ### Entry And App Structure
 
@@ -77,11 +112,11 @@ The UI supports both text-based and SVG-based icon rendering.
   - Aggregates modular SVG icon sources and exports runtime helpers.
 - `js/icons/`
   - Modular SVG icon sources by category.
-  - Current categories include `system`, `media`, `wireless`, `mouse`, `keyboard`, `edit`, `rgb`, `web`, `utility`, and `aliases`.
+  - Current categories: `system`, `media`, `wireless`, `mouse`, `keyboard`, `edit`, `rgb`, `web`, `utility`, and `aliases`.
 - `js/keymap-dictionary.js`
-  - Keycode dictionary and Fluent icon metadata.
+  - Keycode dictionary and Fluent icon metadata. Single source of truth for keycode definitions.
 - `js/fluent-icons-map.json`
-  - Supporting Fluent icon mapping data.
+  - Legacy Fluent icon mapping data. Currently not imported by any runtime module. Do not add new entries here; use `js/keymap-dictionary.js` instead.
 
 ### Utilities And Data
 
@@ -99,20 +134,22 @@ The UI supports both text-based and SVG-based icon rendering.
 ### Scripts
 
 - `scripts/add-svg-icon.js`
-  - Canonical SVG icon addition workflow.
+  - **[Active]** Canonical SVG icon addition workflow.
 - `scripts/add-svg-icon.sh`
-  - Shell wrapper for the Node-based SVG addition workflow.
-- `scripts/add-mouse-icons-robust.js`
-  - Compatibility helper related to icon addition workflow.
+  - **[Active]** Shell wrapper for the Node-based SVG addition workflow.
+- `scripts/dev-static-server.js`
+  - **[Active]** Local development HTTP server. Started via `npm start`.
 - `scripts/fix-keyboard.js`
-  - Keyboard-related maintenance helper.
+  - **[Maintenance]** One-off keyboard layout repair helper. Not registered in npm scripts. Use only when explicitly needed.
+- `scripts/add-mouse-icons-robust.js`
+  - **[Deprecated]** Do not use. Superseded by `scripts/add-svg-icon.js`.
 
 ### Documentation And Planning
 
 - `AGENTS.md`
-  - Common agent rules for this repository.
+  - **This file.** Common agent rules for all AI tools and contributors.
 - `CLAUDE.md`
-  - Optional tool-specific supplement if needed.
+  - Claude-specific supplement covering command syntax and environment differences.
 - `implementation_plan.md`
   - Active implementation plan, always maintained in Japanese.
 - `plans/`
@@ -143,7 +180,8 @@ The UI supports both text-based and SVG-based icon rendering.
 
 ### After Editing
 
-- Run the most relevant local verification available.
+- Run `npm run lint` and `npm run test` to verify correctness.
+- Run `node --check <file>` for quick syntax validation when full tests are not needed.
 - If you cannot run browser verification directly, explicitly note that and rely on static or script-based verification.
 - Summarize what changed and any remaining risks.
 
@@ -152,13 +190,14 @@ The UI supports both text-based and SVG-based icon rendering.
 ### Source Of Truth
 
 - Do not manually add new SVG icon entries directly to `js/svg-icons.js`.
-- Add icons through the supported automation flow, currently centered on `scripts/add-svg-icon.js` and its shell wrapper.
+- Add icons through the supported automation flow: `scripts/add-svg-icon.js` and its shell wrapper.
 - Update category modules under `js/icons/` through the supported tooling path, not by ad hoc edits to the aggregate layer.
 
 ### Metadata
 
 - When adding or updating Fluent-backed keys, keep `js/keymap-dictionary.js` metadata aligned with the intended icon.
 - Treat dictionary comments and Fluent references as part of the icon resolution workflow.
+- Do not add new entries to `js/fluent-icons-map.json`; it is a legacy file.
 
 ### Categories
 
@@ -169,11 +208,15 @@ The UI supports both text-based and SVG-based icon rendering.
 
 ### Preferred Checks
 
-- Use lightweight static verification first when appropriate.
-- Relevant examples in this repository include:
-  - `node --check <file>`
-  - `node --input-type=module -e "import('./js/test-svg-validation.js')"`
-  - `node scripts/add-svg-icon.js --dry-run <KEYCODE>`
+Use lightweight static verification first when appropriate:
+
+```bash
+node --check <file>
+npm run test
+npm run lint
+node scripts/add-svg-icon.js --dry-run <KEYCODE>
+node --input-type=module -e "import('./js/test-svg-validation.js')"
+```
 
 ### UI Verification
 
@@ -193,14 +236,17 @@ The UI supports both text-based and SVG-based icon rendering.
 - Put tool-specific or vendor-specific supplements in separate files such as `CLAUDE.md` only when necessary.
 - Do not embed obsolete phase tracking, one-off migration notes, or temporary status markers here.
 - Prefer documenting enduring workflows, architecture, and constraints.
+- Update `AGENTS.md` whenever the directory structure, npm scripts, or active tooling changes.
 
 ## Good Defaults For Future Agents
 
 - Assume `AGENTS.md` is intended to be committed and shared unless the user explicitly chooses a local-only workflow.
 - Treat `implementation_plan.md` as the active execution artifact and `AGENTS.md` as the stable policy artifact.
 - When in doubt, optimize for maintainability, modularity, and consistency with the current file structure.
+- `scripts/add-mouse-icons-robust.js` is deprecated — do not call it.
+- `js/fluent-icons-map.json` is a legacy file — do not add entries to it.
 
 ---
 
-Last Updated: 2026-05-26
+Last Updated: 2026-05-30
 Maintained By: AI Agents + KeymapViewer Contributors

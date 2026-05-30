@@ -1,139 +1,65 @@
-# KeymapViewer - AI Agent Guide
+# KeymapViewer - Claude Supplement
 
-## Project Overview
-
-KeymapViewer is a web-based keyboard layout mapping and visualization tool. It displays keyboard configurations with key icons, supporting both WebFont and SVG rendering for a modern UI experience.
-
-## AI Agent Rules
-
-- **Implementation Plan Language**: Always create and update the `implementation_plan.md` artifact in **Japanese** (`日本語`). All descriptions, requirements, and checklists in the plan must be written in Japanese to align with the primary user.
-
-## Current State
-
-**Phase**: SVG Migration Phase 2
-
-- ✅ 40 SVG icons implemented from Microsoft Fluent UI System Icons
-- 🔄 Additional icons can be added incrementally using automation script
-- 📋 Icons source: https://github.com/microsoft/fluentui-system-icons
-
-## SVG Icon Implementation
-
-### Adding New SVG Icons (Required Reading)
-
-**Never manually edit svg-icons.js to add new icons.** Use the automation script instead.
-
-#### Quick Start
-
-```bash
-bash scripts/add-svg-icon.sh KC_STOP KC_HELP KC_MAIL
-```
-
-#### Dry Run (Preview Changes)
-
-```bash
-bash scripts/add-svg-icon.sh --dry-run KC_STOP
-```
-
-### How It Works
-
-1. **Icon Name Resolution**: Script extracts icon name from `js/keymap-dictionary.js` comment
-   - Example: `"KC_HELP": { text: "HELP", fluent: "\uF63E" }, // question_circle_24`
-   - Extracts: `question_circle_24`
-
-2. **SVG Lookup**: Searches FluentUI repository at `/tmp/fluentui-system-icons/assets`
-   - Finds: `Question Circle/SVG/ic_fluent_question_circle_24_filled.svg`
-
-3. **SVG Processing**: Extracts SVG content and generates proper entry
-
-4. **File Update**: Adds new entry to `js/svg-icons.js` with correct formatting
-
-5. **Output**: Returns JSON result for verification
-
-### Prerequisites
-
-- FluentUI System Icons must be cloned:
-  ```bash
-  git clone https://github.com/microsoft/fluentui-system-icons.git /tmp/fluentui-system-icons
-  ```
-- Keycode must have `fluent:` value in `js/keymap-dictionary.js`
-- Bash environment available (Git Bash on Windows, WSL, native Linux/macOS)
-
-### Example Flow
-
-**Input**: `KC_STOP`
-**Output**:
-
-```json
-{
-  "keyCode": "KC_STOP",
-  "success": true,
-  "iconName": "dismiss_circle_24",
-  "category": "utility",
-  "svgSize": 1234
-}
-```
-
-## File Structure
-
-```
-├── js/
-│   ├── keymap-dictionary.js   ← Define keycodes + icon names here
-│   ├── svg-icons.js           ← Auto-generated SVG entries (DO NOT edit manually)
-│   └── ...
-├── scripts/
-│   ├── add-svg-icon.sh        ← Run this for new SVG icons ⭐
-│   └── ...
-├── SampleLayouts/
-│   └── sample_numpad.json     ← Test SVG rendering
-└── CLAUDE.md                  ← This file
-```
-
-## Workflow for SVG Icon Addition
-
-1. **Identify Missing Keycode**
-   - Check `js/keymap-dictionary.js` for `fluent:` values without SVG implementation
-   - Verify icon name in the comment: `// icon_name_24`
-
-2. **Run Automation Script**
-
-   ```bash
-   cd /path/to/KeymapViewer
-   bash scripts/add-svg-icon.sh KC_YOUR_KEYCODE
-   ```
-
-3. **Verify Results**
-   - Script outputs JSON with success/failure status
-   - Check `js/svg-icons.js` for new entry
-   - Test in sample layout if needed
-
-4. **Commit Changes**
-   - Only `js/svg-icons.js` is modified
-   - Commit with message: `feat(svg): Add KC_YOUR_KEYCODE icon`
-
-## Testing SVG Icons
-
-Edit `SampleLayouts/sample_numpad.json` LAYER2 to include new keycodes:
-
-```json
-["KC_KB_POWER", "KC_COPY", "KC_CUT", "KC_PASTE", ...]
-```
-
-Run the app and verify icons display correctly.
-
-## Known Limitations
-
-- Some icon names in `keymap-dictionary.js` comments may not match FluentUI exactly
-  - Script will fail gracefully with JSON error output
-  - Manual investigation of FluentUI repo may be needed
-- RGB control icons and some Japanese keys may require manual lookup
-
-## Resources
-
-- **FluentUI System Icons**: https://github.com/microsoft/fluentui-system-icons
-- **Icon Search**: `/tmp/fluentui-system-icons/assets/` directory structure
-- **Icon Metadata**: Check comments in `js/keymap-dictionary.js`
+> **Note**: This file is a Claude-specific supplement only.
+> Repository-wide rules, architecture, and workflow are defined in [`AGENTS.md`](./AGENTS.md).
+> Always read `AGENTS.md` first. This file only documents Claude-specific behaviors or environment differences.
 
 ---
 
-**Last Updated**: 2026-05-20
-**Maintained By**: AI Agents + KeymapViewer Contributors
+## Claude-Specific Notes
+
+### Command Syntax
+
+Claude runs commands in a Windows PowerShell environment by default.
+Use PowerShell-compatible syntax when proposing terminal commands.
+
+```powershell
+# Correct (PowerShell)
+npm run test
+npm run lint
+node --check js/components/Keyboard.js
+
+# Avoid (bash-only syntax in PowerShell context)
+node --check js/components/Keyboard.js && npm run test
+```
+
+For bash scripts (e.g., `scripts/add-svg-icon.sh`), the user may run them via Git Bash or WSL.
+When proposing shell script execution, note which environment is required.
+
+### SVG Icon Automation — Windows Path Note
+
+`scripts/add-svg-icon.sh` expects the FluentUI System Icons repository to be cloned locally.
+The default path referenced in CLAUDE.md history was `/tmp/fluentui-system-icons`, which is not
+available on Windows without WSL. Confirm the clone location with the user before running.
+
+The Node.js script `scripts/add-svg-icon.js` can be called directly from PowerShell:
+
+```powershell
+node scripts/add-svg-icon.js KC_YOUR_KEYCODE
+node scripts/add-svg-icon.js --dry-run KC_YOUR_KEYCODE
+```
+
+### File Encoding
+
+Source files in this repository use LF line endings (enforced by `.prettierrc`).
+Claude should not introduce CRLF when writing or patching files.
+
+---
+
+## Quick Reference (Claude)
+
+| Task | Command |
+|---|---|
+| Start local server | `npm start` → `http://127.0.0.1:5501` |
+| Run tests | `npm run test` |
+| Lint check | `npm run lint` |
+| Format code | `npm run format` |
+| Syntax check one file | `node --check <file>` |
+| Add SVG icon (Node) | `node scripts/add-svg-icon.js <KEYCODE>` |
+| Add SVG icon (bash) | `bash scripts/add-svg-icon.sh <KEYCODE>` |
+| Validate SVG icons | `node --input-type=module -e "import('./js/test-svg-validation.js')"` |
+
+---
+
+Last Updated: 2026-05-30
+Maintained By: AI Agents + KeymapViewer Contributors
