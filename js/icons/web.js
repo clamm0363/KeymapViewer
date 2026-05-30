@@ -8,7 +8,7 @@ export const WEB_ICONS = {
     fallback: '\\uF481',
     width: 24,
     height: 24,
-    category: 'web'
+    category: 'web',
   },
 
   KC_WWW_BACK: {
@@ -19,7 +19,7 @@ export const WEB_ICONS = {
     fallback: '\\uF2AB',
     width: 24,
     height: 24,
-    category: 'web'
+    category: 'web',
   },
 
   KC_WWW_FORWARD: {
@@ -30,7 +30,7 @@ export const WEB_ICONS = {
     fallback: '\\uF2B1',
     width: 24,
     height: 24,
-    category: 'web'
+    category: 'web',
   },
 
   KC_WWW_REFRESH: {
@@ -41,7 +41,7 @@ export const WEB_ICONS = {
     fallback: '\\uF191',
     width: 24,
     height: 24,
-    category: 'web'
+    category: 'web',
   },
 
   KC_MAIL: {
@@ -52,7 +52,7 @@ export const WEB_ICONS = {
     fallback: '\\uF507',
     width: 24,
     height: 24,
-    category: 'web'
+    category: 'web',
   },
 
   KC_CALCULATOR: {
@@ -63,7 +63,7 @@ export const WEB_ICONS = {
     fallback: '\\uE233',
     width: 24,
     height: 24,
-    category: 'web'
+    category: 'web',
   },
 
   KC_MY_COMPUTER: {
@@ -74,7 +74,7 @@ export const WEB_ICONS = {
     fallback: '\\uF35A',
     width: 24,
     height: 24,
-    category: 'web'
+    category: 'web',
   },
 
   KC_ASSISTANT: {
@@ -85,7 +85,7 @@ export const WEB_ICONS = {
     fallback: '\\uE7FA',
     width: 24,
     height: 24,
-    category: 'web'
+    category: 'web',
   },
 
   KC_MISSION_CONTROL: {
@@ -96,7 +96,7 @@ export const WEB_ICONS = {
     fallback: '\\uF463',
     width: 24,
     height: 24,
-    category: 'web'
+    category: 'web',
   },
 
   KC_LAUNCHPAD: {
@@ -107,7 +107,7 @@ export const WEB_ICONS = {
     fallback: '\\uF134',
     width: 24,
     height: 24,
-    category: 'web'
+    category: 'web',
   },
 
   KC_WWW_SEARCH: {
@@ -118,7 +118,7 @@ export const WEB_ICONS = {
     fallback: '\uF690',
     width: 24,
     height: 24,
-    category: 'web'
+    category: 'web',
   },
 
   KC_WWW_STOP: {
@@ -129,7 +129,7 @@ export const WEB_ICONS = {
     fallback: '\uF36A',
     width: 24,
     height: 24,
-    category: 'web'
+    category: 'web',
   },
 
   KC_WWW_FAVORITES: {
@@ -140,6 +140,6 @@ export const WEB_ICONS = {
     fallback: '\uF710',
     width: 24,
     height: 24,
-    category: 'web'
-  }
+    category: 'web',
+  },
 };

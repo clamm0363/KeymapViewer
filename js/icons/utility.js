@@ -8,7 +8,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uE207',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   KC_CONTROL_PANEL: {
@@ -19,7 +19,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF6AA',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   KC_SELECT: {
@@ -30,7 +30,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF77F',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   KC_STOP: {
@@ -41,7 +41,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF36E',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   ic_fluent_delete_24_regular: {
@@ -52,7 +52,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uE74D',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   ic_fluent_navigation_24_regular: {
@@ -63,7 +63,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF4EE',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   KC_MENU: {
@@ -74,7 +74,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF4EE',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   ic_fluent_arrow_swap_24_filled: {
@@ -85,7 +85,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF18E',
     width: 24,
     height: 24,
-    category: 'magic'
+    category: 'magic',
   },
 
   ic_fluent_arrow_swap_24_regular: {
@@ -96,7 +96,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF18E',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   ic_fluent_lock_closed_24_filled: {
@@ -107,7 +107,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uE788',
     width: 24,
     height: 24,
-    category: 'magic'
+    category: 'magic',
   },
 
   ic_fluent_lock_closed_24_regular: {
@@ -118,7 +118,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uE788',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   ic_fluent_keyboard_24_filled: {
@@ -129,7 +129,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uE6C6',
     width: 24,
     height: 24,
-    category: 'magic'
+    category: 'magic',
   },
 
   ic_fluent_keyboard_24_regular: {
@@ -140,7 +140,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uE6C6',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   KC_RESET: {
@@ -151,7 +151,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF8C1',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   KC_QK_BOOT: {
@@ -162,7 +162,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF8C1',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   KC_EE_CLR: {
@@ -173,7 +173,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF34D',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   KC_DM_REC1: {
@@ -184,7 +184,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF662',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   KC_DM_REC2: {
@@ -195,7 +195,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF662',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   KC_DM_PLY1: {
@@ -206,7 +206,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF606',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   KC_DM_PLY2: {
@@ -217,7 +217,7 @@ export const UTILITY_ICONS = {
     fallback: '\\uF606',
     width: 24,
     height: 24,
-    category: 'utility'
+    category: 'utility',
   },
 
   KC_DM_RSTP: {
@@ -228,6 +228,6 @@ export const UTILITY_ICONS = {
     fallback: '\\uF75B',
     width: 24,
     height: 24,
-    category: 'utility'
-  }
+    category: 'utility',
+  },
 };

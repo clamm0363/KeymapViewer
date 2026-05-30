@@ -47,7 +47,12 @@ for (const [alias, target] of Object.entries(ICON_ALIASES)) {
  * @returns {object|null} - Icon object or null
  */
 function getSafeIcon(key) {
-  if (typeof key !== 'string' || key === '__proto__' || key === 'constructor' || key === 'prototype') {
+  if (
+    typeof key !== 'string' ||
+    key === '__proto__' ||
+    key === 'constructor' ||
+    key === 'prototype'
+  ) {
     return null;
   }
   return Object.prototype.hasOwnProperty.call(SVG_ICONS, key) ? SVG_ICONS[key] : null;
@@ -71,7 +76,7 @@ export function createSVGElement(iconKey, options = {}) {
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(icon.svg, 'image/svg+xml');
-    
+
     // Check for parse errors
     if (doc.documentElement.nodeName === 'parsererror') {
       console.warn(`[SVG] Parse error for ${iconKey}:`, doc.documentElement.textContent);
@@ -89,7 +94,7 @@ export function createSVGElement(iconKey, options = {}) {
     const allElements = svgElement.getElementsByTagName('*');
     for (let i = 0; i < allElements.length; i++) {
       const el = allElements[i];
-      
+
       const fill = el.getAttribute('fill');
       if (fill && fill !== 'none' && fill !== 'currentColor' && fill.startsWith('#')) {
         el.setAttribute('fill', 'currentColor');
@@ -106,7 +111,7 @@ export function createSVGElement(iconKey, options = {}) {
         el.style.stroke = 'currentColor';
       }
     }
-    
+
     return svgElement.cloneNode(true);
   } catch (error) {
     console.warn(`[SVG] Render failed for ${iconKey}:`, error.message);
@@ -156,13 +161,13 @@ export function getSVGCategory(iconKey) {
 
 // Export list of all SVG icon keys for debugging
 export function listSVGIcons() {
-  return Object.keys(SVG_ICONS).map(key => {
+  return Object.keys(SVG_ICONS).map((key) => {
     const icon = getSafeIcon(key);
     return {
       key,
       category: icon ? icon.category : null,
       hasSVG: !!(icon && icon.svg),
-      fallback: icon ? icon.fallback : null
+      fallback: icon ? icon.fallback : null,
     };
   });
 }
@@ -170,7 +175,9 @@ export function listSVGIcons() {
 // Debug helper: log all available SVG icons to console
 export function debugSVGIcons() {
   console.log('[SVG] Available icons:');
-  listSVGIcons().forEach(icon => {
-    console.log(`  ${icon.key} [${icon.category}] - SVG: ${icon.hasSVG}, Fallback: ${icon.fallback}`);
+  listSVGIcons().forEach((icon) => {
+    console.log(
+      `  ${icon.key} [${icon.category}] - SVG: ${icon.hasSVG}, Fallback: ${icon.fallback}`
+    );
   });
 }

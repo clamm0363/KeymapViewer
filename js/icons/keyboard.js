@@ -5,10 +5,10 @@ export const KEYBOARD_ICONS = {
     svg: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M21 4C21.5128 4 21.9355 4.38604 21.9933 4.88338L22 5V11.5C22 13.3686 20.5357 14.8951 18.692 14.9948L18.5 15H5.415L8.70711 18.2929C9.06759 18.6534 9.09532 19.2206 8.7903 19.6129L8.70711 19.7071C8.34662 20.0676 7.77939 20.0953 7.3871 19.7903L7.29289 19.7071L2.29289 14.7071C2.2575 14.6717 2.22531 14.6343 2.19633 14.5953L2.12467 14.4841L2.07123 14.3713L2.03585 14.266L2.01102 14.1485L2.00398 14.0898L2 14L2.00279 13.9248L2.02024 13.7993L2.04974 13.6879L2.09367 13.5768L2.146 13.4793L2.2097 13.3871L2.29289 13.2929L7.29289 8.29289C7.68342 7.90237 8.31658 7.90237 8.70711 8.29289C9.06759 8.65338 9.09532 9.22061 8.7903 9.6129L8.70711 9.70711L5.415 13H18.5C19.2797 13 19.9204 12.4051 19.9931 11.6445L20 11.5V5C20 4.44772 20.4477 4 21 4Z" fill="currentColor"/>
     </svg>`,
-    fallback: '\\uE0C1',  // arrow_enter_left
+    fallback: '\\uE0C1', // arrow_enter_left
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
 
   KC_BSPC: {
@@ -19,7 +19,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uF1B2',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
 
   KC_TAB: {
@@ -27,10 +27,10 @@ export const KEYBOARD_ICONS = {
     svg: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M18.2071 11.2929L11.7071 4.79289C11.3166 4.40237 10.6834 4.40237 10.2929 4.79289C9.93241 5.15338 9.90468 5.72061 10.2097 6.1129L10.2929 6.20711L15.086 11H4C3.48716 11 3.06449 11.386 3.00673 11.8834L3 12C3 12.5128 3.38604 12.9355 3.88338 12.9933L4 13H15.086L10.2929 17.7929C9.93241 18.1534 9.90468 18.7206 10.2097 19.1129L10.2929 19.2071C10.6534 19.5676 11.2206 19.5953 11.6129 19.2903L11.7071 19.2071L18.2071 12.7071C18.5676 12.3466 18.5953 11.7794 18.2903 11.3871L18.2071 11.2929L11.7071 4.79289L18.2071 11.2929ZM21 18.5V5.5C21 4.94772 20.5523 4.5 20 4.5C19.4477 4.5 19 4.94772 19 5.5V18.5C19 19.0523 19.4477 19.5 20 19.5C20.5523 19.5 21 19.0523 21 18.5Z" fill="currentColor"/>
     </svg>`,
-    fallback: '\\uF4C1',  // keyboard_tab
+    fallback: '\\uF4C1', // keyboard_tab
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
 
   KC_CAPS: {
@@ -38,10 +38,10 @@ export const KEYBOARD_ICONS = {
     svg: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M13.3211 2.60317C12.6234 1.79894 11.3752 1.79894 10.6774 2.60317L2.43203 12.107C1.449 13.24 2.25383 15.0038 3.75388 15.0038H6.99989V17.2501C6.99989 18.2165 7.78339 19.0001 8.74989 19.0001H15.2499C16.2164 19.0001 16.9999 18.2165 16.9999 17.2501V15.0038H20.2447C21.7448 15.0038 22.5496 13.24 21.5666 12.107L13.3211 2.60317ZM11.8105 3.58617C11.9101 3.47128 12.0885 3.47128 12.1881 3.58617L20.4335 13.09C20.574 13.2518 20.459 13.5038 20.2447 13.5038H16.2499C15.8357 13.5038 15.4999 13.8396 15.4999 14.2538V17.2501C15.4999 17.3881 15.388 17.5001 15.2499 17.5001H8.74989C8.61182 17.5001 8.49989 17.3881 8.49989 17.2501V14.2538C8.49989 13.8396 8.1641 13.5038 7.74989 13.5038H3.75388C3.53959 13.5038 3.42462 13.2518 3.56505 13.09L11.8105 3.58617ZM7.74989 20.5001C7.33568 20.5001 6.99989 20.8358 6.99989 21.2501C6.99989 21.6643 7.33568 22.0001 7.74989 22.0001H16.2499C16.6641 22.0001 16.9999 21.6643 16.9999 21.2501C16.9999 20.8358 16.6641 20.5001 16.2499 20.5001H7.74989Z" fill="currentColor"/>
     </svg>`,
-    fallback: '\\uF4C0',  // keyboard_shift_uppercase
+    fallback: '\\uF4C0', // keyboard_shift_uppercase
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
 
   KC_SPC: {
@@ -49,10 +49,10 @@ export const KEYBOARD_ICONS = {
     svg: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M20 11V13H4V11C4 10.4477 3.55228 10 3 10C2.44772 10 2 10.4477 2 11V13C2 14.1046 2.89543 15 4 15H20C21.1046 15 22 14.1046 22 13V11C22 10.4477 21.5523 10 21 10C20.4477 10 20 10.4477 20 11Z" fill="currentColor"/>
     </svg>`,
-    fallback: '\\uF6F8',  // keyboard_spacebar
+    fallback: '\\uF6F8', // keyboard_spacebar
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
 
   KC_LCTL: {
@@ -63,7 +63,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uF2B7',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
   KC_RCTL: {
     id: 'control-icon',
@@ -73,7 +73,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uF2B7',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
   KC_LALT: {
     id: 'option-icon',
@@ -83,7 +83,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\u2325',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
   KC_RALT: {
     id: 'option-icon',
@@ -93,7 +93,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\u2325',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
   KC_LGUI: {
     id: 'command-icon',
@@ -103,7 +103,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uE744',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
   KC_RGUI: {
     id: 'command-icon',
@@ -113,7 +113,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uE744',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
   KC_FN: {
     id: 'globe-icon',
@@ -123,7 +123,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uF3F6',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
   KC_APP: {
     id: 'menu-icon',
@@ -133,7 +133,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uF4EE',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
 
   KC_LSFT: {
@@ -144,9 +144,9 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uF4BF',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
- 
+
   KC_RSFT: {
     id: 'shift-icon',
     svg: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -155,7 +155,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uF4BF',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
 
   KC_UP: {
@@ -166,7 +166,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uF19B',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
 
   KC_DOWN: {
@@ -177,7 +177,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uF148',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
 
   KC_LEFT: {
@@ -188,7 +188,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uF15B',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
 
   KC_RGHT: {
@@ -199,7 +199,7 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uF181',
     width: 24,
     height: 24,
-    category: 'keyboard'
+    category: 'keyboard',
   },
 
   KC_TRNS: {
@@ -208,6 +208,6 @@ export const KEYBOARD_ICONS = {
     fallback: '\\uF02F9',
     width: 24,
     height: 24,
-    category: 'keyboard'
-  }
+    category: 'keyboard',
+  },
 };

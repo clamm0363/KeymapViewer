@@ -15,7 +15,7 @@ import {
   getSVGCategory,
   getSVGFallback,
   isSVGAvailable,
-  listSVGIcons
+  listSVGIcons,
 } from './svg-icons.js';
 
 console.log('\n=== SVG Validation ===\n');
@@ -34,7 +34,7 @@ console.log('Test 1: Checking SVG module structure...');
     ['createSVGElement function', typeof createSVGElement === 'function'],
     ['isSVGAvailable function', typeof isSVGAvailable === 'function'],
     ['getSVGFallback function', typeof getSVGFallback === 'function'],
-    ['DEBUG icon defined', SVG_ICONS.DEBUG !== undefined]
+    ['DEBUG icon defined', SVG_ICONS.DEBUG !== undefined],
   ];
 
   let passed = 0;
@@ -55,7 +55,7 @@ console.log('Test 2: Checking representative icons...');
     ['KC_RGB_TOG available', isSVGAvailable('KC_RGB_TOG')],
     ['KC_ACL0 available', isSVGAvailable('KC_ACL0')],
     ['Alias KC_DEBUG resolves', SVG_ICONS.KC_DEBUG === SVG_ICONS.DEBUG],
-    ['Alias KC_WBAK resolves', SVG_ICONS.KC_WBAK === SVG_ICONS.KC_WWW_BACK]
+    ['Alias KC_WBAK resolves', SVG_ICONS.KC_WBAK === SVG_ICONS.KC_WWW_BACK],
   ];
 
   let passed = 0;
@@ -74,7 +74,12 @@ console.log('Test 3: Checking icon metadata...');
     const icon = SVG_ICONS[key];
     const category = getSVGCategory(key);
     const fallback = getSVGFallback(key);
-    const ok = !!icon && typeof icon.width === 'number' && typeof icon.height === 'number' && !!category && !!fallback;
+    const ok =
+      !!icon &&
+      typeof icon.width === 'number' &&
+      typeof icon.height === 'number' &&
+      !!category &&
+      !!fallback;
     logResult(key, ok, ok ? `${category}, ${icon.width}x${icon.height}` : 'metadata missing');
   }
   console.log('');

@@ -8,10 +8,10 @@ KeymapViewer is a web-based keyboard layout mapping and visualization tool. It d
 
 - **Implementation Plan Language**: Always create and update the `implementation_plan.md` artifact in **Japanese** (`日本語`). All descriptions, requirements, and checklists in the plan must be written in Japanese to align with the primary user.
 
-
 ## Current State
 
 **Phase**: SVG Migration Phase 2
+
 - ✅ 40 SVG icons implemented from Microsoft Fluent UI System Icons
 - 🔄 Additional icons can be added incrementally using automation script
 - 📋 Icons source: https://github.com/microsoft/fluentui-system-icons
@@ -62,6 +62,7 @@ bash scripts/add-svg-icon.sh --dry-run KC_STOP
 
 **Input**: `KC_STOP`
 **Output**:
+
 ```json
 {
   "keyCode": "KC_STOP",
@@ -94,6 +95,7 @@ bash scripts/add-svg-icon.sh --dry-run KC_STOP
    - Verify icon name in the comment: `// icon_name_24`
 
 2. **Run Automation Script**
+
    ```bash
    cd /path/to/KeymapViewer
    bash scripts/add-svg-icon.sh KC_YOUR_KEYCODE

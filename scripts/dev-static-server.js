@@ -1,8 +1,7 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const { URL } = require('url');
-
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { URL } from 'url';
 const rootDir = process.argv[2] ? path.resolve(process.argv[2]) : process.cwd();
 const port = Number(process.argv[3] || process.env.PORT || 5501);
 
@@ -17,14 +16,14 @@ const contentTypes = {
   '.jpeg': 'image/jpeg',
   '.woff2': 'font/woff2',
   '.woff': 'font/woff',
-  '.ttf': 'font/ttf'
+  '.ttf': 'font/ttf',
 };
 
 function sendFile(filePath, response) {
   const ext = path.extname(filePath).toLowerCase();
   response.writeHead(200, {
     'Content-Type': contentTypes[ext] || 'application/octet-stream',
-    'Cache-Control': 'no-cache'
+    'Cache-Control': 'no-cache',
   });
   fs.createReadStream(filePath).pipe(response);
 }
@@ -71,3 +70,4 @@ server.listen(port, '127.0.0.1', () => {
   console.log(`Static server running at http://127.0.0.1:${port}/`);
   console.log(`Serving: ${rootDir}`);
 });
+

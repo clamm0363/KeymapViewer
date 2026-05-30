@@ -21,23 +21,23 @@ const ICONS_DIR = path.join(PROJECT_ROOT, 'js', 'icons');
 
 // Category-to-File mapping dictionary
 const CATEGORY_MAP = {
-  'system': { file: 'system.js', exportName: 'SYSTEM_ICONS' },
-  'audio': { file: 'media.js', exportName: 'MEDIA_ICONS' },
-  'media': { file: 'media.js', exportName: 'MEDIA_ICONS' },
-  'wireless': { file: 'wireless.js', exportName: 'WIRELESS_ICONS' },
-  'mouse': { file: 'mouse.js', exportName: 'MOUSE_ICONS' },
-  'keyboard': { file: 'keyboard.js', exportName: 'KEYBOARD_ICONS' },
-  'edit': { file: 'edit.js', exportName: 'EDIT_ICONS' },
-  'web': { file: 'web.js', exportName: 'WEB_ICONS' },
-  'rgb': { file: 'rgb.js', exportName: 'RGB_ICONS' },
+  system: { file: 'system.js', exportName: 'SYSTEM_ICONS' },
+  audio: { file: 'media.js', exportName: 'MEDIA_ICONS' },
+  media: { file: 'media.js', exportName: 'MEDIA_ICONS' },
+  wireless: { file: 'wireless.js', exportName: 'WIRELESS_ICONS' },
+  mouse: { file: 'mouse.js', exportName: 'MOUSE_ICONS' },
+  keyboard: { file: 'keyboard.js', exportName: 'KEYBOARD_ICONS' },
+  edit: { file: 'edit.js', exportName: 'EDIT_ICONS' },
+  web: { file: 'web.js', exportName: 'WEB_ICONS' },
+  rgb: { file: 'rgb.js', exportName: 'RGB_ICONS' },
   'jp-keys': { file: 'utility.js', exportName: 'UTILITY_ICONS' },
-  'utility': { file: 'utility.js', exportName: 'UTILITY_ICONS' }
+  utility: { file: 'utility.js', exportName: 'UTILITY_ICONS' },
 };
 
 // Parse CLI arguments
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
-const keyCodes = args.filter(arg => !arg.startsWith('--'));
+const keyCodes = args.filter((arg) => !arg.startsWith('--'));
 
 if (keyCodes.length === 0) {
   console.error('❌ Usage: node scripts/add-svg-icon.js [--dry-run] KEYCODE [KEYCODE...]');
@@ -48,7 +48,9 @@ if (keyCodes.length === 0) {
 // Input validation to prevent Path Traversal and ReDoS
 for (const keyCode of keyCodes) {
   if (typeof keyCode !== 'string' || !/^[A-Za-z0-9_]+$/.test(keyCode)) {
-    console.error(`❌ Invalid KEYCODE format: "${keyCode}". Only alphanumeric characters and underscores are allowed.`);
+    console.error(
+      `❌ Invalid KEYCODE format: "${keyCode}". Only alphanumeric characters and underscores are allowed.`
+    );
     process.exit(1);
   }
 }
@@ -116,10 +118,7 @@ function findSVGPath(iconName) {
     cleanIconName = iconName.substring(0, iconName.length - 8);
   }
 
-  const searchPatterns = [
-    cleanIconName.replace(/_24$/, '').replace(/_20$/, ''),
-    cleanIconName
-  ];
+  const searchPatterns = [cleanIconName.replace(/_24$/, '').replace(/_20$/, ''), cleanIconName];
 
   function searchRecursive(dir, pattern, styleToSearch, exactOnly = false) {
     try {
@@ -143,7 +142,11 @@ function findSVGPath(iconName) {
             }
           } else {
             // Substring fallback matching
-            if (entry.name.includes(pattern) && (entry.name.includes(`24_${styleToSearch}.svg`) || entry.name.includes(`20_${styleToSearch}.svg`))) {
+            if (
+              entry.name.includes(pattern) &&
+              (entry.name.includes(`24_${styleToSearch}.svg`) ||
+                entry.name.includes(`20_${styleToSearch}.svg`))
+            ) {
               return fullPath;
             }
           }
@@ -193,18 +196,18 @@ function extractSVGContent(svgPath) {
       throw new Error('Path traversal detected');
     }
     let content = fs.readFileSync(safePath, 'utf8');
-    
+
     // Extract only the SVG element
     const svgMatch = content.match(/<svg[^>]*>[\s\S]*?<\/svg>/);
     if (svgMatch) {
       let cleanedSvg = svgMatch[0];
-      
+
       // Standardize filled/stroke colors to support Light/Dark theme switching seamlessly
       cleanedSvg = cleanedSvg
         .replace(/fill="#(212121|2c2c2c|2C2C2C)"/g, 'fill="currentColor"')
         .replace(/stroke="#(212121|2c2c2c|2C2C2C)"/g, 'stroke="currentColor"')
         .trim();
-        
+
       return cleanedSvg;
     }
   } catch (err) {
@@ -218,23 +221,47 @@ function extractSVGContent(svgPath) {
  */
 function determineCategory(keyCode) {
   const keyboardKeys = new Set([
-    'KC_ENT', 'KC_BSPC', 'KC_TAB', 'KC_CAPS', 'KC_SPC',
-    'KC_LCTL', 'KC_RCTL', 'KC_LALT', 'KC_RALT', 'KC_LGUI', 'KC_RGUI',
-    'KC_FN', 'KC_APP', 'KC_LSFT', 'KC_RSFT',
-    'KC_UP', 'KC_DOWN', 'KC_LEFT', 'KC_RGHT', 'KC_TRNS'
+    'KC_ENT',
+    'KC_BSPC',
+    'KC_TAB',
+    'KC_CAPS',
+    'KC_SPC',
+    'KC_LCTL',
+    'KC_RCTL',
+    'KC_LALT',
+    'KC_RALT',
+    'KC_LGUI',
+    'KC_RGUI',
+    'KC_FN',
+    'KC_APP',
+    'KC_LSFT',
+    'KC_RSFT',
+    'KC_UP',
+    'KC_DOWN',
+    'KC_LEFT',
+    'KC_RGHT',
+    'KC_TRNS',
   ]);
-  const editKeys = new Set([
-    'KC_HELP', 'KC_UNDO', 'KC_CUT', 'KC_COPY', 'KC_PASTE', 'KC_AGAIN'
-  ]);
+  const editKeys = new Set(['KC_HELP', 'KC_UNDO', 'KC_CUT', 'KC_COPY', 'KC_PASTE', 'KC_AGAIN']);
   const webKeys = new Set([
-    'KC_MAIL', 'KC_CALCULATOR', 'KC_MY_COMPUTER',
-    'KC_ASSISTANT', 'KC_MISSION_CONTROL', 'KC_LAUNCHPAD'
+    'KC_MAIL',
+    'KC_CALCULATOR',
+    'KC_MY_COMPUTER',
+    'KC_ASSISTANT',
+    'KC_MISSION_CONTROL',
+    'KC_LAUNCHPAD',
   ]);
 
   if (keyCode.startsWith('KC_AUDIO_') || keyCode.startsWith('KC_KB_VOLUME_')) return 'audio';
   if (keyCode.startsWith('KC_MEDIA_')) return 'media';
   if (keyCode.startsWith('KC_WWW_')) return 'web';
-  if (keyCode.startsWith('KC_MS_') || keyCode.startsWith('KC_BTN') || keyCode.startsWith('KC_WH_') || keyCode.startsWith('KC_ACL')) return 'mouse';
+  if (
+    keyCode.startsWith('KC_MS_') ||
+    keyCode.startsWith('KC_BTN') ||
+    keyCode.startsWith('KC_WH_') ||
+    keyCode.startsWith('KC_ACL')
+  )
+    return 'mouse';
   if (keyCode.startsWith('KC_BT_') || keyCode.startsWith('KC_OUT_')) return 'wireless';
   if (keyCode.startsWith('KC_RGB_')) return 'rgb';
   if (keyboardKeys.has(keyCode)) return 'keyboard';
@@ -242,7 +269,8 @@ function determineCategory(keyCode) {
   if (webKeys.has(keyCode)) return 'web';
   if (keyCode.startsWith('JP_') || keyCode.startsWith('KC_JP_')) return 'jp-keys';
   if (keyCode.includes('BRIGHTNESS')) return 'system';
-  if (keyCode.includes('POWER') || keyCode.includes('SLEEP') || keyCode.includes('WAKE')) return 'system';
+  if (keyCode.includes('POWER') || keyCode.includes('SLEEP') || keyCode.includes('WAKE'))
+    return 'system';
   return 'utility';
 }
 
@@ -258,7 +286,7 @@ function generateIconObject(keyCode, svgContent, fallback, category) {
     fallback,
     width: 24,
     height: 24,
-    category
+    category,
   };
 }
 
@@ -288,7 +316,7 @@ function addIconToFile(keyCode, iconCode, category) {
     if (!safePath.startsWith(PROJECT_ROOT)) {
       throw new Error('Path traversal detected');
     }
-    
+
     if (!fs.existsSync(safePath)) {
       throw new Error(`Category file does not exist: ${target.file}`);
     }
@@ -318,18 +346,20 @@ function addIconToFile(keyCode, iconCode, category) {
 
     if (!dryRun) {
       fs.writeFileSync(safePath, content, 'utf8');
-      
+
       // Auto-validate syntax
       try {
         execSync(`node --check "${safePath}"`, { stdio: 'ignore' });
         console.log(`  ✓ Syntax check passed successfully for ${target.file}`);
       } catch (err) {
-        console.error(`  ❌ Syntax validation failed after write! Reverting changes to ${target.file}...`);
+        console.error(
+          `  ❌ Syntax validation failed after write! Reverting changes to ${target.file}...`
+        );
         fs.writeFileSync(safePath, originalContent, 'utf8');
         return false;
       }
     }
-    
+
     console.log(`  ✅ Successfully added to js/icons/${target.file}`);
     return true;
   } catch (err) {
@@ -393,7 +423,7 @@ function processKeyCode(keyCode) {
     fallback,
     category,
     targetFile: CATEGORY_MAP[category]?.file || 'utility.js',
-    svgSize: svgContent.length
+    svgSize: svgContent.length,
   };
 }
 
@@ -415,7 +445,7 @@ function main() {
   // Summary
   console.log('\n' + '='.repeat(50));
   console.log('📊 Summary');
-  const successful = results.filter(r => r.success).length;
+  const successful = results.filter((r) => r.success).length;
   const failed = results.length - successful;
   console.log(`  ✅ Successful: ${successful}`);
   console.log(`  ❌ Failed: ${failed}`);

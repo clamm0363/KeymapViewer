@@ -1,75 +1,69 @@
-# 実装計画 - Issue #4: RGB Mode キーのアイコン・専用表示対応
-
+# 実装計画 - Issue #5: ESLint/Prettier & Vitest の導入
 ## 概要
+コードの品質維持、開発効率の向上、そして今後のリファクタリング（一方向データフローの導入やアイコン辞書の統合など）をデグレなく安全に進めるために、静的解析ツール（ESLint / Prettier）およびテストランナー（Vitest）を導入します。
 
-WebHIDやJSONからロードされた QMK / VIA 公式の `RGB_M_*`（RGBアニメーションモード直接指定）系キーコード（10種類）について、他の `KC_RGB_*` コントロールキー（`KC_RGB_MOD` など）と同様に、美しいパレット風アイコンと整った下部表示ラベルでレンダリングされるように対応します。
+本プロジェクトはVanilla JS（ブラウザ環境、ES Modules）で記述されているため、フロントエンドライブラリ（ReactやVueなど）に依存しない軽量なWeb環境に適した設定を行います。
 
-ユーザーのご要望に基づき、表示されるテキストは `FLUENT`（アイコン）モードと `TEXT` モードのどちらでも **`"MODE P"`**, **`"MODE B"`** などの `"MODE <一文字>"` 形式（`RGB_M_SW`, `RGB_M_TW` は `"MODE SW"`, `"MODE TW"`）にします。
+## 実装ステップ
 
-## ユーザー確認・レビュー必要事項
+### 1. `package.json` の初期化と依存関係のインストール
+- `npm init -y` にて `package.json` を新規作成。
+- 以下の開発依存関係（devDependencies）をインストール。
+  - `vitest` (高速・軽量なユニットテストランナー)
+  - `eslint` (静的解析Linter)
+  - `eslint-config-prettier` (Prettierとの競合を避けるための設定)
+  - `prettier` (コードフォーマッタ)
 
-> [!NOTE]
-> TEXTモード時も `MODE P` などの表示になりますが、文字数が多い（特に `MODE SW`, `MODE TW` など）ため、表示エリアからはみ出す可能性があります。
-> 実装および動作確認完了後、ユーザーに実際の画面の見た目を確認していただき、フォントサイズやレイアウトの調整指示をいただきます。
+### 2. 静的解析の設定
+- **ESLint設定 (`eslint.config.js`)**
+  - ブラウザ環境 (`globals.browser`) および ES Modules (`sourceType: "module"`) に対応したフラット設定 (Flat Config) を作成。
+  - 推奨ルール (`@eslint/js`) を適用。
+- **Prettier設定 (`.prettierrc`)**
+  - プロジェクト標準のコード整形ルール（シングルクォート、セミコロンあり、インデント幅2など）を定義。
 
-## 提案する変更と現在のステータス
+### 3. テスト環境の設定 (`vitest.config.js`)
+- `vitest.config.js` を作成。
+- Vanilla JSのピュアロジックが安全に動作・テストできるシンプルな設定を行う。
 
-すでに以下の変更を実装し、構文エラーがないことを確認済みです。
+### 4. npm scripts の整備
+`package.json` に以下のスクリプトを定義。
+- `npm run lint`: ESLint によるコード品質チェック。
+- `npm run format`: Prettier によるコードの整形。
+- `npm run test`: Vitest によるテストの実行。
+- `npm run test:watch`: テストの変更監視実行。
 
+### 5. ユニットテストの作成
+もっともロジックが複雑でバグが混入しやすい `js/utils/labelParser.js` および `helpers.js` に対するユニットテストを記述する。
+- `test/utils/labelParser.test.js`
+- `test/utils/helpers.test.js`
 ---
 
-### 1. [MODIFY] [rgb.js](file:///c:/Git/KeymappingViewer/js/icons/rgb.js) (実装完了)
+## 期待される効果
 
-`RGB_ICONS` に `KC_RGB_M_*` 系キーコード（10種類）の定義を追加しました。
-各キーは「RGBモード」を操作するものであるため、統一感と判別のしやすさを考慮し、`KC_RGB_MOD` と同一の「ペイントパレット」風のSVGアイコンを流用して定義しました。
-
-* **対象キーコード**:
-  * `KC_RGB_M_P` (Plain) -> `"MODE P"`
-  * `KC_RGB_M_B` (Breathe) -> `"MODE B"`
-  * `KC_RGB_M_R` (Rainbow) -> `"MODE R"`
-  * `KC_RGB_M_SW` (Swirl) -> `"MODE SW"`
-  * `KC_RGB_M_SN` (Snake) -> `"MODE SN"`
-  * `KC_RGB_M_K` (Knight) -> `"MODE K"`
-  * `KC_RGB_M_X` (Xmas) -> `"MODE X"`
-  * `KC_RGB_M_G` (Gradient) -> `"MODE G"`
-  * `KC_RGB_M_T` (Test) -> `"MODE T"`
-  * `KC_RGB_M_TW` (Twinkle) -> `"MODE TW"`
-
----
-
-### 2. [MODIFY] [keymap-dictionary.js](file:///c:/Git/KeymappingViewer/js/keymap-dictionary.js) (実装完了)
-
-`KeymapDictionary.keys` 内 of `KC_RGB_M_*` 系の定義を更新し、Webフォント（Fluent）表示モード用の `fluent` プロパティ（`\uF2F6`：パレット風アイコン）を追加し、テキストを `"MODE P"` 〜 `"MODE TW"` に書き換えました。
-
----
-
-### 3. [MODIFY] [keycapIconUtils.js](file:///c:/Git/KeymappingViewer/js/components/keycapIconUtils.js) (実装完了)
-
-`RGB_LABELS` に定義されている各キーコードに対応するラベルを `"MODE P"` などの新しい形式に更新しました。
-
----
-
-## 期待される効果と挙動
-
-1. **自動判定の有効化**:
-   `js/components/keycapIconUtils.js` の既存ロジックにより、キーコードが `KC_RGB_` で始まり、かつ `isSVGAvailable` が `true` になるため、自動的に `isRGBKey` および `isRGBFluent` が `true` と判定されます。
-2. **美しいUIの実現**:
-   `Fluent` 表示モード時には、キーキャップの中央に「ペイントパレット」のSVGアイコンが描画され、下部に小さく `"MODE P"` などのモード名ラベルが整ってレンダリングされます（他の `KC_RGB_*` 系コントロールキーと完全に統一されたデザインになります）。
-3. **Textモードとの整合**:
-   `Text` 表示モードでも、`keymap-dictionary.js` の `text` 定義に従ってテキスト凡例が綺麗に収まります。
-
----
-
+1. **品質の自動チェック**:
+   AIエージェントや人間がコードを編集した際、`npm run lint` や `npm run test` を実行することで、バグやフォーマットの乱れ、構文エラーを即座にチェックできるようになります。
+2. **リファクタリングの安全性確保**:
+   以降の Issue #6（辞書の統合）や Issue #7（Storeの導入）といった複雑なロジック改修を行う際に、テストが通っていることでデグレがないことを保証できます。
 ## 検証プラン
+1. **静的解析の実行**:
+   `npm run lint` および `npm run format` を実行し、既存コードの問題点を検出し、フォーマットが動作することを確認します。
+2. **テストの実行**:
+   `npm run test` を実行し、作成したテストが正常にパスすることを確認します。
 
-### 1. 静的検証 (実行済み・パス)
-* 構文エラーチェック: `node --check js/icons/rgb.js`
-* SVGモジュール検証スクリプト of 実行:
-  ```bash
-  node --input-type=module -e "import('./js/test-svg-validation.js')"
-  ```
-  *結果: 260個のアイコンが正常に検証され、rgbカテゴリが21個に増加したことを確認しました。*
+## 追加作業：ローカル開発サーバーの導入と動作確認
+Issue #5 の改修に伴い、ブラウザでアプリケーションが正常に描画され、エラーが発生しないかを検証するためにローカルサーバーを起動できるようにします。
 
-### 2. UI表示検証 (未完了)
-* ローカル開発サーバーを起動し、ブラウザでレイアウトを確認します。
-* `Fluent` モードおよび `Text` モードのそれぞれで `"MODE P"` などの表示崩れがないか、特に `TEXT` モードにおける文字のはみ出しやサイズについて確認し、ユーザーの調整指示を待ちます。
+### 1. サーバーの要件
+- ホスト: `127.0.0.1`
+- ポート: `5501`
+- ES Modules (`type="module"`) などの適切な MIME タイプがブラウザに返されること。
+
+### 2. サーバーの起動手段
+Node.js 環境でゼロ依存で動作するシンプルなHTTPサーバープログラム `scripts/server.js` を作成するか、あるいは標準的な `http-server` パッケージを利用します。
+今回は依存関係を極力シンプルに保つため、Node.js 組み込みの `http` / `fs` / `path` モジュールを使用した軽量なローカルサーバースクリプト `scripts/server.js` を作成し、`npm start` で起動できるようにします。
+これにより追加パッケージのダウンロードを伴わずに高速かつ安定して `127.0.0.1:5501` で起動可能です。
+
+### 3. 検証方法
+1. `npm start` コマンドでサーバーを起動。
+2. ブラウザで `http://127.0.0.1:5501` にアクセスし、開発者ツールのコンソールにエラーが表示されていないこと、およびキーボードレイアウトが正常に描画されることを確認します。
+
