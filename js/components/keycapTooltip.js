@@ -1,4 +1,4 @@
-import { getKeycodeTooltipInfo } from '../keymap-dictionary.js';
+import { getKeycodeTooltipInfo } from '../utils/tooltipEngine.js';
 import { buildKeyInspectorTooltipLines } from '../utils/keyInspector.js';
 
 function joinTooltipLines(lines) {

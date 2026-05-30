@@ -1,4 +1,4 @@
-import { getKeycodeTooltipInfo } from '../keymap-dictionary.js';
+import { getKeycodeTooltipInfo } from './tooltipEngine.js';
 import { getKeyCategory } from '../components/keycapIconUtils.js';
 
 function joinVisibleParts(parts) {
