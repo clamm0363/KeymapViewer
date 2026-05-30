@@ -80,8 +80,11 @@ export function Keyboard({
 
           let isVisible = true;
           if (optionIdx !== null && optionIdx !== undefined) {
-            const selectedVal =
-              activeLayoutOptions[optionIdx] !== undefined ? activeLayoutOptions[optionIdx] : 0;
+            // optionIdx は parseInt 済みの数値。Object.hasOwn で存在確認後にアクセスする
+            const safeIdx = Number(optionIdx);
+            const selectedVal = Object.hasOwn(activeLayoutOptions, safeIdx)
+              ? activeLayoutOptions[safeIdx]
+              : 0;
             if (selectedVal !== optionVal) {
               isVisible = false;
             }
@@ -170,12 +173,15 @@ export function Keyboard({
   }, [maxWidth, forcedScale]);
 
   useEffect(() => {
+    // layer は数値インデックス。Number() で明示的に数値化してからアクセスする
+    const layerIdx = Number(layer);
     const layerSource =
-      (externalMap && externalMap.layers && externalMap.layers[layer]) ||
-      (design && design.layers && design.layers[layer]);
+      (externalMap && externalMap.layers && externalMap.layers[layerIdx]) ||
+      (design && design.layers && design.layers[layerIdx]);
     if (layerSource) {
       const next = {};
       const cols = (design && design.matrix && design.matrix.cols) || 16;
+      // キーは Math.floor / % による純粋な計算値であり、ユーザー入力ではない
       layerSource.forEach((v, i) => (next[`${Math.floor(i / cols)},${i % cols}`] = v));
       setCodes(next);
     } else {
