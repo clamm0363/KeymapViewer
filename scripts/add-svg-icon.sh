@@ -7,6 +7,11 @@
 # Usage:
 #   bash scripts/add-svg-icon.sh KC_HELP KC_UNDO KC_CUT
 #   bash scripts/add-svg-icon.sh --dry-run KC_HELP
+#
+# Note for Windows Users:
+#   PowerShell or cmd.exe users can directly run:
+#     node scripts/add-svg-icon.js KC_HELP
+#   Alternatively, run this sh script within Git Bash or WSL.
 ###############################################################################
 
 set -euo pipefail

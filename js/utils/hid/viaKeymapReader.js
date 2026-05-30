@@ -3,9 +3,9 @@ import { getRawLabel } from '../helpers.js';
 export const VIA_USAGE_PAGE = 0xff60;
 export const VIA_USAGE = 0x61;
 const VIA_REPORT_SIZE = 32;
-const VIA_COMMAND_START = 0x00;
+const _VIA_COMMAND_START = 0x00;
 const VIA_DATA_BUFFER_SIZE = 28;
-const VIA_PROTOCOL_ALPHA = 7;
+const _VIA_PROTOCOL_ALPHA = 7;
 const VIA_PROTOCOL_BETA = 8;
 
 const VIA_COMMANDS = Object.freeze({
