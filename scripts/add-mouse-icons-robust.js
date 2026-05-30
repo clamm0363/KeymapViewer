@@ -30,7 +30,7 @@ const MOUSE_KEYCODES = [
   'KC_WH_R',
   'KC_ACL0',
   'KC_ACL1',
-  'KC_ACL2'
+  'KC_ACL2',
 ];
 
 console.log('⚠ scripts/add-mouse-icons-robust.js is deprecated.');
@@ -38,7 +38,7 @@ console.log('  Delegating to scripts/add-svg-icon.js for modular output.\n');
 
 const result = spawnSync(process.execPath, [ADD_SVG_ICON_SCRIPT, ...MOUSE_KEYCODES], {
   cwd: PROJECT_ROOT,
-  stdio: 'inherit'
+  stdio: 'inherit',
 });
 
 process.exit(result.status ?? 1);

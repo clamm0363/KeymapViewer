@@ -74,7 +74,7 @@ const replaceMag = `    // MAGIC category
 
 // 置換の適用（CRLFとLFの両方に対応できるように正規化してから置換）
 function normalizeNewlines(str) {
-    return str.replace(/\r\n/g, '\n');
+  return str.replace(/\r\n/g, '\n');
 }
 
 // ターゲットのファイルを読み込んで正規化
@@ -87,18 +87,20 @@ result = result.replace(normalizeNewlines(searchMagicScale), normalizeNewlines(r
 result = result.replace(normalizeNewlines(searchMag), normalizeNewlines(replaceMag));
 
 // 🌟 通常のキーのレンダリング全体を囲む、絶対に重複しない巨大な一意のブロックを置換 🌟
-const targetStart = "return createElement('div', {\n                                            style: {\n                                                display: 'flex',\n                                                alignItems: 'center',\n                                                justifyContent: 'center',\n                                                width: '100%',\n                                                height: '100%',\n                                                padding: '2px',\n                                                boxSizing: 'border-box',\n                                                position: 'relative' // 右下バッジのための相対配置基準点";
+const targetStart =
+  "return createElement('div', {\n                                            style: {\n                                                display: 'flex',\n                                                alignItems: 'center',\n                                                justifyContent: 'center',\n                                                width: '100%',\n                                                height: '100%',\n                                                padding: '2px',\n                                                boxSizing: 'border-box',\n                                                position: 'relative' // 右下バッジのための相対配置基準点";
 
-const targetEnd = "keyCategory)\n                                            )\n                                        ]);\n                                    })()";
+const targetEnd =
+  'keyCategory)\n                                            )\n                                        ]);\n                                    })()';
 
 const startIndex = result.indexOf(normalizeNewlines(targetStart));
 if (startIndex !== -1) {
-    const endIndex = result.indexOf(normalizeNewlines(targetEnd), startIndex);
-    if (endIndex !== -1) {
-        const fullMatch = result.substring(startIndex, endIndex + normalizeNewlines(targetEnd).length);
-        
-        // 置き換え後のコード (改行時のフレックス2行レンダリング + カテゴリバッジの bottom: -4.5px を両方綺麗に含んでいます)
-        const replaceMultiline = `return createElement('div', {
+  const endIndex = result.indexOf(normalizeNewlines(targetEnd), startIndex);
+  if (endIndex !== -1) {
+    const fullMatch = result.substring(startIndex, endIndex + normalizeNewlines(targetEnd).length);
+
+    // 置き換え後のコード (改行時のフレックス2行レンダリング + カテゴリバッジの bottom: -4.5px を両方綺麗に含んでいます)
+    const replaceMultiline = `return createElement('div', {
                                             style: {
                                                 display: 'flex',
                                                 alignItems: 'center',
@@ -212,14 +214,14 @@ if (startIndex !== -1) {
                                             )
                                         ]);
                                     })()`;
-        
-        result = result.replace(fullMatch, replaceMultiline);
-        console.log('✨ Ultimate range match succeeded for multiline rendering!');
-    } else {
-        console.error('❌ Failed to find targetEnd in file.');
-    }
+
+    result = result.replace(fullMatch, replaceMultiline);
+    console.log('✨ Ultimate range match succeeded for multiline rendering!');
+  } else {
+    console.error('❌ Failed to find targetEnd in file.');
+  }
 } else {
-    console.error('❌ Failed to find targetStart in file.');
+  console.error('❌ Failed to find targetStart in file.');
 }
 
 // 保存（ファイルの元の改行コードに合わせて出力）

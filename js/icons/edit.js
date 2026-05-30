@@ -8,7 +8,7 @@ export const EDIT_ICONS = {
     fallback: '\\uF32C',
     width: 24,
     height: 24,
-    category: 'edit'
+    category: 'edit',
   },
 
   KC_CUT: {
@@ -19,7 +19,7 @@ export const EDIT_ICONS = {
     fallback: '\\uF33B',
     width: 24,
     height: 24,
-    category: 'edit'
+    category: 'edit',
   },
 
   KC_PASTE: {
@@ -30,7 +30,7 @@ export const EDIT_ICONS = {
     fallback: '\\uF2D6',
     width: 24,
     height: 24,
-    category: 'edit'
+    category: 'edit',
   },
 
   KC_UNDO: {
@@ -41,7 +41,7 @@ export const EDIT_ICONS = {
     fallback: '\\uF19A',
     width: 24,
     height: 24,
-    category: 'edit'
+    category: 'edit',
   },
 
   KC_AGAIN: {
@@ -52,7 +52,7 @@ export const EDIT_ICONS = {
     fallback: '\\uF16F',
     width: 24,
     height: 24,
-    category: 'edit'
+    category: 'edit',
   },
 
   KC_HELP: {
@@ -63,7 +63,7 @@ export const EDIT_ICONS = {
     fallback: '\\uF63E',
     width: 24,
     height: 24,
-    category: 'edit'
+    category: 'edit',
   },
 
   ic_fluent_pen_24_regular: {
@@ -74,6 +74,6 @@ export const EDIT_ICONS = {
     fallback: '\\uE70F',
     width: 24,
     height: 24,
-    category: 'edit'
-  }
+    category: 'edit',
+  },
 };

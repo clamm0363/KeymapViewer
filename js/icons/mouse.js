@@ -8,7 +8,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uF19C',
     width: 24,
     height: 24,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_MS_D: {
@@ -19,7 +19,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uF149',
     width: 24,
     height: 24,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_MS_L: {
@@ -30,7 +30,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uF15C',
     width: 24,
     height: 24,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_MS_R: {
@@ -41,7 +41,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uF182',
     width: 24,
     height: 24,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_BTN1: {
@@ -52,7 +52,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uE446',
     width: 24,
     height: 24,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_BTN2: {
@@ -63,7 +63,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uE449',
     width: 24,
     height: 24,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_BTN3: {
@@ -74,7 +74,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uE444',
     width: 24,
     height: 24,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_BTN4: {
@@ -85,7 +85,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uE446',
     width: 24,
     height: 24,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_BTN5: {
@@ -96,7 +96,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uE446',
     width: 24,
     height: 24,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_WH_U: {
@@ -107,7 +107,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uF2CA',
     width: 20,
     height: 20,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_WH_D: {
@@ -118,7 +118,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uF2C7',
     width: 20,
     height: 20,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_WH_L: {
@@ -129,7 +129,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uF2C8',
     width: 20,
     height: 20,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_WH_R: {
@@ -140,7 +140,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uF2C9',
     width: 20,
     height: 20,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_ACL0: {
@@ -151,7 +151,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uF445',
     width: 24,
     height: 24,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_ACL1: {
@@ -162,7 +162,7 @@ export const MOUSE_ICONS = {
     fallback: '\\uF445',
     width: 24,
     height: 24,
-    category: 'mouse'
+    category: 'mouse',
   },
 
   KC_ACL2: {
@@ -173,6 +173,6 @@ export const MOUSE_ICONS = {
     fallback: '\\uF445',
     width: 24,
     height: 24,
-    category: 'mouse'
-  }
+    category: 'mouse',
+  },
 };
