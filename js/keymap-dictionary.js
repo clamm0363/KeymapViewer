@@ -1227,16 +1227,6 @@ const tooltipTemplateAliasMap = new Map([
   ['RWIN_T', 'RGUI_T'],
 ]);
 
-const tooltipWrapperDescriptions = {
-  LCTL: 'Hold Left Control and press',
-  LSFT: 'Hold Left Shift and press',
-  LALT: 'Hold Left Alt and press',
-  LGUI: 'Hold Left GUI and press',
-  RCTL: 'Hold Right Control and press',
-  RSFT: 'Hold Right Shift and press',
-  RALT: 'Hold Right Alt and press',
-  RGUI: 'Hold Right GUI and press',
-};
 
 const tooltipModTapDescriptions = {
   LCTL_T: 'Left Control when held',
