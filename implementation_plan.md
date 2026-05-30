@@ -1,72 +1,93 @@
-# Issue #7, #13, #18, #19 の対処計画
+# Issue #14 の対処計画：keymap-dictionary.js のツールチップロジック分離（改訂版）
 
-ユーザーおよび別AIとの議論を経て、状態管理の自作 Store 導入（Issue #7）を非推奨として計画外クローズし、最優先課題であるテストカバレッジの拡充（Issue #13）、および微修正（Issue #18, #19）を実施します。
+`js/keymap-dictionary.js` の肥大化を解消するため、ツールチップ生成およびパースエンジンを新設する `js/utils/tooltipEngine.js` に分離します。
+
+AIレビュアーからの指摘を全面的に受け入れ、**循環参照（相互依存）と `keymap-dictionary.js` での re-export 案を完全に排除**し、依存関係が一方向（DAG：有向非巡回グラフ）になるよう設計を改善しました。
+
+---
+
+## 📐 依存関係の改善（DAGの構築）
+
+### 改善前（循環参照の発生）
+```mermaid
+graph TD
+    keyInspector --> keymap-dictionary
+    keycapTooltip --> keymap-dictionary
+    keymap-dictionary <--> tooltipEngine
+```
+
+### 改善後（クリーンな一方向の依存関係）✅
+```mermaid
+graph TD
+    keyInspector --> tooltipEngine
+    keycapTooltip --> tooltipEngine
+    tooltipEngine --> keymap-dictionary
+```
+
+これにより、モジュールの初期化エラーやバンドルツールの処理エラーのリスクを根底から排除します。
+
+---
 
 ## User Review Required
 
-> [!NOTE]
-> 今回の計画に破壊的変更や影響の大きい設計判断はありません。
-> - `Issue #7` は「Close as not planned」としてGitHub上でクローズします。
-> - `Issue #13` では新設するテストファイル（`keyInspector.test.js`, `loadJsonUtils.test.js`）のみを追加し、既存のコード本体は一切変更しません。
-> - `Issue #18` と `#19` は、数行のコメント追加および変数名のプレフィックス修正のみの極めて低リスクな変更です。
-
-## Open Questions
-
-> [!NOTE]
-> 現在未解決の設計上の疑問点はありません。
+> [!IMPORTANT]
+> **外部インポートの直接修正**:
+> `keymap-dictionary.js` での re-export を行わないため、`getKeycodeTooltipInfo` を直接利用している既存の以下のファイルを修正し、インポート元を `js/utils/tooltipEngine.js` へ直接向けるように書き換えます。
+> - `js/utils/keyInspector.js`
+> - `js/components/keycapTooltip.js`
 
 ## Proposed Changes
 
 ---
 
-### 1. Issue #7 のクローズ処理
+### 1. ツールチップパース・生成エンジンの分離
 
-GitHub CLI を使用し、Issue #7 を「Close as not planned（計画外クローズ）」としてクローズします。
+#### [NEW] [tooltipEngine.js](file:///c:/Git/KeymappingViewer/js/utils/tooltipEngine.js)
+- `js/keymap-dictionary.js` から以下の定数・ヘルパー・公開API関数を完全に移動・新設します。
+- **依存関係（一方向）**:
+  ```javascript
+  import { QMK_KEYCODE_METADATA } from '../qmk-keycode-metadata.js';
+  import { resolveKeycodeAlias } from '../keymap-dictionary.js';
+  ```
+- **移植対象の静的マップ・定数**:
+  - `preferredOfficialKeycodeDisplay`, `tooltipWrapperTokens`, `tooltipWrapperAliasMap`, `tooltipTemplateAliasMap`, `tooltipModTapDescriptions`, `modifierWrapperExpansion`, `tooltipModifierNameByStyle`
+- **移植対象のヘルパー関数**:
+  - `splitTopLevelArgs`, `canonicalizeTooltipAtom`, `normalizeKeyStyle`, `getStyledModifierName`, `formatModifierList`, `collectModifierChain`, `formatDirectDescriptionForKeyStyle`, `extractWrappedExpressionParts`, `getDirectKeycodeDescription`, `getViaSpecificDescription`, `getCompositeKeycodeDescription`, `isWrappedExpression`
+- **移植対象の公開API関数**:
+  - `toCanonicalKeycodeDisplay`, `getKeycodeDescription`, `getKeycodeTooltipInfo`
 
----
-
-### 2. keyInspector.js & loadJsonUtils.js のユニットテスト実装 (Issue #13)
-
-#### [NEW] [keyInspector.test.js](file:///c:/Git/KeymappingViewer/test/utils/keyInspector.test.js)
-- `js/utils/keyInspector.js` の `buildKeyInspectorData` および `buildKeyInspectorTooltipLines` に対するテストコードを記述します。
-- 以下のテストケースを含めます:
-  - `standard` ルートにおけるラベル解決（`bottomLabel`, ` displayText`, `textFallback` などが正常にマージされるか）
-  - `layer` ルートにおけるラベル解決（`topTag`, `primaryText`, `secondaryText` の結合）
-  - `mod` ルートにおけるラベル解決（`modLabel`, `baseLabel` の結合）
-  - マクロコード（例: `MACRO(3)`）に対するマクロIDとマクロ内容の抽出検証
-  - 生成されたインスペクターデータからデバッグ用ツールチップ行（`buildKeyInspectorTooltipLines`）が正しく組み立てられるかの検証
-  - プライベート領域グリフ（`\uE000`〜`\uF8FF`）が含まれるラベルのフォールバック動作の検証
-
-#### [NEW] [loadJsonUtils.test.js](file:///c:/Git/KeymappingViewer/test/utils/loadJsonUtils.test.js)
-- `js/utils/loadJsonUtils.js` の全公開関数に対する網羅的なテストコードを記述します。
-- 以下のテストケースを含めます:
-  - `isLayoutJson` と `isMappingJson` の正常・異常パターンの判定
-  - `normalizeLayoutJson` のマトリクス行・列の数値型変換と `encoders` 配列のフォールバック保証の検証
-  - `normalizeMappingJson` における `layers`, `macros`, `macroAliases`, `encoders` のオブジェクト・配列正規化およびエラーハンドリングの検証
-  - 不正な JSON オブジェクトが渡された際の例外スローおよび適切なエラーメッセージ（`getLayoutJsonErrorMessage`, `getMappingJsonErrorMessage`）の検証
+#### [MODIFY] [keymap-dictionary.js](file:///c:/Git/KeymappingViewer/js/keymap-dictionary.js)
+- 移植した定数および L1231 以降のすべてのツールチップ生成コードを完全に削除し、約1,200行まで軽量化します。
+- 使用しなくなる `import { QMK_KEYCODE_METADATA }` のインポート宣言を削除します。
+- **重要**: `tooltipEngine.js` への依存や re-export は一切行いません。これにより、辞書ファイルとしての純粋なデータ・エイリアス解決責務に専念させます。
 
 ---
 
-### 3. viaKeymapReader.js の未使用定数修正 (Issue #19)
+### 2. インポート箇所の直接修正
 
-#### [MODIFY] [viaKeymapReader.js](file:///c:/Git/KeymappingViewer/js/utils/hid/viaKeymapReader.js)
-- L6 の `const VIA_COMMAND_START = 0x00;` を `const _VIA_COMMAND_START = 0x00;` にリネームします。
-- L8 の `const VIA_PROTOCOL_ALPHA = 7;` を `const _VIA_PROTOCOL_ALPHA = 7;` にリネームします。
-- これにより、仕様上の定数定義を残したまま、ESLint の `no-unused-vars` 警告（アンダースコア始まりを許容）を解消します。
+#### [MODIFY] [keyInspector.js](file:///c:/Git/KeymappingViewer/js/utils/keyInspector.js)
+- `getKeycodeTooltipInfo` のインポート元を `tooltipEngine.js` に変更します。
+  ```diff
+  -import { getKeycodeTooltipInfo } from '../keymap-dictionary.js';
+  +import { getKeycodeTooltipInfo } from './tooltipEngine.js';
+  ```
+
+#### [MODIFY] [keycapTooltip.js](file:///c:/Git/KeymappingViewer/js/components/keycapTooltip.js)
+- `getKeycodeTooltipInfo` のインポート元を `tooltipEngine.js` に変更します。
+  ```diff
+  -import { getKeycodeTooltipInfo } from '../keymap-dictionary.js';
+  +import { getKeycodeTooltipInfo } from '../utils/tooltipEngine.js';
+  ```
 
 ---
-
-### 4. add-svg-icon.sh の Windows 互換性注意書き追加 (Issue #18)
-
-#### [MODIFY] [add-svg-icon.sh](file:///c:/Git/KeymappingViewer/scripts/add-svg-icon.sh)
-- スクリプトのヘッダーコメント部分に、Windows環境（PowerShell/コマンドプロンプトなど）における実行手順（`node scripts/add-svg-icon.js` を直接実行可能である旨）の注記を追記します。
 
 ## Verification Plan
 
 ### Automated Tests
-- `npm run test` を実行し、既存のテスト（11件）に加えて、新規に作成する `keyInspector.test.js` および `loadJsonUtils.test.js` のテストケースがすべて正常にパスすることを確認します。
-- テストコマンド: `npm run test`
-- `npm run lint` を実行し、今回の修正箇所（`viaKeymapReader.js`）の `no-unused-vars` 警告が解消されていること、およびプロジェクト全体にエラー/警告が発生しないことを確認します。
+- 新設する `tooltipEngine.js` を網羅的に検証するため、`test/utils/tooltipEngine.test.js` を新規に作成します（変換、説明文生成、エイリアス構造体の組み立て等を徹底テスト）。
+- テストコマンド: `npm run test` （追加したテストを含む35件以上のすべてのテストケースがパスすることを確認）
+- Linterコマンド: `npm run lint` （警告数に増減や問題が発生しないことを確認）
 
 ### Manual Verification
-- `npm start` でローカル開発サーバーを起動し、ブラウザで `http://127.0.0.1:5501` にアクセスし、画面が正常に描画されエラーが発生しないこと、およびキーボードのキーにホバーした際にデバッグツールチップ（インスペクター情報）が問題なく表示されることを確認します。
+- `npm start` でローカル開発サーバーを起動し、ブラウザで `http://127.0.0.1:5501` にアクセス。
+- ラッパーキー、レイヤー操作キーなどのツールチップがエラーなく正常に以前と同様に表示されることを確認します。
