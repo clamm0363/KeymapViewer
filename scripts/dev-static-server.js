@@ -70,4 +70,3 @@ server.listen(port, '127.0.0.1', () => {
   console.log(`Static server running at http://127.0.0.1:${port}/`);
   console.log(`Serving: ${rootDir}`);
 });
-

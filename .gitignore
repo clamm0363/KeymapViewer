@@ -18,15 +18,6 @@ desktop.ini
 fluentui-system-icons/
 scratch/
 
-# FluentUI and temporary files
-fluentui-system-icons/
-scratch/
-
-# FluentUI and temporary files
-fluentui-system-icons/
-scratch/
-
-
-# FluentUI and temporary files
-fluentui-system-icons/
-scratch/
+# Node.js dependencies
+node_modules/
+package-lock.json
