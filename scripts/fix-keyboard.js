@@ -1,5 +1,18 @@
+// [MAINTENANCE] fix-keyboard.js
+//
+// このスクリプトは Keyboard.js の特定コードブロックを文字列マッチで置換する
+// 一時的なパッチスクリプトです。
+//
+// ⚠️  現在の Keyboard.js はリファクタリング済みのため、このスクリプトは
+//     適用できない状態です（対象コードが存在しない）。
+//     過去の修正経緯の記録として保存しています。
+//
+// 使用する場合は、適用前に必ずターゲットコードが存在するか確認してください。
+// npm scripts には登録されていません。直接 `node scripts/fix-keyboard.js` で実行します。
+
 const fs = require('fs');
 const path = require('path');
+
 
 const targetFile = path.resolve(__dirname, '..', 'js', 'components', 'Keyboard.js');
 let content = fs.readFileSync(targetFile, 'utf8');
