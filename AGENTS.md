@@ -103,6 +103,8 @@ When adding new pure logic to `js/utils/`, add corresponding test cases.
   - Device card, controls, and per-device orchestration.
 - `js/components/Header.js`
   - Header and top-level controls.
+- `js/components/inputDeviceSettings.js`
+  - Per-device input settings UI (pointing device type, encoder display mode, etc.).
 - `js/components/Modals/`
   - Modal UIs such as export/help/macro dialogs.
 
@@ -124,6 +126,18 @@ When adding new pure logic to `js/utils/`, add corresponding test cases.
   - Key label parsing and normalization logic.
 - `js/utils/helpers.js`
   - Shared non-keycap helper utilities.
+- `js/utils/keyInspector.js`
+  - Key metadata inspection and tooltip detail extraction.
+- `js/utils/loadJsonUtils.js`
+  - JSON layout file loading and normalization helpers.
+- `js/utils/hid/definitionUtils.js`
+  - VIA/QMK definition file parsing and normalization utilities.
+- `js/utils/hid/deviceRegistry.js`
+  - WebHID device registration and lookup.
+- `js/utils/hid/localDefinitions.js`
+  - Local definition file management for private/public VIA JSON.
+- `js/utils/hid/viaKeymapReader.js`
+  - WebHID communication and VIA protocol keymap reading.
 - `SampleLayouts/`
   - Sample layout data for manual verification.
 - `json_public/`
