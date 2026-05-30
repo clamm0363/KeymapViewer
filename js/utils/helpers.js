@@ -332,9 +332,7 @@ export const findSplitX = (design) => {
   const UNIT = 56;
   const keys = [];
   let x = 0,
-    y = 0,
-    w = 1,
-    h = 1;
+    w = 1;
   design.layouts.keymap.forEach((row) => {
     x = 0;
     row.forEach((item) => {
@@ -342,13 +340,11 @@ export const findSplitX = (design) => {
         keys.push({ x: x * UNIT, w: w * UNIT });
         x += w;
         w = 1;
-        h = 1;
       } else {
         if (item.x !== undefined) x += item.x;
         if (item.w !== undefined) w = item.w;
       }
     });
-    y++;
   });
 
   if (keys.length === 0) return null;

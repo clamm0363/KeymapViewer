@@ -1,5 +1,4 @@
 const { createElement, useState, useEffect, useMemo, useRef } = React;
-const html = htm.bind(createElement);
 
 import { findSplitX } from '../utils/helpers.js';
 import { Keycap } from './Keycap.js';
