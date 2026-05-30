@@ -117,8 +117,6 @@ When adding new pure logic to `js/utils/`, add corresponding test cases.
   - Current categories: `system`, `media`, `wireless`, `mouse`, `keyboard`, `edit`, `rgb`, `web`, `utility`, and `aliases`.
 - `js/keymap-dictionary.js`
   - Keycode dictionary and Fluent icon metadata. Single source of truth for keycode definitions.
-- `js/fluent-icons-map.json`
-  - Legacy Fluent icon mapping data. Currently not imported by any runtime module. Do not add new entries here; use `js/keymap-dictionary.js` instead.
 
 ### Utilities And Data
 
@@ -211,7 +209,6 @@ When adding new pure logic to `js/utils/`, add corresponding test cases.
 
 - When adding or updating Fluent-backed keys, keep `js/keymap-dictionary.js` metadata aligned with the intended icon.
 - Treat dictionary comments and Fluent references as part of the icon resolution workflow.
-- Do not add new entries to `js/fluent-icons-map.json`; it is a legacy file.
 
 ### Categories
 
@@ -258,7 +255,6 @@ node --input-type=module -e "import('./js/test-svg-validation.js')"
 - Treat `implementation_plan.md` as the active execution artifact and `AGENTS.md` as the stable policy artifact.
 - When in doubt, optimize for maintainability, modularity, and consistency with the current file structure.
 - `scripts/add-mouse-icons-robust.js` is deprecated — do not call it.
-- `js/fluent-icons-map.json` is a legacy file — do not add entries to it.
 
 ---
 
