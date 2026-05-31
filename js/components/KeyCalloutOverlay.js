@@ -1,41 +1,5 @@
 const { createElement } = React;
 
-function estimateTextHeight(customText, description) {
-  let customLines = 0;
-  if (customText) {
-    customText.split('\n').forEach((part) => {
-      let weight = 0;
-      for (let i = 0; i < part.length; i++) {
-        weight += part.charCodeAt(i) > 255 ? 2.0 : 1.0;
-      }
-      // BOX_W = 180, inside width = 164px.
-      // Font size 11px (approx 6.5px per English char, 11px per JP char).
-      // We can fit approx 25 English weight or 14 Japanese weight characters.
-      customLines += Math.max(1, Math.ceil(weight / 25));
-    });
-  }
-
-  let descLines = 0;
-  if (description) {
-    description.split('\n').forEach((part) => {
-      let weight = 0;
-      for (let i = 0; i < part.length; i++) {
-        weight += part.charCodeAt(i) > 255 ? 2.0 : 1.0;
-      }
-      // Font size 10px (approx 5.8px per English char, 10px per JP char).
-      // We can fit approx 28 English weight or 16 Japanese weight characters.
-      descLines += Math.max(1, Math.ceil(weight / 28));
-    });
-  }
-
-  const customHeight = customLines * 15.5; // generous height for 11px font-size
-  const descHeight = descLines * 13.5;   // generous height for 10px font-size
-  const gap = customHeight > 0 && descHeight > 0 ? 6 : 0;
-  const padding = 16; // top & bottom padding
-  const total = padding + customHeight + descHeight + gap;
-  return Math.max(52, Math.ceil(total));
-}
-
 export function KeyCalloutOverlay({
   keys,           // filteredKeys
   keyAnnotations,
@@ -54,7 +18,8 @@ export function KeyCalloutOverlay({
   const innerOffsetY = 4;
 
   const svgWidth = containerWidth;
-  const svgHeight = scaleMetrics.maxHeight * finalScale + 8;
+  // Secure an extra 140px at the bottom to ensure callouts in fallback layout are never clipped
+  const svgHeight = scaleMetrics.maxHeight * finalScale + 140;
 
   // Style constants based on theme
   const bgCol = isLight ? 'rgba(255, 255, 255, 0.95)' : 'rgba(15, 23, 42, 0.92)';
@@ -62,7 +27,9 @@ export function KeyCalloutOverlay({
   const textCol = isLight ? '#1e293b' : '#e2e8f0';
   const lineCol = isLight ? 'rgba(148, 163, 184, 0.9)' : 'rgba(100, 116, 139, 0.7)';
 
-  const BOX_W = 180; // Expanded to 180px for a more balanced layout and more room
+  // foreignObject container sizes
+  const FO_WIDTH = 280;
+  const FO_HEIGHT = 200;
   const LINE_LEN = 60;
 
   const callouts = [];
@@ -77,7 +44,6 @@ export function KeyCalloutOverlay({
 
     const cText = annotation.customText || '';
     const dText = annotation.description || '';
-    const boxH = estimateTextHeight(cText, dText);
 
     // Determine base key layout coordinates in screen space
     const screenCenterX = innerOffsetX + (k.x + k.w / 2) * finalScale;
@@ -92,28 +58,33 @@ export function KeyCalloutOverlay({
 
     let lineStartX, lineEndX, boxX;
     let lineY = screenCenterY;
-    let boxY = lineY - boxH / 2;
+    let boxY = lineY - FO_HEIGHT / 2; // Center the foreignObject vertically on lineY
     let isFallback = false;
+
+    // Estimate horizontal position of the fit-content box to check for overflow
+    // The max-width of the dynamic text box is 200px
+    const ESTIMATED_BOX_W = 200;
 
     if (isLeftSide) {
       lineStartX = screenKeyLeftEdge;
       lineEndX = lineStartX - LINE_LEN;
-      boxX = lineEndX - BOX_W;
+      boxX = lineEndX - FO_WIDTH;
     } else {
       lineStartX = screenKeyRightEdge;
       lineEndX = lineStartX + LINE_LEN;
       boxX = lineEndX;
     }
 
-    // Fallback detection: If the callout box overflows left/right bounds
-    const needsFallback = isLeftSide ? boxX < 0 : boxX + BOX_W > svgWidth;
+    // Check if the estimated box bounds overflows the left/right viewport boundaries
+    const checkX = isLeftSide ? lineEndX - ESTIMATED_BOX_W : lineEndX + ESTIMATED_BOX_W;
+    const needsFallback = isLeftSide ? checkX < 0 : checkX > svgWidth;
 
     if (needsFallback) {
       isFallback = true;
       const BELOW_OFFSET = 12;
       const screenKeyBottomY = innerOffsetY + (k.y + k.h) * finalScale;
-      // Center the box horizontally under the key, clamped to SVG container bounds
-      boxX = Math.max(4, Math.min(screenCenterX - BOX_W / 2, svgWidth - BOX_W - 4));
+      // Center the foreignObject horizontally under the key, clamped to SVG bounds
+      boxX = Math.max(4, Math.min(screenCenterX - FO_WIDTH / 2, svgWidth - FO_WIDTH - 4));
       boxY = screenKeyBottomY + BELOW_OFFSET;
       lineStartX = screenCenterX;
       lineEndX = screenCenterX;
@@ -128,7 +99,8 @@ export function KeyCalloutOverlay({
       lineEndY: isFallback ? boxY : lineY,
       boxX,
       boxY,
-      boxH,
+      isFallback,
+      isLeftSide,
       customText: cText,
       description: dText,
     });
@@ -151,6 +123,10 @@ export function KeyCalloutOverlay({
       },
     },
     callouts.map((c) => {
+      // Outer layout flex align options inside foreignObject
+      const justifyVal = c.isFallback ? 'flex-start' : 'center'; // In fallback, top of box touches vertical line
+      const alignVal = c.isFallback ? 'center' : (c.isLeftSide ? 'flex-end' : 'flex-start');
+
       return createElement('g', { key: `callout-g-${c.keyId}` }, [
         // Connecting dash line
         createElement('line', {
@@ -170,66 +146,81 @@ export function KeyCalloutOverlay({
             key: 'box',
             x: c.boxX,
             y: c.boxY,
-            width: BOX_W,
-            height: c.boxH,
+            width: FO_WIDTH,
+            height: FO_HEIGHT,
           },
           createElement(
             'div',
             {
               xmlns: 'http://www.w3.org/1999/xhtml',
               style: {
-                width: `${BOX_W}px`,
-                height: `${c.boxH}px`,
-                padding: '7px 9px',
-                border: `1.2px solid ${borderCol}`,
-                borderRadius: '8px',
-                backgroundColor: bgCol,
-                boxShadow: isLight
-                  ? '0 4px 10px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6)'
-                  : '0 6px 15px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+                width: '100%',
+                height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
+                justifyContent: justifyVal,
+                alignItems: alignVal,
                 boxSizing: 'border-box',
               },
             },
-            [
-              createElement(
-                'div',
-                {
-                  key: 'custom-text',
-                  style: {
-                    fontFamily: "'Outfit', 'Noto Sans JP', sans-serif",
-                    fontSize: '11px',
-                    fontWeight: '700',
-                    lineHeight: '1.3',
-                    marginBottom: '3px',
-                    color: textCol,
-                    textAlign: 'left',
-                    wordBreak: 'break-all',
-                    whiteSpace: 'pre-wrap',
-                  },
+            createElement(
+              'div',
+              {
+                style: {
+                  width: 'fit-content',
+                  maxWidth: '200px', // Balanced and readable column width
+                  height: 'fit-content',
+                  padding: '8px 12px',
+                  border: `1.2px solid ${borderCol}`,
+                  borderRadius: '8px',
+                  backgroundColor: bgCol,
+                  boxShadow: isLight
+                    ? '0 4px 10px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6)'
+                    : '0 6px 15px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  boxSizing: 'border-box',
                 },
-                c.customText
-              ),
-              createElement(
-                'div',
-                {
-                  key: 'description',
-                  style: {
-                    fontFamily: "'Outfit', 'Noto Sans JP', sans-serif",
-                    fontSize: '10px',
-                    fontWeight: '400',
-                    opacity: 0.82,
-                    lineHeight: '1.35',
-                    color: textCol,
-                    textAlign: 'left',
-                    wordBreak: 'break-all',
-                    whiteSpace: 'pre-wrap',
+              },
+              [
+                createElement(
+                  'div',
+                  {
+                    key: 'custom-text',
+                    style: {
+                      fontFamily: "'Outfit', 'Noto Sans JP', sans-serif",
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      lineHeight: '1.3',
+                      marginBottom: '3px',
+                      color: textCol,
+                      textAlign: 'left',
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap',
+                    },
                   },
-                },
-                c.description
-              ),
-            ]
+                  c.customText
+                ),
+                createElement(
+                  'div',
+                  {
+                    key: 'description',
+                    style: {
+                      fontFamily: "'Outfit', 'Noto Sans JP', sans-serif",
+                      fontSize: '10px',
+                      fontWeight: '400',
+                      opacity: 0.82,
+                      lineHeight: '1.35',
+                      color: textCol,
+                      textAlign: 'left',
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap',
+                    },
+                  },
+                  c.description
+                ),
+              ]
+            )
           )
         ),
       ]);
