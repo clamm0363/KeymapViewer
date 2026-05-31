@@ -24,7 +24,7 @@ export function KeyCalloutOverlay({ model, isLight, _isAppDark }) {
         width: '100%',
         height: `${model.overlayHeight}px`,
         pointerEvents: 'none',
-        zIndex: 50,
+        zIndex: 90,
         overflow: 'visible',
       },
     },

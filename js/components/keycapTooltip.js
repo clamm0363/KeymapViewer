@@ -123,7 +123,7 @@ export function buildStandardKeyTooltip(
   if (annotation) {
     if (annotation.customText) lines.push(`📌 ${annotation.customText}`);
     if (annotation.description) lines.push(`   ${annotation.description}`);
-    if (annotation.customText || annotation.description) lines.push('');
+    if (annotation.customText || annotation.description) lines.push('----');
   }
 
   lines.push(tooltipInfo.officialCode);
@@ -166,8 +166,17 @@ export function buildEncoderTooltip({
   cwCode,
   trackballCwPrefix = 'CW-MAPPED',
   trackballCcwPrefix = 'CCW-MAPPED',
+  annotation = null,
 }) {
-  const lines = [`Encoder e${encoderIndex}`];
+  const lines = [];
+
+  if (annotation) {
+    if (annotation.customText) lines.push(`📌 ${annotation.customText}`);
+    if (annotation.description) lines.push(`   ${annotation.description}`);
+    if (annotation.customText || annotation.description) lines.push('----');
+  }
+
+  lines.push(`Encoder e${encoderIndex}`);
 
   lines.push(buildEncoderActionTooltip('Push', pushText, pushCode || 'KC_NO', keyStyle, macros));
 

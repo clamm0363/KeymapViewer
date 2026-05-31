@@ -356,6 +356,7 @@ export function renderEncoderKeycap({
     cwCode,
     trackballCwPrefix: cwPrefix,
     trackballCcwPrefix: ccwPrefix,
+    annotation,
   });
 
   const displayRaw = buildDisplayRaw(fullRaw, val);

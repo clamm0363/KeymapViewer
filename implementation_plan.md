@@ -888,3 +888,55 @@ createElement(
 - `npm run lint` および `npm run test` の実行。
 - ブラウザ上で、左側アノテーションはキーの左辺から、右側は右辺から、下側は下辺から常に真っ直ぐ破線が伸びていることを確認する。
 
+---
+
+## 【追補計画】エンコーダ等のツールチップへのカスタム注釈の反映（2026-06-01）
+
+### 概要
+- 一般キー（スタンダード、モディファイア、レイヤー）のツールチップには、ユーザーが設定したカスタム注釈（`annotation`）が正しく反映されています（`📌 タイトル` および `詳細説明`）。
+- しかし、エンコーダ（`k.isEncoder`）など、一部のキーではツールチップの生成関数である `buildEncoderTooltip` 内で `annotation` オブジェクトが受け取られておらず、カスタム注釈テキストがツールチップ情報に挿入されない状態になっています。
+- この問題を修正し、エンコーダキーのホバー時のツールチップの最上部にもカスタム注釈が美しく表示されるようにします。
+
+### 変更方針
+1. **`js/components/keycapTooltip.js` の `buildEncoderTooltip` を修正**
+   - 引数オブジェクトに `annotation = null` を追加します。
+   - 関数内で、もし `annotation` が存在する場合は、`buildStandardKeyTooltip` と同様にツールチップテキストの先頭にカスタム注釈を積みます。
+     ```js
+     if (annotation) {
+       if (annotation.customText) lines.push(`📌 ${annotation.customText}`);
+       if (annotation.description) lines.push(`   ${annotation.description}`);
+       if (annotation.customText || annotation.description) lines.push('');
+     }
+     ```
+   - 既存の `Encoder e${encoderIndex}` など、通常のエンコーダ詳細テキストはその直後に続けます（一般キーと全く同様の仕様）。
+
+2. **`js/components/keycapEncoder.js` の `renderEncoderKeycap` を修正**
+   - 引数として渡されてきている `annotation` を、`buildEncoderTooltip` を呼び出す際の引数オブジェクトにプロパティとして追加します。
+     ```diff
+       const tooltipText = buildEncoderTooltip({
+         encoderIndex: k.encoderIndex,
+         pushText,
+         pushCode: val,
+         macros,
+         keyStyle,
+         currentStyle,
+         ccwActions,
+         ccwLabel,
+         cwLabel,
+         ccwCode,
+         cwCode,
+         trackballCwPrefix: cwPrefix,
+         trackballCcwPrefix: ccwPrefix,
+     +   annotation,
+       });
+     ```
+
+### 変更対象ファイル
+- `js/components/keycapTooltip.js` (エンコーダ用ツールチップ生成ロジックの修正)
+- `js/components/keycapEncoder.js` (エンコーダレンダラからの annotation の引き渡し)
+
+### 検証計画
+- `npm run lint` および `npm run test` の実行。
+- ブラウザやテストケースにより、エンコーダキーに対するツールチップ（`title` 属性）にカスタム注釈が正しく含まれていることを確認する。
+
+
