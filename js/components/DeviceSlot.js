@@ -10,6 +10,7 @@ import {
   toLegacyEncoderStyle,
 } from './inputDeviceSettings.js';
 import { setAnnotation, clearAnnotation } from '../utils/keyAnnotations.js';
+import { buildCalloutOverlayModel } from '../utils/calloutLayout.js';
 import { KeyAnnotationModal } from './KeyAnnotationModal.js';
 import { KeyCalloutOverlay } from './KeyCalloutOverlay.js';
 
@@ -141,7 +142,6 @@ export function DeviceSlot({
   onScaleMetricsChange,
 }) {
   const [copied, setCopied] = useState(false);
-  const [showCallouts, setShowCallouts] = useState(false);
   const [annotatingKey, setAnnotatingKey] = useState(null);
   const [localScaleMetrics, setLocalScaleMetrics] = useState(null);
   const [localFilteredKeys, setLocalFilteredKeys] = useState([]);
@@ -174,6 +174,7 @@ export function DeviceSlot({
   const hasDeviceSpecificOptions = showSeparation || hasEncoders || hasLayoutOptions;
   const currentDisplayScale = normalizeDisplayScale(dev.displayScale);
   const isScaleFollowing = !!dev.followScale;
+  const showCallouts = !!dev.showCallouts;
   const layerOptions = (dev.keymapJson && dev.keymapJson.layers) ||
     (dev.design && dev.design.layers) || [0, 1, 2, 3];
   const totalLayerPages = Math.max(1, Math.ceil(layerOptions.length / MAX_VISIBLE_LAYER_BUTTONS));
@@ -953,6 +954,15 @@ export function DeviceSlot({
     ]
   );
 
+  const calloutOverlayModel =
+    showCallouts && localScaleMetrics && localFilteredKeys.length > 0
+      ? buildCalloutOverlayModel({
+          keys: localFilteredKeys,
+          keyAnnotations: dev.keyAnnotations || {},
+          scaleMetrics: localScaleMetrics,
+        })
+      : null;
+
   useEffect(() => {
     const nextPage = Math.min(
       totalLayerPages - 1,
@@ -1307,7 +1317,7 @@ export function DeviceSlot({
                       'button',
                       {
                         key: 'callouts-btn',
-                        onClick: () => setShowCallouts((v) => !v),
+                        onClick: () => onUpdateDevice(dev.id, { showCallouts: !showCallouts }),
                         disabled: !hasData,
                         className:
                           (showCallouts
@@ -1388,7 +1398,7 @@ export function DeviceSlot({
                       'button',
                       {
                         key: 'callouts-btn',
-                        onClick: () => setShowCallouts((v) => !v),
+                        onClick: () => onUpdateDevice(dev.id, { showCallouts: !showCallouts }),
                         disabled: !hasData,
                         className:
                           (showCallouts
@@ -1448,6 +1458,9 @@ export function DeviceSlot({
               className:
                 'flex min-w-0 flex-col gap-4 relative ' +
                 (dev.showSettings && !isGridLayout ? 'lg:flex-row lg:items-start' : ''),
+              style: calloutOverlayModel?.bottomPadding
+                ? { paddingBottom: `${calloutOverlayModel.bottomPadding}px` }
+                : undefined,
             },
             [
               dev.showSettings && !isGridLayout
@@ -1514,7 +1527,7 @@ export function DeviceSlot({
                     settingsPanel
                   )
                 : null,
-              showCallouts && localScaleMetrics && localFilteredKeys.length > 0 &&
+              calloutOverlayModel &&
                 (() => {
                   const isLight =
                     dev.theme === 'Light' ||
@@ -1524,9 +1537,7 @@ export function DeviceSlot({
                   
                   return createElement(KeyCalloutOverlay, {
                     key: 'callout-overlay',
-                    keys: localFilteredKeys,
-                    keyAnnotations: dev.keyAnnotations || {},
-                    scaleMetrics: localScaleMetrics,
+                    model: calloutOverlayModel,
                     isLight,
                     isAppDark: !isLightApp,
                   });

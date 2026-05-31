@@ -124,6 +124,7 @@ function createEmptyDevice() {
     displayScaleByLayout: { ...DEFAULT_DISPLAY_SCALE_BY_LAYOUT },
     followScale: false,
     showSettings: false,
+    showCallouts: false,
     keyAnnotations: {},
   };
 }
@@ -169,6 +170,7 @@ export function App() {
                 followScale: !!parsed.followScale,
                 macroAliases: parsed.keymapJson?.macroAliases || {},
                 showSettings: false,
+                showCallouts: false,
                 keyAnnotations: parsed.keyAnnotations || {},
               },
             ];
@@ -192,6 +194,7 @@ export function App() {
           device.displayScale
         ),
         followScale: !!device.followScale,
+        showCallouts: !!device.showCallouts,
         keyAnnotations: device.keyAnnotations || {},
       }));
     }
@@ -306,6 +309,7 @@ export function App() {
               followScale: false,
               macroAliases: keymapJson.macroAliases,
               showSettings: false,
+              showCallouts: false,
             };
           })
         );
