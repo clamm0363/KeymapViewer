@@ -82,6 +82,7 @@ function getColumnLefts(svgWidth) {
   return Array.from({ length: columnCount }, (_, index) => startX + index * columnWidth);
 }
 
+
 export function buildCalloutOverlayModel({
   keys,
   keyAnnotations,
@@ -105,8 +106,6 @@ export function buildCalloutOverlayModel({
     return null;
   }
 
-  const renderedKeyboardWidth = maxWidth * finalScale;
-  const innerOffsetX = Math.max(0, (containerWidth - renderedKeyboardWidth) / 2);
   const svgWidth = containerWidth;
   const keyboardHeight = maxHeight * finalScale + CALLOUT_TOP_OFFSET * 2;
   const keyboardBottomY = CALLOUT_TOP_OFFSET + maxHeight * finalScale;
@@ -124,11 +123,17 @@ export function buildCalloutOverlayModel({
       return;
     }
 
-    const screenCenterX = innerOffsetX + (key.x + key.w / 2) * finalScale;
-    const screenCenterY = CALLOUT_TOP_OFFSET + (key.y + key.h / 2) * finalScale;
-    const screenKeyLeftEdge = innerOffsetX + key.x * finalScale;
-    const screenKeyRightEdge = innerOffsetX + (key.x + key.w) * finalScale;
-    const screenKeyBottomY = CALLOUT_TOP_OFFSET + (key.y + key.h) * finalScale;
+    const keyLeft = key.x + 20;
+    const keyRight = key.x + key.w + 14;
+    const keyTop = key.y + 20;
+    const keyBottom = key.y + key.h + 14;
+
+    const screenKeyLeftEdge = containerWidth / 2 + (keyLeft - maxWidth / 2) * finalScale;
+    const screenKeyRightEdge = containerWidth / 2 + (keyRight - maxWidth / 2) * finalScale;
+    const screenKeyTopEdge = CALLOUT_TOP_OFFSET + keyTop * finalScale;
+    const screenKeyBottomY = CALLOUT_TOP_OFFSET + keyBottom * finalScale;
+    const screenCenterX = (screenKeyLeftEdge + screenKeyRightEdge) / 2;
+    const screenCenterY = (screenKeyTopEdge + screenKeyBottomY) / 2;
     const isLeftSide = key.x + key.w / 2 < maxWidth / 2;
     const estimatedWidth = estimateCalloutWidth({ customText, description });
     const estimatedHeight = estimateCalloutHeight({ customText, description, estimatedWidth });
@@ -148,8 +153,8 @@ export function buildCalloutOverlayModel({
     if (sideOverflow) {
       fallbackCandidates.push({
         keyId: matrixKey,
-        lineStartX: screenCenterX,
-        lineStartY: screenKeyBottomY,
+        screenCenterX,
+        screenKeyBottomY,
         anchorX: screenCenterX,
         estimatedHeight,
         estimatedWidth,
@@ -215,9 +220,12 @@ export function buildCalloutOverlayModel({
 
       const boxLeft = columnLefts[chosenColumn];
       const boxTop = columnHeights[chosenColumn];
+
       callouts.push({
         ...callout,
         placement: 'below',
+        lineStartX: callout.screenCenterX,
+        lineStartY: callout.screenKeyBottomY,
         lineEndX: boxLeft + callout.estimatedWidth / 2,
         lineEndY: boxTop,
         boxLeft,

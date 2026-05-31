@@ -1483,6 +1483,7 @@ export function DeviceSlot({
                 {
                   key: 'kbd-wrap',
                   className: 'order-2 min-w-0 flex-1 overflow-hidden lg:order-1',
+                  style: { position: 'relative', zIndex: 1 },
                 },
                 createElement(
                   'div',

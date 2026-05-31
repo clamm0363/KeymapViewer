@@ -547,46 +547,55 @@ useEffect(() => {
       containerWidth: containerRef.current?.getBoundingClientRect().width ?? 0,
     });
   }
-}, [autoFitScale, finalScale, maxWidth, maxHeight, onScaleMetricsChange]);
-```
+}, [autoFitScale, finalScale, maxWidth, maxHeight, on## 【追補計画】破線の直線化と重なり順（z-index）の修正（2026-06-01）
 
-**`Keycap` 呼び出しに追加**:
-```js
-matrixKey: mK,  // k.matrix ? `${k.matrix[0]},${k.matrix[1]}` : k.id
-annotation: keyAnnotations[mK] || null,
-onAnnotateKey,
-```
+### 概要
+- コールアウト破線がデバイス筐体（キーボード）の裏に回り込んで隠れてしまう不具合を解消します。
+- 破線の始点・終点がキーキャップ枠線からズレて表示される計算バグを解消します。
+- 前のエージェントによって導入された折れ線（`polyline` / `lineStub`）を廃止し、キーキャップ枠線の最も近い辺の中点からボックス端点までの「一直線の破線」に戻します。
 
-**`overflow-hidden` の変更は不要。`KeyCalloutOverlay` の import も不要。**
+### 変更方針
+1. **重なり順の解消（z-index のスタッキングコンテキスト設計）**
+   - `js/components/KeyCalloutOverlay.js` 内の `callout-overlay-root` 要素の `zIndex` を `90` に設定します。
+   - さらに、`js/components/DeviceSlot.js` 内の `kbd-wrap` 要素の `style` に `{ position: 'relative', zIndex: 1 }` を追加します。
+   - `kbd-wrap` が `overflow: hidden` や Flexbox の `order` を持っており、かつ明確な `zIndex` が指定されていなかったためにスタッキングコンテキストの描画順序がブラウザ依存で狂っていました。両者に明確な `zIndex`（`kbd-wrap` = 1, `KeyCalloutOverlay` = 90）を指定することで、破線やボックスがキーボードケースやキーキャップの前面に確実に表示されるようになります。
 
----
+2. **座標計算バグの解消（枠線オフセットと中央寄せスケールの反映）**
+   - `js/utils/calloutLayout.js` でのキーキャップ枠線座標の算出式を修正します。
+   - **ズレの原因**:
+     - `Keycap` コンポーネントの位置指定（`getKeycapFrameStyle`）では、内側余白である `paddingOffset = 20` が座標に加算されています（`left: x + 20`, `top: y + 20`）。
+     - さらに、標準キーキャップの幅・高さは `w - 6`, `h - 6` です。
+     - また、`Keyboard.js` 内で `transform-origin: center center` にて中央寄せスケール（`scale(finalScale)`）されているため、これを考慮した絶対座標変換が必要です。
+   - **修正後の座標計算式**:
+     - スケール前のローカルキー枠線座標:
+       - `keyLeft = key.x + 20`
+       - `keyRight = key.x + key.w + 14` (key.x + 20 + key.w - 6)
+       - `keyTop = key.y + 20`
+       - `keyBottom = key.y + key.h + 14` (key.y + 20 + key.h - 6)
+     - 中央寄せスケールを反映したスクリーン座標:
+       - `screenKeyLeftEdge = containerWidth / 2 + (keyLeft - maxWidth / 2) * finalScale`
+       - `screenKeyRightEdge = containerWidth / 2 + (keyRight - maxWidth / 2) * finalScale`
+       - `screenKeyTopEdge = CALLOUT_TOP_OFFSET + (keyTop) * finalScale`
+       - `screenKeyBottomY = CALLOUT_TOP_OFFSET + (keyBottom) * finalScale`
+       - `screenCenterX = (screenKeyLeftEdge + screenKeyRightEdge) / 2`
+       - `screenCenterY = (screenKeyTopEdge + screenKeyBottomY) / 2`
+   - この計算式により、スケールや親コンテナ幅がどう変化しても、始点・終点がキーキャップ枠線と完全に一致します。
 
-#### [MODIFY] `js/components/Keycap.js`
+3. **折れ線の廃止と直線化**
+   - `KeyCalloutOverlay.js` で `<polyline>` を使用している箇所を `<line>` 要素に変更します。
+   - 描画する線は、始点 `(lineStartX, lineStartY)` から終点 `(lineEndX, lineEndY)` までの直線とします。
+   - `js/utils/calloutLayout.js` で計算されていた折れ線用の制御点 `lineStubX`, `lineStubY` は不要になるため、計算およびプロパティから削除します。
 
-**props 追加**: `matrixKey`, `annotation`, `onAnnotateKey`
+### 変更対象ファイル
+- `js/components/KeyCalloutOverlay.js` (zIndex の設定、line要素への変更)
+- `js/components/DeviceSlot.js` (kbd-wrap の zIndex 指定)
+- `js/utils/calloutLayout.js` (座標計算式の修正、不要な Stub 計算の削除)
+- `test/utils/calloutLayout.test.js` (テストケース内での座標期待値の修正)
 
-ルート div の props に追加:
-```js
-onContextMenu: (e) => {
-  if (onAnnotateKey) { e.preventDefault(); onAnnotateKey(matrixKey); }
-},
-```
-
-アノテーション設定済みインジケータ（キー右上の青点）:
-```js
-annotation && (annotation.customText || annotation.description) &&
-  createElement('div', {
-    style: {
-      position: 'absolute', right: '4px', top: '4px',
-      width: '5px', height: '5px', borderRadius: '50%',
-      backgroundColor: '#60a5fa', zIndex: 50, pointerEvents: 'none',
-    },
-  })
-```
-
-`buildStandardKeyTooltip` の呼び出しに `annotation` を第5引数として追加。
-
-**エンコーダーキー対応** (`renderEncoderKeycap` をラッパー div で包む):
+### 検証計画
+- `npm run lint` および `npm run test` の実行。
+- コールアウトが表示されている状態で、破線がキーキャップや筐体よりも前面に表示されることを確認する。
+- 破線が歪んだ折れ線ではなく、キーからボックスへ直線の破線として繋がっていることを確認する。��パー div で包む):
 ```js
 if (k.isEncoder) {
   return createElement('div', {
@@ -792,4 +801,90 @@ createElement(
     ...
   }
 )
+
+---
+
+## 【追補計画】破線の直線化・座標バグ・重なり順（z-index）の修正（2026-06-01）
+
+### 概要
+- コールアウト破線がデバイス筐体（キーボード）の裏に回り込んで隠れてしまう不具合を解消します。
+- 破線の始点・終点がキーキャップ枠線からズレて表示される計算バグを解消します。
+- 前のエージェントによって導入された折れ線（`polyline` / `lineStub`）を廃止し、キーキャップ枠線の最も近い辺の中点からボックス端点までの「一直線の破線」に戻します。
+
+### 変更方針
+1. **重なり順の解消（z-index のスタッキングコンテキスト設計）**
+   - `js/components/KeyCalloutOverlay.js` 内の `callout-overlay-root` 要素の `zIndex` を `90` に設定します。
+   - さらに、`js/components/DeviceSlot.js` 内の `kbd-wrap` 要素の `style` に `{ position: 'relative', zIndex: 1 }` を追加します。
+   - `kbd-wrap` が `overflow: hidden` や Flexbox の `order` を持っており、かつ明確な `zIndex` が指定されていなかったためにスタッキングコンテキストの描画順序がブラウザ依存で狂っていました。両者に明確な `zIndex`（`kbd-wrap` = 1, `KeyCalloutOverlay` = 90）を指定することで、破線やボックスがキーボードケースやキーキャップの前面に確実に表示されるようになります。
+
+2. **座標計算バグの解消（枠線オフセットと中央寄せスケールの反映）**
+   - `js/utils/calloutLayout.js` でのキーキャップ枠線座標の算出式を修正します。
+   - **ズレの原因**:
+     - `Keycap` コンポーネントの位置指定（`getKeycapFrameStyle`）では、内側余白である `paddingOffset = 20` が座標に加算されています（`left: x + 20`, `top: y + 20`）。
+     - さらに、標準キーキャップの幅・高さは `w - 6`, `h - 6` です。
+     - また、`Keyboard.js` 内で `transform-origin: center center` にて中央寄せスケール（`scale(finalScale)`）されているため、これを考慮した絶対座標変換が必要です。
+   - **修正後の座標計算式**:
+     - スケール前のローカルキー枠線座標:
+       - `keyLeft = key.x + 20`
+       - `keyRight = key.x + key.w + 14` (key.x + 20 + key.w - 6)
+       - `keyTop = key.y + 20`
+       - `keyBottom = key.y + key.h + 14` (key.y + 20 + key.h - 6)
+     - 中央寄せスケールを反映したスクリーン座標:
+       - `screenKeyLeftEdge = containerWidth / 2 + (keyLeft - maxWidth / 2) * finalScale`
+       - `screenKeyRightEdge = containerWidth / 2 + (keyRight - maxWidth / 2) * finalScale`
+       - `screenKeyTopEdge = CALLOUT_TOP_OFFSET + (keyTop) * finalScale`
+       - `screenKeyBottomY = CALLOUT_TOP_OFFSET + (keyBottom) * finalScale`
+       - `screenCenterX = (screenKeyLeftEdge + screenKeyRightEdge) / 2`
+       - `screenCenterY = (screenKeyTopEdge + screenKeyBottomY) / 2`
+   - この計算式により、スケールや親コンテナ幅がどう変化しても、始点・終点がキーキャップ枠線と完全に一致します。
+
+3. **折れ線の廃止と直線化**
+   - `KeyCalloutOverlay.js` で `<polyline>` を使用している箇所を `<line>` 要素に変更します。
+   - 描画する線は、始点 `(lineStartX, lineStartY)` から終点 `(lineEndX, lineEndY)` までの直線とします。
+   - `js/utils/calloutLayout.js` で計算されていた折れ線用の制御点 `lineStubX`, `lineStubY` は不要になるため、計算およびプロパティから削除します。
+
+### 変更対象ファイル
+- `js/components/KeyCalloutOverlay.js` (zIndex の設定、line要素への変更)
+- `js/components/DeviceSlot.js` (kbd-wrap の zIndex 指定)
+- `js/utils/calloutLayout.js` (座標計算式の修正、不要な Stub 計算の削除)
+- `test/utils/calloutLayout.test.js` (テストケース内での座標期待値の修正)
+
+### 検証計画
+- `npm run lint` および `npm run test` の実行。
+- コールアウトが表示されている状態で、破線がキーキャップや筐体よりも前面に表示されることを確認する。
+- 破線が歪んだ折れ線ではなく、キーからボックスへ直線の破線として繋がっていることを確認する。
 ```
+
+---
+
+## 【追補計画】配置に連動した破線接続点の最適化（2026-06-01）
+
+### 概要
+- コールアウト破線の引き出し位置（始点・終点）が機械的な「最も近い中点」で計算されているため、左側や下側に配置されたボックスに対する引き出し線がキーの不自然な辺（例：左配置なのに下辺など）から伸び、見た目の乱雑さに繋がっていました。
+- ボックスの配置（`left`, `right`, `below`）に破線の始点と終点をセマンティクス連動させることで、常に「左配置のカードへはキーの左辺から」「右配置へは右辺から」「下配置へは下辺から」破線がすっきりと伸びる洗練された美しいデザインを実現します。
+
+### 変更方針
+1. **左右配置 (`left` / `right`) の接続点の固定**
+   - **`left`（キーの左側に配置される場合）**:
+     - 始点 (`lineStartX`, `lineStartY`): キーの左辺の中点 (`screenKeyLeftEdge`, `screenCenterY`)
+     - 終点 (`lineEndX`, `lineEndY`): ボックスの右辺の中点 (`sideBoxLeft + estimatedWidth`, クランプされた `screenCenterY`)
+   - **`right`（キーの右側に配置される場合）**:
+     - 始点 (`lineStartX`, `lineStartY`): キーの右辺の中点 (`screenKeyRightEdge`, `screenCenterY`)
+     - 終点 (`lineEndX`, `lineEndY`): ボックスの左辺の中点 (`sideBoxLeft`, クランプされた `screenCenterY`)
+
+2. **下方向配置 (`below`) の接続点を「常に下辺から伸ばす」仕様に統一（大外回り問題の根本的解消）**
+   - 下方向に配置されたアノテーションカードについて、キーからの左右のズレに関わらず、始点（キー側）の接続点を一律で **キーの「下辺の中点」** (`screenCenterX`, `screenKeyBottomY`) に固定します。
+   - **理由**: カードが下（`below`）に配置されている以上、引き出し線の方向は「下」であるため、キーの横（左辺や右辺）から出発すると2枚目の画像のように大外を不自然な角度で横切る不恰好な線になってしまいます。常に下辺から引き出すことで、1枚目の画像のようにキーボードのグリッドに沿って真っ直ぐ（または斜め下に）きれいに降りる、統一感のあるすっきりしたレイアウトを実現できます。
+   - **終点 (`lineEndX`, `lineEndY`)**: 常にボックスの上辺の中点 (`boxLeft + callout.estimatedWidth / 2`, `boxTop`) に接続します。
+
+3. **不要な関数の廃止**
+   - `js/utils/calloutLayout.js` で一時的に追加された機械的な最短距離算出関数 `getClosestKeyEdgeMidpoint` を廃止します。
+
+### 変更対象ファイル
+- `js/utils/calloutLayout.js` (接続点ロジックの書き換え、`getClosestKeyEdgeMidpoint` の廃止)
+- `test/utils/calloutLayout.test.js` (テストの追従・検証)
+
+### 検証計画
+- `npm run lint` および `npm run test` の実行。
+- ブラウザ上で、左側アノテーションはキーの左辺から、右側は右辺から、下側は下辺から常に真っ直ぐ破線が伸びていることを確認する。
+
