@@ -1,5 +1,39 @@
 const { createElement } = React;
 
+function estimateTextHeight(customText, description) {
+  let customLines = 0;
+  if (customText) {
+    customText.split('\n').forEach((part) => {
+      let weight = 0;
+      for (let i = 0; i < part.length; i++) {
+        weight += part.charCodeAt(i) > 255 ? 2.0 : 1.0;
+      }
+      // BOX_W = 140, inside width = 124px.
+      // Font size 9px (approx 5.6px per English char, 9px per JP char).
+      customLines += Math.max(1, Math.ceil(weight / 22));
+    });
+  }
+
+  let descLines = 0;
+  if (description) {
+    description.split('\n').forEach((part) => {
+      let weight = 0;
+      for (let i = 0; i < part.length; i++) {
+        weight += part.charCodeAt(i) > 255 ? 2.0 : 1.0;
+      }
+      // Font size 8px (approx 4.8px per English char, 8px per JP char).
+      descLines += Math.max(1, Math.ceil(weight / 26));
+    });
+  }
+
+  const customHeight = customLines * 12.5;
+  const descHeight = descLines * 11.0;
+  const gap = customHeight > 0 && descHeight > 0 ? 5 : 0;
+  const padding = 14; // generous top & bottom padding
+  const total = padding + customHeight + descHeight + gap;
+  return Math.max(48, Math.ceil(total));
+}
+
 export function KeyCalloutOverlay({
   keys,           // filteredKeys
   keyAnnotations,
@@ -27,7 +61,6 @@ export function KeyCalloutOverlay({
   const lineCol = isLight ? 'rgba(148, 163, 184, 0.9)' : 'rgba(100, 116, 139, 0.7)';
 
   const BOX_W = 140;
-  const BOX_H = 60;
   const LINE_LEN = 60;
 
   const callouts = [];
@@ -39,6 +72,10 @@ export function KeyCalloutOverlay({
     if (!annotation || (!annotation.customText && !annotation.description)) {
       return; // Skip if no annotations
     }
+
+    const cText = annotation.customText || '';
+    const dText = annotation.description || '';
+    const boxH = estimateTextHeight(cText, dText);
 
     // Determine base key layout coordinates in screen space
     const screenCenterX = innerOffsetX + (k.x + k.w / 2) * finalScale;
@@ -53,7 +90,7 @@ export function KeyCalloutOverlay({
 
     let lineStartX, lineEndX, boxX;
     let lineY = screenCenterY;
-    let boxY = lineY - BOX_H / 2;
+    let boxY = lineY - boxH / 2;
     let isFallback = false;
 
     if (isLeftSide) {
@@ -89,8 +126,9 @@ export function KeyCalloutOverlay({
       lineEndY: isFallback ? boxY : lineY,
       boxX,
       boxY,
-      customText: annotation.customText || '',
-      description: annotation.description || '',
+      boxH,
+      customText: cText,
+      description: dText,
     });
   });
 
@@ -131,7 +169,7 @@ export function KeyCalloutOverlay({
             x: c.boxX,
             y: c.boxY,
             width: BOX_W,
-            height: BOX_H,
+            height: c.boxH,
           },
           createElement(
             'div',
@@ -139,7 +177,7 @@ export function KeyCalloutOverlay({
               xmlns: 'http://www.w3.org/1999/xhtml',
               style: {
                 width: `${BOX_W}px`,
-                height: `${BOX_H}px`,
+                height: `${c.boxH}px`,
                 padding: '6px 8px',
                 border: `1.2px solid ${borderCol}`,
                 borderRadius: '8px',
@@ -166,11 +204,8 @@ export function KeyCalloutOverlay({
                     marginBottom: '2px',
                     color: textCol,
                     textAlign: 'left',
-                    wordBreak: 'break-all',
-                    display: '-webkit-box',
-                    WebkitLineClamp: '2',
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
+                    wordBreak: 'break-word',
+                    whiteSpace: 'pre-wrap',
                   },
                 },
                 c.customText
@@ -187,11 +222,8 @@ export function KeyCalloutOverlay({
                     lineHeight: '1.3',
                     color: textCol,
                     textAlign: 'left',
-                    wordBreak: 'break-all',
-                    display: '-webkit-box',
-                    WebkitLineClamp: '2',
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
+                    wordBreak: 'break-word',
+                    whiteSpace: 'pre-wrap',
                   },
                 },
                 c.description

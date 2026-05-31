@@ -125,7 +125,6 @@ export function DeviceSlot({
   editingDeviceId,
   editingName,
   appTheme,
-  showCallouts,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -142,6 +141,7 @@ export function DeviceSlot({
   onScaleMetricsChange,
 }) {
   const [copied, setCopied] = useState(false);
+  const [showCallouts, setShowCallouts] = useState(false);
   const [annotatingKey, setAnnotatingKey] = useState(null);
   const [localScaleMetrics, setLocalScaleMetrics] = useState(null);
   const [localFilteredKeys, setLocalFilteredKeys] = useState([]);
@@ -1306,6 +1306,27 @@ export function DeviceSlot({
                     createElement(
                       'button',
                       {
+                        key: 'callouts-btn',
+                        onClick: () => setShowCallouts((v) => !v),
+                        disabled: !hasData,
+                        className:
+                          (showCallouts
+                            ? isLightApp
+                              ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 border-transparent'
+                              : 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border-blue-500/30'
+                            : isLightApp
+                              ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200'
+                              : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 border-slate-700/50') +
+                          ' ' +
+                          actionButtonClass +
+                          ' ' +
+                          (!hasData ? 'opacity-40 cursor-not-allowed border-dashed ' : ''),
+                      },
+                      'CALLOUTS'
+                    ),
+                    createElement(
+                      'button',
+                      {
                         key: 'share-btn',
                         onClick: handleShare,
                         disabled: !hasData,
@@ -1362,6 +1383,27 @@ export function DeviceSlot({
                         className: neutralActionButtonClass,
                       },
                       'MACROS'
+                    ),
+                    createElement(
+                      'button',
+                      {
+                        key: 'callouts-btn',
+                        onClick: () => setShowCallouts((v) => !v),
+                        disabled: !hasData,
+                        className:
+                          (showCallouts
+                            ? isLightApp
+                              ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 border-transparent'
+                              : 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border-blue-500/30'
+                            : isLightApp
+                              ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200'
+                              : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 border-slate-700/50') +
+                          ' ' +
+                          actionButtonClass +
+                          ' ' +
+                          (!hasData ? 'opacity-40 cursor-not-allowed border-dashed ' : ''),
+                      },
+                      'CALLOUTS'
                     ),
                     createElement(
                       'button',
