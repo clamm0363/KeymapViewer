@@ -114,10 +114,19 @@ export function buildStandardKeyTooltip(
   code,
   keyStyle = 'Windows',
   macros = [],
-  inspectorData = null
+  inspectorData = null,
+  annotation = null
 ) {
   const tooltipInfo = getKeycodeTooltipInfo(code, code, keyStyle);
-  const lines = [tooltipInfo.officialCode];
+  const lines = [];
+
+  if (annotation) {
+    if (annotation.customText) lines.push(`📌 ${annotation.customText}`);
+    if (annotation.description) lines.push(`   ${annotation.description}`);
+    if (annotation.customText || annotation.description) lines.push('');
+  }
+
+  lines.push(tooltipInfo.officialCode);
 
   if (tooltipInfo.description) {
     lines.push(tooltipInfo.description);

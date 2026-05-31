@@ -9,6 +9,9 @@ import {
   resolveInputDeviceSetting,
   toLegacyEncoderStyle,
 } from './inputDeviceSettings.js';
+import { setAnnotation, clearAnnotation } from '../utils/keyAnnotations.js';
+import { KeyAnnotationModal } from './KeyAnnotationModal.js';
+import { KeyCalloutOverlay } from './KeyCalloutOverlay.js';
 
 const MIN_DISPLAY_SCALE = 0.35;
 const MAX_DISPLAY_SCALE = 1.6;
@@ -122,6 +125,7 @@ export function DeviceSlot({
   editingDeviceId,
   editingName,
   appTheme,
+  showCallouts,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -138,6 +142,23 @@ export function DeviceSlot({
   onScaleMetricsChange,
 }) {
   const [copied, setCopied] = useState(false);
+  const [annotatingKey, setAnnotatingKey] = useState(null);
+  const [localScaleMetrics, setLocalScaleMetrics] = useState(null);
+  const [localFilteredKeys, setLocalFilteredKeys] = useState([]);
+
+  const handleAnnotationSave = (data) => {
+    onUpdateDevice(dev.id, {
+      keyAnnotations: setAnnotation(dev.keyAnnotations || {}, annotatingKey, data)
+    });
+    setAnnotatingKey(null);
+  };
+  
+  const handleAnnotationClear = () => {
+    onUpdateDevice(dev.id, {
+      keyAnnotations: clearAnnotation(dev.keyAnnotations || {}, annotatingKey)
+    });
+    setAnnotatingKey(null);
+  };
   const isGridLayout = layoutMode === 'grid';
   const hasData = !!dev.design;
   const encoderIndices = getEncoderIndices(dev.design);
@@ -1383,7 +1404,7 @@ export function DeviceSlot({
             {
               key: 'kbd-area',
               className:
-                'flex min-w-0 flex-col gap-4 ' +
+                'flex min-w-0 flex-col gap-4 relative ' +
                 (dev.showSettings && !isGridLayout ? 'lg:flex-row lg:items-start' : ''),
             },
             [
@@ -1426,7 +1447,14 @@ export function DeviceSlot({
                     encoderStyles: dev.encoderStyles || {},
                     inputDeviceSettings: dev.inputDeviceSettings || {},
                     layoutOptions: dev.layoutOptions || {},
-                    onScaleMetricsChange,
+                    onScaleMetricsChange: (metrics) => {
+                      setLocalScaleMetrics(metrics);
+                      if (onScaleMetricsChange) onScaleMetricsChange(metrics);
+                    },
+                    keyAnnotations: dev.keyAnnotations || {},
+                    showCallouts,
+                    onAnnotateKey: (matrixKey) => setAnnotatingKey(matrixKey),
+                    onKeysChange: setLocalFilteredKeys,
                   })
                 )
               ),
@@ -1444,6 +1472,23 @@ export function DeviceSlot({
                     settingsPanel
                   )
                 : null,
+              showCallouts && localScaleMetrics && localFilteredKeys.length > 0 &&
+                (() => {
+                  const isLight =
+                    dev.theme === 'Light' ||
+                    (dev.theme === 'System' &&
+                      window.matchMedia &&
+                      window.matchMedia('(prefers-color-scheme: light)').matches);
+                  
+                  return createElement(KeyCalloutOverlay, {
+                    key: 'callout-overlay',
+                    keys: localFilteredKeys,
+                    keyAnnotations: dev.keyAnnotations || {},
+                    scaleMetrics: localScaleMetrics,
+                    isLight,
+                    isAppDark: !isLightApp,
+                  });
+                })(),
             ]
           )
         : createElement('div', { key: 'empty-area', className: 'py-20 text-center opacity-20' }, [
@@ -1454,6 +1499,16 @@ export function DeviceSlot({
               'Waiting for Data'
             ),
           ]),
+      annotatingKey !== null &&
+        createElement(KeyAnnotationModal, {
+          key: 'annotation-modal',
+          isLightApp,
+          matrixKey: annotatingKey,
+          currentAnnotation: dev.keyAnnotations?.[annotatingKey] || null,
+          onSave: handleAnnotationSave,
+          onClear: handleAnnotationClear,
+          onClose: () => setAnnotatingKey(null),
+        }),
     ]
   );
 }

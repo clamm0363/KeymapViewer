@@ -28,6 +28,8 @@ export function Header({
   onSetLayoutMode,
   onSetAppTheme,
   appTheme,
+  showCallouts,
+  onToggleCallouts,
 }) {
   const inactiveLayoutColor = isLightApp ? '#64748b' : '#94a3b8';
   const activeLayoutColor = '#ffffff';
@@ -153,9 +155,26 @@ export function Header({
                 (isLightApp
                   ? 'bg-blue-600 hover:bg-blue-500 text-white'
                   : 'bg-blue-600 hover:bg-blue-500 text-white') +
-                ' flex items-center justify-center text-center px-4 py-2 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest mr-2',
+                ' flex items-center justify-center text-center px-4 py-2 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest mr-1',
             },
             'MATCH KEY SIZE'
+          ),
+          createElement(
+            'button',
+            {
+              key: 'callouts-btn',
+              onClick: onToggleCallouts,
+              className:
+                (showCallouts
+                  ? isLightApp
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 border-transparent'
+                    : 'bg-blue-500/20 border-blue-500/30 hover:bg-blue-500/30 text-blue-400'
+                  : isLightApp
+                    ? 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-transparent'
+                    : 'bg-slate-700 hover:bg-slate-600 text-white border-transparent') +
+                ' border flex items-center justify-center text-center px-4 py-2 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest mr-2',
+            },
+            'CALLOUTS'
           ),
           createElement('div', {
             key: 'layout-separator',

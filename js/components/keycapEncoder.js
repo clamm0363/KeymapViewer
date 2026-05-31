@@ -314,6 +314,9 @@ export function renderEncoderKeycap({
   macros = [],
   isLight,
   isAppDark,
+  matrixKey,
+  annotation,
+  onAnnotateKey,
 }) {
   const currentSetting = resolveInputDeviceSetting(
     inputDeviceSettings,
@@ -377,6 +380,12 @@ export function renderEncoderKeycap({
           onMacroClick(parseInt(macroMatch[1], 10));
         }
       },
+      onContextMenu: (e) => {
+        if (onAnnotateKey) {
+          e.preventDefault();
+          onAnnotateKey(matrixKey);
+        }
+      },
       style: getKeycapFrameStyle({
         k,
         isLayerKey: false,
@@ -386,6 +395,23 @@ export function renderEncoderKeycap({
         isAppDark,
       }),
     },
-    getEncoderChildElements(currentStyle, isLight)
+    [
+      ...getEncoderChildElements(currentStyle, isLight),
+      annotation && (annotation.customText || annotation.description) &&
+        createElement('div', {
+          key: 'annotation-dot',
+          style: {
+            position: 'absolute',
+            right: '4px',
+            top: '4px',
+            width: '5px',
+            height: '5px',
+            borderRadius: '50%',
+            backgroundColor: '#60a5fa',
+            zIndex: 50,
+            pointerEvents: 'none',
+          },
+        }),
+    ]
   );
 }

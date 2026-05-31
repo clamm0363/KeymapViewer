@@ -124,6 +124,7 @@ function createEmptyDevice() {
     displayScaleByLayout: { ...DEFAULT_DISPLAY_SCALE_BY_LAYOUT },
     followScale: false,
     showSettings: false,
+    keyAnnotations: {},
   };
 }
 
@@ -168,6 +169,7 @@ export function App() {
                 followScale: !!parsed.followScale,
                 macroAliases: parsed.keymapJson?.macroAliases || {},
                 showSettings: false,
+                keyAnnotations: parsed.keyAnnotations || {},
               },
             ];
           }
@@ -190,12 +192,14 @@ export function App() {
           device.displayScale
         ),
         followScale: !!device.followScale,
+        keyAnnotations: device.keyAnnotations || {},
       }));
     }
     return [createEmptyDevice()];
   });
   const [layoutMode, setLayoutMode] = useState(() => (saved && saved.layoutMode) || 'stack');
   const [appTheme, setAppTheme] = useState(() => (saved && saved.appTheme) || 'dark');
+  const [showCallouts, setShowCallouts] = useState(false);
   const [editingDeviceId, setEditingDeviceId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [draggedSlotId, setDraggedSlotId] = useState(null);
@@ -997,6 +1001,8 @@ export function App() {
         onSetLayoutMode: handleLayoutModeChange,
         onSetAppTheme: setAppTheme,
         appTheme,
+        showCallouts,
+        onToggleCallouts: () => setShowCallouts((v) => !v),
       }),
 
       showHelp &&
@@ -1142,6 +1148,7 @@ export function App() {
                 editingDeviceId,
                 editingName,
                 appTheme,
+                showCallouts,
                 onDragStart: handleSlotDragStart,
                 onDragEnd: handleSlotDragEnd,
                 onDragOver: handleDragOver,

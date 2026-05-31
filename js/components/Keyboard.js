@@ -20,6 +20,10 @@ export function Keyboard({
   inputDeviceSettings = {},
   layoutOptions = {},
   onScaleMetricsChange = null,
+  keyAnnotations = {},
+  _showCallouts = false,
+  onAnnotateKey = null,
+  onKeysChange = null,
 }) {
   const [codes, setCodes] = useState({});
   const containerRef = useRef(null);
@@ -152,6 +156,12 @@ export function Keyboard({
   );
 
   useEffect(() => {
+    if (typeof onKeysChange === 'function') {
+      onKeysChange(filteredKeys);
+    }
+  }, [filteredKeys, onKeysChange]);
+
+  useEffect(() => {
     if (forcedScale !== null) {
       setAutoFitScale(1);
       return;
@@ -200,6 +210,7 @@ export function Keyboard({
         finalScale,
         maxWidth,
         maxHeight,
+        containerWidth: containerRef.current?.getBoundingClientRect().width ?? 0,
       });
     }
   }, [autoFitScale, finalScale, maxWidth, maxHeight, onScaleMetricsChange]);
@@ -433,8 +444,8 @@ export function Keyboard({
               createElement('div', { style: getCaseBgFillStyle() })
             ),
           ...filteredKeys.map((k, i) => {
-            const mK = k.matrix ? `${k.matrix[0]},${k.matrix[1]}` : null;
-            const val = mK ? codes[mK] : null;
+            const mK = k.matrix ? `${k.matrix[0]},${k.matrix[1]}` : k.id;
+            const val = k.matrix ? codes[mK] : null;
 
             return createElement(Keycap, {
               key: i,
@@ -452,6 +463,9 @@ export function Keyboard({
               externalMap,
               isLight,
               isAppDark,
+              matrixKey: mK,
+              annotation: keyAnnotations[mK] || null,
+              onAnnotateKey,
             });
           }),
         ]

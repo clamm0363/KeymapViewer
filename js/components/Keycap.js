@@ -32,6 +32,9 @@ export function Keycap({
   externalMap,
   isLight,
   isAppDark,
+  matrixKey,
+  annotation,
+  onAnnotateKey,
 }) {
   const parsed = parseKeyLabel(val, k.id, displayMode, keyStyle, macroAliases, k.isJIS);
   let {
@@ -114,6 +117,9 @@ export function Keycap({
       macros: (externalMap && externalMap.macros) || [],
       isLight,
       isAppDark,
+      matrixKey,
+      annotation,
+      onAnnotateKey,
     });
   }
 
@@ -256,7 +262,8 @@ export function Keycap({
     val || fullRaw,
     keyStyle,
     (externalMap && externalMap.macros) || [],
-    inspectorData
+    inspectorData,
+    annotation
   );
 
   const jisSvg =
@@ -324,6 +331,12 @@ export function Keycap({
           onMacroClick(parseInt(macroMatch[1], 10));
         }
       },
+      onContextMenu: (e) => {
+        if (onAnnotateKey) {
+          e.preventDefault();
+          onAnnotateKey(matrixKey);
+        }
+      },
       style: getKeycapFrameStyle({
         k,
         isLayerKey: isLayerKey || isModKey,
@@ -365,6 +378,22 @@ export function Keycap({
             k,
             model: standardDisplayModel,
             isLight,
-          })
+          }),
+
+    annotation && (annotation.customText || annotation.description) &&
+      createElement('div', {
+        key: 'annotation-dot',
+        style: {
+          position: 'absolute',
+          right: '4px',
+          top: '4px',
+          width: '5px',
+          height: '5px',
+          borderRadius: '50%',
+          backgroundColor: '#60a5fa',
+          zIndex: 50,
+          pointerEvents: 'none',
+        },
+      })
   );
 }
