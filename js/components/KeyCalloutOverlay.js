@@ -27,9 +27,9 @@ export function KeyCalloutOverlay({
   const textCol = isLight ? '#1e293b' : '#e2e8f0';
   const lineCol = isLight ? 'rgba(148, 163, 184, 0.9)' : 'rgba(100, 116, 139, 0.7)';
 
-  // foreignObject container sizes
-  const FO_WIDTH = 280;
-  const FO_HEIGHT = 200;
+  // foreignObject container sizes - significantly expanded to prevent vertical/horizontal clipping
+  const FO_WIDTH = 360;
+  const FO_HEIGHT = 380;
   const LINE_LEN = 60;
 
   const callouts = [];
@@ -62,8 +62,8 @@ export function KeyCalloutOverlay({
     let isFallback = false;
 
     // Estimate horizontal position of the fit-content box to check for overflow
-    // The max-width of the dynamic text box is 200px
-    const ESTIMATED_BOX_W = 200;
+    // Expanded from 200px to 240px for better text readability
+    const ESTIMATED_BOX_W = 240;
 
     if (isLeftSide) {
       lineStartX = screenKeyLeftEdge;
@@ -120,6 +120,7 @@ export function KeyCalloutOverlay({
         height: `${svgHeight}px`,
         pointerEvents: 'none',
         zIndex: 50,
+        overflow: 'visible', // Prevent clipping of negative offsets
       },
     },
     callouts.map((c) => {
@@ -148,6 +149,9 @@ export function KeyCalloutOverlay({
             y: c.boxY,
             width: FO_WIDTH,
             height: FO_HEIGHT,
+            style: {
+              overflow: 'visible', // Prevent internal WebKit overflow clipping
+            },
           },
           createElement(
             'div',
@@ -168,7 +172,7 @@ export function KeyCalloutOverlay({
               {
                 style: {
                   width: 'fit-content',
-                  maxWidth: '200px', // Balanced and readable column width
+                  maxWidth: '240px', // Expanded to 240px for premium widescreen typography
                   height: 'fit-content',
                   padding: '8px 12px',
                   border: `1.2px solid ${borderCol}`,

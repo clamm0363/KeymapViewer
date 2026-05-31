@@ -526,6 +526,84 @@ Outfit の Google Fonts リンク近くに追加:
 
 ---
 
-最終更新: 2026-05-31
-策定者: AI Agent（プロジェクト構造調査済み）
+最終更新: 2026-06-01
+策定者: AI Agent（アノテーションボックス自動拡張バグ修正設計追加）
 実装担当: 別エージェント
+
+---
+
+## 【追加設計】アノテーションボックスの動的自動サイズ調整とクリッピング問題の解消
+
+レビュー担当者からの指摘に基づき、アノテーションボックスのテキストが途中で見切れる問題を以下の設計で解消します。
+
+### 1. 問題の原因分析
+- 日本語などの長文テキストや複数行のテキストを設定した場合、従来の固定サイズ（`FO_HEIGHT = 200px`）ではボックス全体の高さが足りず、下部が見切れてしまうケースがありました。
+- また、`y` 座標が負になるケース（キーボード上部のキーなど）において、SVG コンテナ自体の `overflow: hidden` （ブラウザのデフォルト挙動）や `foreignObject` 自体の境界によってクリップされることがありました。
+
+### 2. 解決策設計（十分に大きな描画領域の確保と CSS `fit-content` の活用）
+レビューでの提案通り、「十分に大きな描画領域を確保した上で CSS `fit-content` 等を用いて背景枠を描画する」アプローチを採用します。
+
+1. **`foreignObject` の描画領域（Viewport）の大幅な拡張**
+   - 従来の `FO_WIDTH = 280`, `FO_HEIGHT = 200` を、**`FO_WIDTH = 360`**, **`FO_HEIGHT = 380`** に大幅に拡張します。
+   - これにより、20〜30行の長文説明であってもスクロールバーを出さずに完全に表示できる領域を確保します。
+
+2. **SVG コンテナおよび `foreignObject` への `overflow: visible` 設定**
+   - `KeyCalloutOverlay.js` が生成する `svg` 要素、および `<foreignObject>` 要素の双方の `style` に **`overflow: 'visible'`** を明示的に追加します。
+   - これにより、キーボードの最上部/最下部付近でアノテーションボックスが SVG の物理境界（`height` や `top`）をわずかに超えてはみ出した場合でも、ブラウザがクリップせずに全体を美しく描画します。
+
+3. **テキストボックスの最大幅の調整**
+   - テキストボックスの `maxWidth` を従来の `200px` から **`240px`** に拡大し、より多くの文字を横方向に収められるようにします。これにより縦方向の不必要な行数を抑え、バランスの良い premium なカードアスペクト比を維持します。
+
+4. **動的接続点（コネクション）の維持**
+   - 描画領域を拡張しても、従来の「Flexbox による縦横アライメント」を維持するため、引き出し線の端点（`lineEndX`）とテキストボックスの接続位置はピクセル単位で正確に維持されます。
+     - 左側：`alignItems: 'flex-end'`（右端を dashed line に吸い付かせる）
+     - 右側：`alignItems: 'flex-start'`（左端を dashed line に吸い付かせる）
+     - 上下：`justifyContent: 'center'`（テキスト量に応じたカードの縦方向中心に dashed line が完璧に一致する）
+
+### 3. KeyCalloutOverlay.js の変更詳細
+
+```js
+// foreignObject container sizes
+const FO_WIDTH = 360;  // 320から360に拡張し十分な余白を確保
+const FO_HEIGHT = 380; // 200から380に大幅拡張し、長文対応
+
+...
+
+// SVGルート要素のスタイル
+style: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: `${svgHeight}px`,
+  pointerEvents: 'none',
+  zIndex: 50,
+  overflow: 'visible', // ← 追加：SVGの境界外でもクリップさせない
+}
+
+...
+
+// foreignObject要素
+createElement(
+  'foreignObject',
+  {
+    key: 'box',
+    x: c.boxX,
+    y: c.boxY,
+    width: FO_WIDTH,
+    height: FO_HEIGHT,
+    style: {
+      overflow: 'visible', // ← 追加：foreignObjectの境界外でも念のためクリップさせない
+    }
+  },
+  ...
+  // 内側のテキストボックス div
+  style: {
+    width: 'fit-content',
+    maxWidth: '240px', // ← 200pxから240pxに拡張（横方向のバランス改善）
+    height: 'fit-content',
+    ...
+  }
+)
+```
+
