@@ -8,9 +8,10 @@ function estimateTextHeight(customText, description) {
       for (let i = 0; i < part.length; i++) {
         weight += part.charCodeAt(i) > 255 ? 2.0 : 1.0;
       }
-      // BOX_W = 140, inside width = 124px.
-      // Font size 9px (approx 5.6px per English char, 9px per JP char).
-      customLines += Math.max(1, Math.ceil(weight / 22));
+      // BOX_W = 180, inside width = 164px.
+      // Font size 11px (approx 6.5px per English char, 11px per JP char).
+      // We can fit approx 25 English weight or 14 Japanese weight characters.
+      customLines += Math.max(1, Math.ceil(weight / 25));
     });
   }
 
@@ -21,17 +22,18 @@ function estimateTextHeight(customText, description) {
       for (let i = 0; i < part.length; i++) {
         weight += part.charCodeAt(i) > 255 ? 2.0 : 1.0;
       }
-      // Font size 8px (approx 4.8px per English char, 8px per JP char).
-      descLines += Math.max(1, Math.ceil(weight / 26));
+      // Font size 10px (approx 5.8px per English char, 10px per JP char).
+      // We can fit approx 28 English weight or 16 Japanese weight characters.
+      descLines += Math.max(1, Math.ceil(weight / 28));
     });
   }
 
-  const customHeight = customLines * 12.5;
-  const descHeight = descLines * 11.0;
-  const gap = customHeight > 0 && descHeight > 0 ? 5 : 0;
-  const padding = 14; // generous top & bottom padding
+  const customHeight = customLines * 15.5; // generous height for 11px font-size
+  const descHeight = descLines * 13.5;   // generous height for 10px font-size
+  const gap = customHeight > 0 && descHeight > 0 ? 6 : 0;
+  const padding = 16; // top & bottom padding
   const total = padding + customHeight + descHeight + gap;
-  return Math.max(48, Math.ceil(total));
+  return Math.max(52, Math.ceil(total));
 }
 
 export function KeyCalloutOverlay({
@@ -60,7 +62,7 @@ export function KeyCalloutOverlay({
   const textCol = isLight ? '#1e293b' : '#e2e8f0';
   const lineCol = isLight ? 'rgba(148, 163, 184, 0.9)' : 'rgba(100, 116, 139, 0.7)';
 
-  const BOX_W = 140;
+  const BOX_W = 180; // Expanded to 180px for a more balanced layout and more room
   const LINE_LEN = 60;
 
   const callouts = [];
@@ -178,7 +180,7 @@ export function KeyCalloutOverlay({
               style: {
                 width: `${BOX_W}px`,
                 height: `${c.boxH}px`,
-                padding: '6px 8px',
+                padding: '7px 9px',
                 border: `1.2px solid ${borderCol}`,
                 borderRadius: '8px',
                 backgroundColor: bgCol,
@@ -188,7 +190,6 @@ export function KeyCalloutOverlay({
                 display: 'flex',
                 flexDirection: 'column',
                 boxSizing: 'border-box',
-                overflow: 'hidden',
               },
             },
             [
@@ -198,13 +199,13 @@ export function KeyCalloutOverlay({
                   key: 'custom-text',
                   style: {
                     fontFamily: "'Outfit', 'Noto Sans JP', sans-serif",
-                    fontSize: '9px',
+                    fontSize: '11px',
                     fontWeight: '700',
                     lineHeight: '1.3',
-                    marginBottom: '2px',
+                    marginBottom: '3px',
                     color: textCol,
                     textAlign: 'left',
-                    wordBreak: 'break-word',
+                    wordBreak: 'break-all',
                     whiteSpace: 'pre-wrap',
                   },
                 },
@@ -216,13 +217,13 @@ export function KeyCalloutOverlay({
                   key: 'description',
                   style: {
                     fontFamily: "'Outfit', 'Noto Sans JP', sans-serif",
-                    fontSize: '8px',
+                    fontSize: '10px',
                     fontWeight: '400',
-                    opacity: 0.8,
-                    lineHeight: '1.3',
+                    opacity: 0.82,
+                    lineHeight: '1.35',
                     color: textCol,
                     textAlign: 'left',
-                    wordBreak: 'break-word',
+                    wordBreak: 'break-all',
                     whiteSpace: 'pre-wrap',
                   },
                 },
