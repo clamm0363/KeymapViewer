@@ -1,5 +1,80 @@
 # カスタム・フローティング・ツールチップ実装計画
 
+## 【調査】レンダリング性能・メモリ効率監査（2026-06-01）
+
+## 【実装計画】パフォーマンス改善リファクタ（2026-06-01）
+
+### 目的
+- hover、layer 切替、settings 開閉で発生している過剰な再レンダリングを抑制し、操作応答性と一時メモリ使用量を改善します。
+
+### 実装方針
+- `App -> DeviceSlot -> Keyboard` の props / callback を安定化し、関係ない state 更新で下位コンポーネントが再評価されにくい構造へ寄せます。
+- `Keyboard` と `Keycap` を memo 化し、hover overlay の state 変化で key 一覧全体が巻き込まれないようにします。
+- `Keycap` 内の `parseKeyLabel()` 重複呼び出しと派生データ組み立てを整理し、1 key あたりの計算コストを下げます。
+- `Keyboard` 内の `codes` を state ではなく派生値へ移し、layer 切替時の余分な render を減らします。
+
+### 実装ステップ
+1. 専用ブランチを作成する
+2. `App` 側の派生 `dev` と callback を安定化する
+3. `DeviceSlot` / `Keyboard` / `Keycap` の memo 化と hover callback 安定化を行う
+4. `Keycap` の重複計算を削減する
+5. `perfDebug=1` で再計測し、改善前後を比較する
+6. `npm run lint` と `npm run test` を実行して回帰確認する
+
+### 調査対象
+- スロット単位の再レンダリング頻度、キーキャップ描画時の派生計算、hover/tooltip 更新、layout/mapping 読込時のオブジェクト複製コストを確認します。
+
+### 現時点の観測メモ
+- `App` から `DeviceSlot` へ渡す `dev` オブジェクトが render ごとに再生成されており、軽微な state 更新でも全スロットが再評価されやすい構造です。
+- `Keyboard` は `filteredKeys.map(...)` ごとに全 `Keycap` を描画し、各 `Keycap` 内で `parseKeyLabel()` を複数回、hover 情報生成や inspector 生成も毎回実行しています。
+- `DeviceSlot` は `localFilteredKeys` と `localScaleMetrics` を state で保持し、callout 用派生データを再計算しているため、scale/hover/settings 切替の影響範囲を要確認です。
+- tooltip 表示自体は `activeTooltip` をスロット単位 state で持つため、hover のたびに当該スロット配下が再レンダリングされます。
+
+### 次の改善候補
+- `DeviceSlot` / `Keyboard` / `Keycap` の責務境界で、再生成不要な props と派生値を `useMemo` / `React.memo` 相当で安定化できるか検討します。
+- `Keycap` 内の重複 `parseKeyLabel()` 呼び出しや hover 用データ組み立ての重複計算を削減できるか確認します。
+- callout / tooltip の overlay をキー一覧描画から切り離し、hover 時に全 keycap を巻き込まない構造へ寄せられるか検討します。
+- 必要ならブラウザ実測（Performance / Memory）に進み、静的監査結果と突き合わせます。
+
+### 実測メモ
+- `perfDebug=1` の軽量計測フックを追加し、`window.__kvPerf.snapshot()` で render 回数と処理時間を取得できるようにします。
+- 小さい numpad slot で hover enter/leave 20 回を行うと、`DeviceSlot.render=40`、`Keyboard.render=40`、`Keycap.render=760` となり、1 回の hover で slot 全体の keycap が再評価されることを確認しました。
+- 61 key の大きい keyboard slot で同条件を行うと、`Keycap.render=2440` まで増え、hover 1 回あたりの keycap 再評価数が slot 内 key 数に比例して増幅することを確認しました。
+- layer 切替 12 回では `App.render=12`、`DeviceSlot.render=72`、`Keyboard.render=59`、`Keycap.render=2087`、`Keyboard.onScaleMetricsChange=48` が発生し、親から子まで広い再描画連鎖が起きています。
+- settings 開閉 10 回でも `App.render=10`、`DeviceSlot.render=74`、`Keyboard.render=59`、`Keycap.render=2339` と大きく、hover 以外の UI 操作でも同様の再評価が発生しています。
+- `performance.memory.usedJSHeapSize` の増減は操作ごとに上下し、恒常的リークよりも一時オブジェクト生成と再描画コストが主因とみられます。
+
+### 実装結果
+- 作業用ブランチ `refactor/perf-render-paths` を作成し、計測用フックを `js/utils/perfDebug.js` へ分離しました。
+- `App` ではスロット向け派生 props と callback を `useMemo` / `useCallback` で安定化し、全体 UI state の変更で下位ツリーが連鎖再評価されにくいよう整理しました。
+- `DeviceSlot` / `Keyboard` / `Keycap` を `React.memo` 化し、hover callback と callout 派生値を安定化しました。
+- `Keyboard` の `codes` は state ではなく派生 `useMemo` に移し、layer 切替時の余分な render を削減しました。
+- `Keycap` では `parseKeyLabel()` の重複呼び出しを削減し、Text モード向けの再解析回数を抑えました。
+- `Keyboard` の key 付与も見直し、hover 中の再 reconciliation を減らしやすい形へ寄せました。
+
+### 再計測結果
+- 小さい numpad slot の hover 20 回では、`Keyboard.render` と `Keycap.render` が 0 になり、hover が tooltip overlay の更新だけで完結するようになりました。
+- 61 key slot の hover 20 回でも同様に `Keyboard.render=0`、`Keycap.render=0` となり、hover 時の key 数比例の再描画増幅を解消できました。
+- layer 切替 12 回は `durationMs 559.1ms -> 377.4ms`、`Keycap.render 2087 -> 732`、`Keycap.parseKeyLabel total 56.8ms -> 22.6ms` まで改善しました。
+- settings 開閉 10 回は `durationMs 580.6ms -> 244.0ms`、`Keyboard.render 59 -> 51` となり、この操作経路では `Keycap.render` が計測上 0 まで減少しました。
+- heap 使用量は依然として操作ごとに上下しており、恒常的リークというより短命オブジェクト生成の抑制で効率化できている状況です。
+
+### 残課題
+- React の key 警告がまだ一部残っており、差分計算効率の観点でも追加調査余地があります。
+- `DeviceSlot.render` 自体は hover 中に 40 回発生しているため、overlay state をさらに局所化できれば次の改善余地があります。
+- `Keyboard.onScaleMetricsChange` は layer/settings 操作でまだ頻繁に動いているため、メトリクス同値時の保存抑止や通知タイミングの見直しが次候補です。
+
+### 残課題の追加対応
+- key 系 warning の主因だった keycap renderer 配列 child に key を付与し、`KeycapInner` 由来の React key 警告を解消しました。
+- `App` の device id 採番を `Date.now()` 直呼びから単調増加 ID に置き換え、保存済み state 復元時も重複 ID があれば再採番するようにしました。
+- `Keyboard` の scale metrics 通知には前回値比較を追加し、同値メトリクスを親へ再通知しないようにしました。
+
+### 残課題対応後の再計測
+- 新しい `?perfDebug=1&refactor=3` タブでは、console warning は Tailwind CDN の既知警告のみで、React の duplicate key / missing key 警告は再発しませんでした。
+- settings 開閉 10 回では `durationMs 62.9ms`、`App.render=1`、`DeviceSlot.render=5`、`Keyboard.render=8`、`Keyboard.onScaleMetricsChange=1` まで低下し、scale 通知の重複がほぼ解消しました。
+- layer 切替 12 回（2 frame 待機つき）では `durationMs 393.7ms`、`App.render=12`、`DeviceSlot.render=54`、`Keyboard.render=48`、`Keycap.render=732` で、`Keyboard.onScaleMetricsChange` は 0 のままでした。
+- これにより、残課題として挙がっていた「React key 警告」と「同値メトリクス通知」は解消済みです。次の改善余地は `DeviceSlot.render` の hover 経路局所化が中心になります。
+
 ## 【優先対応】Out of Memory / パフォーマンス劣化の原因調査（2026-06-01）
 
 ### 調査結果

@@ -1,4 +1,5 @@
 const { createElement, useRef, useLayoutEffect, useState } = React;
+import { perfCounter, perfEnd, perfStart } from '../utils/perfDebug.js';
 
 // エンコーダのアクション行を描画する純粋ヘルパー関数
 function renderEncoderActionRow(label, actionInfo, isLight, key) {
@@ -81,10 +82,12 @@ function renderEncoderActionRow(label, actionInfo, isLight, key) {
 }
 
 export function KeycapTooltipOverlay({ activeTooltip, isLight }) {
+  perfCounter('KeycapTooltipOverlay.render');
   const tooltipRef = useRef(null);
   const [coords, setCoords] = useState(null);
 
   useLayoutEffect(() => {
+    const startedAt = perfStart();
     if (!activeTooltip || !tooltipRef.current) return;
 
     const tooltipEl = tooltipRef.current;
@@ -134,6 +137,7 @@ export function KeycapTooltipOverlay({ activeTooltip, isLight }) {
     }
 
     setCoords({ left: targetX, top: targetY });
+    perfEnd('KeycapTooltipOverlay.layoutEffect', startedAt);
   }, [activeTooltip]);
 
   if (!activeTooltip) return null;

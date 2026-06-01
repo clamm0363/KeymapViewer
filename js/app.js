@@ -1,4 +1,4 @@
-const { useState, useEffect, useMemo, useRef, createElement } = React;
+const { useState, useEffect, useMemo, useRef, useCallback, createElement } = React;
 
 import { STORAGE_KEY } from './constants.js';
 import { loadSavedState, sanitizeDeviceName } from './utils/helpers.js';
@@ -20,6 +20,7 @@ import {
 } from './utils/hid/localDefinitions.js';
 import { formatUsbId, validateDefinitionForDevice } from './utils/hid/definitionUtils.js';
 import { isLayoutJson, normalizeLayoutJson, normalizeMappingJson } from './utils/loadJsonUtils.js';
+import { initPerfDebug, perfCounter } from './utils/perfDebug.js';
 
 const CURRENT_VERSION = '1.2.5';
 const DEFAULT_DISPLAY_SCALE = 1;
@@ -30,6 +31,12 @@ const DEFAULT_DISPLAY_SCALE_BY_LAYOUT = Object.freeze({
   stack: DEFAULT_DISPLAY_SCALE,
   grid: DEFAULT_DISPLAY_SCALE,
 });
+let nextDeviceId = Date.now();
+
+function createDeviceId() {
+  nextDeviceId += 1;
+  return nextDeviceId;
+}
 
 function normalizeDisplayScale(value) {
   const numeric = Number(value);
@@ -66,6 +73,20 @@ function buildInputDeviceSettings(inputDeviceSettings = {}, encoderStyles = {}) 
     }
   });
   return next;
+}
+
+function normalizeDeviceIds(devices = []) {
+  const seenIds = new Set();
+  return devices.map((device) => {
+    const rawId = Number(device?.id);
+    const nextId =
+      Number.isFinite(rawId) && rawId > 0 && !seenIds.has(rawId) ? rawId : createDeviceId();
+    seenIds.add(nextId);
+    return {
+      ...device,
+      id: nextId,
+    };
+  });
 }
 
 function normalizeNameForComparison(value) {
@@ -108,7 +129,7 @@ function readJsonFile(file) {
 
 function createEmptyDevice() {
   return {
-    id: Date.now(),
+    id: createDeviceId(),
     name: null,
     design: null,
     keymapJson: null,
@@ -130,6 +151,8 @@ function createEmptyDevice() {
 }
 
 export function App() {
+  initPerfDebug();
+  perfCounter('App.render');
   const saved = useMemo(() => {
     const s = loadSavedState();
     if (s && s.version === CURRENT_VERSION) return s;
@@ -147,7 +170,7 @@ export function App() {
           if (parsed && parsed.design) {
             return [
               {
-                id: Date.now(),
+                id: createDeviceId(),
                 name: sanitizeDeviceName(parsed.name || 'Shared Device'),
                 design: parsed.design,
                 keymapJson: parsed.keymapJson,
@@ -182,21 +205,23 @@ export function App() {
     }
 
     if (saved && saved.devices && saved.devices.length > 0) {
-      return saved.devices.map((device) => ({
-        ...device,
-        inputDeviceSettings: buildInputDeviceSettings(
-          device.inputDeviceSettings,
-          device.encoderStyles
-        ),
-        displayScale: normalizeDisplayScale(device.displayScale),
-        displayScaleByLayout: normalizeDisplayScaleByLayout(
-          device.displayScaleByLayout,
-          device.displayScale
-        ),
-        followScale: !!device.followScale,
-        showCallouts: !!device.showCallouts,
-        keyAnnotations: device.keyAnnotations || {},
-      }));
+      return normalizeDeviceIds(
+        saved.devices.map((device) => ({
+          ...device,
+          inputDeviceSettings: buildInputDeviceSettings(
+            device.inputDeviceSettings,
+            device.encoderStyles
+          ),
+          displayScale: normalizeDisplayScale(device.displayScale),
+          displayScaleByLayout: normalizeDisplayScaleByLayout(
+            device.displayScaleByLayout,
+            device.displayScale
+          ),
+          followScale: !!device.followScale,
+          showCallouts: !!device.showCallouts,
+          keyAnnotations: device.keyAnnotations || {},
+        }))
+      );
     }
     return [createEmptyDevice()];
   });
@@ -268,7 +293,7 @@ export function App() {
 
       try {
         const devs = await Promise.all(
-          sampleFiles.map(async (s, idx) => {
+          sampleFiles.map(async (s) => {
             // Use cache busting to ensure we get the latest version from disk
             const resp = await fetch(`${s.file}?t=${Date.now()}`);
             if (!resp.ok) throw new Error(`Failed to load ${s.file}`);
@@ -290,7 +315,7 @@ export function App() {
             };
 
             return {
-              id: Date.now() + idx,
+              id: createDeviceId(),
               name: sanitizeDeviceName(data.name),
               design: design,
               keymapJson: keymapJson,
@@ -394,9 +419,27 @@ export function App() {
     }
   }, [isExporting, exportModalDevId, devices, exportSettings.background]);
 
+  const isLightApp = appTheme === 'light';
+
   const handleExportClick = () => {
     setIsExporting(true);
   };
+
+  const handleSlotScaleMetrics = useCallback((deviceId, metrics) => {
+    slotScaleMetricsRef.current[deviceId] = metrics;
+  }, []);
+
+  const handleOpenExportModal = useCallback(
+    (device) => {
+      setExportModalDevId(device.id);
+      setExportSettings({
+        layers: [device.layer],
+        includeMacros: true,
+        background: isLightApp ? 'Light' : 'Dark',
+      });
+    },
+    [isLightApp]
+  );
 
   const addSlot = () => {
     if (devices.length >= 4) return;
@@ -981,7 +1024,24 @@ export function App() {
     setDraggedSlotId(null);
   };
 
-  const isLightApp = appTheme === 'light';
+  const deviceViewItems = useMemo(
+    () =>
+      devices.map((dev, idx) => ({
+        idx,
+        dev: {
+          ...dev,
+          displayScale: getDisplayScaleForLayout(dev, layoutMode),
+          displayScaleByLayout: normalizeDisplayScaleByLayout(
+            dev.displayScaleByLayout,
+            dev.displayScale
+          ),
+        },
+        onScaleMetricsChange: (metrics) => handleSlotScaleMetrics(dev.id, metrics),
+        onSetExportModal: () => handleOpenExportModal(dev),
+      })),
+    [devices, layoutMode, handleSlotScaleMetrics, handleOpenExportModal]
+  );
+
   return createElement(
     'div',
     {
@@ -1131,17 +1191,10 @@ export function App() {
                 : 'flex flex-col gap-8',
           },
           [
-            devices.map((dev, idx) =>
+            deviceViewItems.map(({ dev, idx, onScaleMetricsChange, onSetExportModal }) =>
               createElement(DeviceSlot, {
                 key: dev.id,
-                dev: {
-                  ...dev,
-                  displayScale: getDisplayScaleForLayout(dev, layoutMode),
-                  displayScaleByLayout: normalizeDisplayScaleByLayout(
-                    dev.displayScaleByLayout,
-                    dev.displayScale
-                  ),
-                },
+                dev,
                 idx,
                 isLightApp,
                 layoutMode,
@@ -1161,17 +1214,8 @@ export function App() {
                 onSetEditingName: setEditingName,
                 onOpenLoadModal: openLoadModal,
                 onSetMacroModal: setMacroModalState,
-                onScaleMetricsChange: (metrics) => {
-                  slotScaleMetricsRef.current[dev.id] = metrics;
-                },
-                onSetExportModal: (d) => {
-                  setExportModalDevId(d.id);
-                  setExportSettings({
-                    layers: [d.layer],
-                    includeMacros: true,
-                    background: isLightApp ? 'Light' : 'Dark',
-                  });
-                },
+                onScaleMetricsChange,
+                onSetExportModal,
               })
             ),
 

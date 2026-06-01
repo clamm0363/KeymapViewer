@@ -107,6 +107,7 @@ export function renderTopTag({ label, isLight, accentColor }) {
   return createElement(
     'div',
     {
+      key: 'top-tag',
       style: getTopTagContainerStyle(),
     },
     createElement(
@@ -137,6 +138,7 @@ export function renderBottomCaption({ label, isLight, color = null }) {
   return createElement(
     'div',
     {
+      key: 'bottom-caption',
       style: getBottomCaptionContainerStyle(),
     },
     createElement(
@@ -322,6 +324,7 @@ export function renderModifierSupplement({
       return createElement(
         'div',
         {
+          key: 'modifier-offset-text',
           style: getOffsetSecondarySlotStyle(),
         },
         createElement(
@@ -353,6 +356,7 @@ export function renderModifierSupplement({
       ? createElement(
           'div',
           {
+            key: 'modifier-offset-fallback',
             style: getOffsetSecondarySlotStyle(),
           },
           createElement(
@@ -381,6 +385,7 @@ export function renderModifierSupplement({
   return createElement(
     'div',
     {
+      key: placement === 'offset' ? 'modifier-offset-icons' : 'modifier-bottom-icons',
       style: containerStyle,
     },
     iconSequence

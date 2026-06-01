@@ -1,4 +1,4 @@
-const { createElement, Fragment, useCallback, useEffect, useState } = React;
+const { createElement, Fragment, memo, useCallback, useEffect, useMemo, useState } = React;
 import { Keyboard } from './Keyboard.js';
 import { sanitizeDeviceName, findSplitX } from '../utils/helpers.js';
 import { createSVGElement } from '../svg-icons.js';
@@ -16,6 +16,7 @@ import {
   setAnnotation,
 } from '../utils/keyAnnotations.js';
 import { buildCalloutOverlayModel } from '../utils/calloutLayout.js';
+import { perfCounter, perfEnd, perfStart } from '../utils/perfDebug.js';
 import { KeyAnnotationModal } from './KeyAnnotationModal.js';
 import { KeyCalloutOverlay } from './KeyCalloutOverlay.js';
 import { KeycapTooltipOverlay } from './KeycapTooltipOverlay.js';
@@ -123,7 +124,7 @@ const updateInputDeviceSetting = (dev, idx, partialSetting) => {
   };
 };
 
-export function DeviceSlot({
+function DeviceSlotInner({
   dev,
   idx,
   isLightApp,
@@ -147,12 +148,16 @@ export function DeviceSlot({
   onSetExportModal,
   onScaleMetricsChange,
 }) {
+  perfCounter('DeviceSlot.render');
   const [copied, setCopied] = useState(false);
   const [editingKey, setEditingKey] = useState(null);
   const [localScaleMetrics, setLocalScaleMetrics] = useState(null);
   const [localFilteredKeys, setLocalFilteredKeys] = useState([]);
   const currentLayer = Number(dev.layer) || 0;
-  const currentLayerAnnotations = getLayerAnnotations(dev.keyAnnotations || {}, currentLayer);
+  const currentLayerAnnotations = useMemo(
+    () => getLayerAnnotations(dev.keyAnnotations || {}, currentLayer),
+    [dev.keyAnnotations, currentLayer]
+  );
 
   const handleKeyEditSave = (data) => {
     if (!editingKey) return;
@@ -199,7 +204,7 @@ export function DeviceSlot({
   );
   const isGridLayout = layoutMode === 'grid';
   const hasData = !!dev.design;
-  const encoderIndices = getEncoderIndices(dev.design);
+  const encoderIndices = useMemo(() => getEncoderIndices(dev.design), [dev.design]);
   const hasGap = dev.design && findSplitX(dev.design) !== null;
   const showSeparation = hasGap;
   const hasEncoders = encoderIndices.length > 0;
@@ -216,7 +221,8 @@ export function DeviceSlot({
   const shouldRenderCallouts = showCallouts && !dev.showSettings;
   const [activeTooltip, setActiveTooltip] = useState(null);
 
-  const handleKeyHover = (e, hoverContentInfo) => {
+  const handleKeyHover = useCallback((e, hoverContentInfo) => {
+    perfCounter('DeviceSlot.handleKeyHover');
     const rect = e.currentTarget.getBoundingClientRect();
     setActiveTooltip({
       x: rect.left + rect.width / 2,
@@ -225,11 +231,12 @@ export function DeviceSlot({
       contentInfo: hoverContentInfo,
       isFixed: true,
     });
-  };
+  }, []);
 
-  const handleKeyHoverLeave = () => {
+  const handleKeyHoverLeave = useCallback(() => {
+    perfCounter('DeviceSlot.handleKeyHoverLeave');
     setActiveTooltip(null);
-  };
+  }, []);
   const handleScaleMetricsChange = useCallback(
     (metrics) => {
       setLocalScaleMetrics((prev) => {
@@ -1042,14 +1049,22 @@ export function DeviceSlot({
     ]
   );
 
-  const calloutOverlayModel =
-    shouldRenderCallouts && localScaleMetrics && localFilteredKeys.length > 0
-      ? buildCalloutOverlayModel({
-          keys: localFilteredKeys,
-          keyAnnotations: currentLayerAnnotations,
-          scaleMetrics: localScaleMetrics,
-        })
-      : null;
+  const calloutOverlayModel = useMemo(() => {
+    if (!shouldRenderCallouts || !localScaleMetrics || localFilteredKeys.length === 0) {
+      return null;
+    }
+    const startedAt = perfStart();
+    const model = buildCalloutOverlayModel({
+      keys: localFilteredKeys,
+      keyAnnotations: currentLayerAnnotations,
+      scaleMetrics: localScaleMetrics,
+    });
+    perfEnd('DeviceSlot.buildCalloutOverlayModel', startedAt, {
+      keys: localFilteredKeys.length,
+      annotations: Object.keys(currentLayerAnnotations || {}).length,
+    });
+    return model;
+  }, [shouldRenderCallouts, localScaleMetrics, localFilteredKeys, currentLayerAnnotations]);
 
   useEffect(() => {
     const nextPage = Math.min(
@@ -1690,3 +1705,55 @@ export function DeviceSlot({
     ]
   );
 }
+
+function areDeviceSlotPropsEqual(prevProps, nextProps) {
+  const slotEditingRelevant =
+    prevProps.editingDeviceId === prevProps.dev.id || nextProps.editingDeviceId === nextProps.dev.id;
+  const prevDev = prevProps.dev;
+  const nextDev = nextProps.dev;
+  const sameDeviceView =
+    prevDev.id === nextDev.id &&
+    prevDev.name === nextDev.name &&
+    prevDev.design === nextDev.design &&
+    prevDev.keymapJson === nextDev.keymapJson &&
+    prevDev.layer === nextDev.layer &&
+    prevDev.displayMode === nextDev.displayMode &&
+    prevDev.theme === nextDev.theme &&
+    prevDev.keyStyle === nextDev.keyStyle &&
+    prevDev.encoderStyles === nextDev.encoderStyles &&
+    prevDev.inputDeviceSettings === nextDev.inputDeviceSettings &&
+    prevDev.layoutOptions === nextDev.layoutOptions &&
+    prevDev.separation === nextDev.separation &&
+    prevDev.displayScale === nextDev.displayScale &&
+    prevDev.displayScaleByLayout === nextDev.displayScaleByLayout &&
+    prevDev.followScale === nextDev.followScale &&
+    prevDev.macroAliases === nextDev.macroAliases &&
+    prevDev.showSettings === nextDev.showSettings &&
+    prevDev.showCallouts === nextDev.showCallouts &&
+    prevDev.keyAnnotations === nextDev.keyAnnotations;
+
+  return (
+    sameDeviceView &&
+    prevProps.idx === nextProps.idx &&
+    prevProps.isLightApp === nextProps.isLightApp &&
+    prevProps.layoutMode === nextProps.layoutMode &&
+    prevProps.dragOverTarget === nextProps.dragOverTarget &&
+    prevProps.editingDeviceId === nextProps.editingDeviceId &&
+    (!slotEditingRelevant || prevProps.editingName === nextProps.editingName) &&
+    prevProps.appTheme === nextProps.appTheme &&
+    prevProps.onDragStart === nextProps.onDragStart &&
+    prevProps.onDragEnd === nextProps.onDragEnd &&
+    prevProps.onDragOver === nextProps.onDragOver &&
+    prevProps.onDragLeave === nextProps.onDragLeave &&
+    prevProps.onDrop === nextProps.onDrop &&
+    prevProps.onUpdateDevice === nextProps.onUpdateDevice &&
+    prevProps.onRemoveDevice === nextProps.onRemoveDevice &&
+    prevProps.onStartEditing === nextProps.onStartEditing &&
+    prevProps.onFinishEditing === nextProps.onFinishEditing &&
+    prevProps.onSetEditingName === nextProps.onSetEditingName &&
+    prevProps.onOpenLoadModal === nextProps.onOpenLoadModal &&
+    prevProps.onSetMacroModal === nextProps.onSetMacroModal
+  );
+}
+
+export const DeviceSlot = memo(DeviceSlotInner, areDeviceSlotPropsEqual);

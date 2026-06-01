@@ -1,9 +1,21 @@
-const { createElement, useState, useEffect, useMemo, useRef } = React;
+const { createElement, memo, useEffect, useMemo, useRef, useState } = React;
 
 import { findSplitX } from '../utils/helpers.js';
 import { Keycap } from './Keycap.js';
+import { perfCounter, perfEnd, perfStart } from '../utils/perfDebug.js';
 
-export function Keyboard({
+function areScaleMetricsEqual(prevMetrics, nextMetrics) {
+  if (!prevMetrics || !nextMetrics) return false;
+  return (
+    prevMetrics.autoFitScale === nextMetrics.autoFitScale &&
+    prevMetrics.finalScale === nextMetrics.finalScale &&
+    prevMetrics.maxWidth === nextMetrics.maxWidth &&
+    prevMetrics.maxHeight === nextMetrics.maxHeight &&
+    prevMetrics.containerWidth === nextMetrics.containerWidth
+  );
+}
+
+function KeyboardInner({
   design,
   layer = 0,
   externalMap = null,
@@ -26,8 +38,9 @@ export function Keyboard({
   onKeyHover = null,
   onKeyHoverLeave = null,
 }) {
-  const [codes, setCodes] = useState({});
+  perfCounter('Keyboard.render');
   const containerRef = useRef(null);
+  const lastReportedScaleMetricsRef = useRef(null);
   const [autoFitScale, setAutoFitScale] = useState(1);
 
   const isLight =
@@ -52,6 +65,7 @@ export function Keyboard({
   }, [layoutOptions]);
 
   const keys = useMemo(() => {
+    const startedAt = perfStart();
     if (!design || !design.layouts || !design.layouts.keymap) return [];
     const list = [];
     const UNIT = 56;
@@ -142,6 +156,10 @@ export function Keyboard({
       }
     }
 
+    perfEnd('Keyboard.computeKeys', startedAt, {
+      keyCount: list.length,
+      separation: isSeparationEnabled,
+    });
     return list;
   }, [design, isSeparationEnabled, splitX, activeLayoutOptions]);
 
@@ -182,20 +200,24 @@ export function Keyboard({
     return () => observer.disconnect();
   }, [maxWidth, forcedScale]);
 
-  useEffect(() => {
+  const codes = useMemo(() => {
     // layer は数値インデックス。Number() で明示的に数値化してからアクセスする
     const layerIdx = Number(layer);
     const layerSource =
       (externalMap && externalMap.layers && externalMap.layers[layerIdx]) ||
       (design && design.layers && design.layers[layerIdx]);
     if (layerSource) {
+      const startedAt = perfStart();
       const next = {};
       const cols = (design && design.matrix && design.matrix.cols) || 16;
       // キーは Math.floor / % による純粋な計算値であり、ユーザー入力ではない
       layerSource.forEach((v, i) => (next[`${Math.floor(i / cols)},${i % cols}`] = v));
-      setCodes(next);
+      perfEnd('Keyboard.computeCodes', startedAt, {
+        entries: layerSource.length,
+      });
+      return next;
     } else {
-      setCodes({});
+      return {};
     }
   }, [design, layer, externalMap]);
 
@@ -205,15 +227,20 @@ export function Keyboard({
   const finalScale = baseScale * normalizedUserScale;
 
   useEffect(() => {
-    if (typeof onScaleMetricsChange === 'function') {
-      onScaleMetricsChange({
-        autoFitScale,
-        finalScale,
-        maxWidth,
-        maxHeight,
-        containerWidth: containerRef.current?.getBoundingClientRect().width ?? 0,
-      });
-    }
+    if (typeof onScaleMetricsChange !== 'function') return;
+
+    const nextMetrics = {
+      autoFitScale,
+      finalScale,
+      maxWidth,
+      maxHeight,
+      containerWidth: containerRef.current?.getBoundingClientRect().width ?? 0,
+    };
+    if (areScaleMetricsEqual(lastReportedScaleMetricsRef.current, nextMetrics)) return;
+
+    lastReportedScaleMetricsRef.current = nextMetrics;
+    perfCounter('Keyboard.onScaleMetricsChange');
+    onScaleMetricsChange(nextMetrics);
   }, [autoFitScale, finalScale, maxWidth, maxHeight, onScaleMetricsChange]);
 
   if (filteredKeys.length === 0) return null;
@@ -460,7 +487,7 @@ export function Keyboard({
             const val = k.matrix ? codes[mK] : null;
 
             return createElement(Keycap, {
-              key: i,
+              key: `${mK}:${k.x}:${k.y}:${k.w}:${k.h}`,
               k,
               val,
               i,
@@ -486,3 +513,5 @@ export function Keyboard({
     )
   );
 }
+
+export const Keyboard = memo(KeyboardInner);

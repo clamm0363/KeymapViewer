@@ -1,4 +1,4 @@
-const { createElement } = React;
+const { createElement, memo } = React;
 
 import { parseKeyLabel } from '../utils/labelParser.js';
 import { buildKeyInspectorData } from '../utils/keyInspector.js';
@@ -16,8 +16,9 @@ import {
 import { buildStandardHoverInfo } from './keycapTooltip.js';
 import { renderEncoderKeycap } from './keycapEncoder.js';
 import { renderLayerKeycap, renderModKeycap, renderStandardKeycap } from './keycapSections.js';
+import { perfCounter, perfEnd, perfStart } from '../utils/perfDebug.js';
 
-export function Keycap({
+function KeycapInner({
   k,
   val,
   i,
@@ -37,6 +38,9 @@ export function Keycap({
   onKeyHover,
   onKeyHoverLeave,
 }) {
+  perfCounter('Keycap.render');
+  const totalStartedAt = perfStart();
+  const parseStartedAt = perfStart();
   const parsed = parseKeyLabel(val, k.id, displayMode, keyStyle, macroAliases, k.isJIS);
   let {
     fullRaw,
@@ -85,7 +89,10 @@ export function Keycap({
     utilityLabel,
   } = iconRenderState;
 
-  const textModeParsed = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases, k.isJIS);
+  const textModeParsed =
+    displayMode === 'Text'
+      ? parsed
+      : parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases, k.isJIS);
   let textFallback = narrowSlash(textModeParsed.displayText);
   const is1u = (k.w || 56) / 56 < 1.25;
   if (is1u) {
@@ -97,11 +104,13 @@ export function Keycap({
 
   const isFluentCenter = isFluentIcon || (isModKey && baseIsFluent);
   const centerText = isModKey && modType !== 'base' ? baseLabel : displayText;
-  const magicLabel = isMagicFluent
-    ? narrowSlash(parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases, k.isJIS).displayText)
-    : '';
+  const magicLabel = isMagicFluent ? narrowSlash(textModeParsed.displayText) : '';
+  perfEnd('Keycap.parseKeyLabel', parseStartedAt, {
+    isEncoder: !!k.isEncoder,
+  });
 
   if (k.isEncoder) {
+    perfEnd('Keycap.total', totalStartedAt, { kind: 'encoder' });
     const encodersSource = (externalMap && externalMap.encoders) || (design && design.encoders);
     return renderEncoderKeycap({
       k,
@@ -267,6 +276,9 @@ export function Keycap({
     inspectorData,
     annotation
   );
+  perfEnd('Keycap.total', totalStartedAt, {
+    kind: isLayerKey ? 'layer' : isModKey ? 'mod' : 'standard',
+  });
 
   const jisSvg =
     k.isJIS &&
@@ -405,3 +417,5 @@ export function Keycap({
       })
   );
 }
+
+export const Keycap = memo(KeycapInner);
