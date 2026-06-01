@@ -213,6 +213,7 @@ export function DeviceSlot({
   const currentDisplayScale = normalizeDisplayScale(dev.displayScale);
   const isScaleFollowing = !!dev.followScale;
   const showCallouts = !!dev.showCallouts;
+  const shouldRenderCallouts = showCallouts && !dev.showSettings;
   const [activeTooltip, setActiveTooltip] = useState(null);
 
   const handleKeyHover = (e, hoverContentInfo) => {
@@ -276,6 +277,20 @@ export function DeviceSlot({
     (isLightApp
       ? 'bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200'
       : 'bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border-blue-500/30');
+  const compactToggleShellClass =
+    'flex h-10 w-fit max-w-full items-center gap-2 rounded-xl border px-2.5 ' +
+    (isLightApp
+      ? 'bg-white border-slate-200 shadow-sm'
+      : 'bg-slate-800/40 backdrop-blur-sm border-slate-700/50');
+  const compactToggleLabelClass =
+    'px-1 text-[9px] font-black uppercase tracking-[0.22em] ' +
+    (isLightApp ? 'text-slate-400' : 'text-slate-400');
+  const compactToggleOptionBaseClass =
+    'flex h-7 min-w-[42px] items-center justify-center rounded-lg px-2 text-[10px] font-black transition-all';
+  const compactToggleOptionInactiveClass = isLightApp
+    ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+    : 'text-slate-400 hover:bg-slate-700/60 hover:text-slate-100';
+  const compactToggleOptionActiveClass = 'bg-blue-600 text-white shadow-lg';
   const settingsPanel = createElement(
     'div',
     {
@@ -1028,7 +1043,7 @@ export function DeviceSlot({
   );
 
   const calloutOverlayModel =
-    showCallouts && localScaleMetrics && localFilteredKeys.length > 0
+    shouldRenderCallouts && localScaleMetrics && localFilteredKeys.length > 0
       ? buildCalloutOverlayModel({
           keys: localFilteredKeys,
           keyAnnotations: currentLayerAnnotations,
@@ -1095,7 +1110,7 @@ export function DeviceSlot({
                     onClick: () => onUpdateDevice(dev.id, { layer: layerIndex }),
                     className:
                       (dev.layer === layerIndex
-                        ? 'bg-blue-600 text-white shadow-lg'
+                        ? compactToggleOptionActiveClass
                         : isLightApp
                           ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
                           : 'text-slate-500 hover:bg-slate-700/60 hover:text-slate-200') +
@@ -1128,6 +1143,56 @@ export function DeviceSlot({
           ]
         )
       : null;
+  const renderCalloutsToggle = () =>
+    createElement(
+      'div',
+      {
+        key: 'callouts-toggle',
+        className: compactToggleShellClass + (!hasData ? ' opacity-40' : ''),
+      },
+      [
+        createElement(
+          'span',
+          {
+            key: 'lbl',
+            className: compactToggleLabelClass,
+          },
+          'CALLOUTS'
+        ),
+        createElement(
+          'div',
+          { key: 'opts', className: 'flex gap-1.5' },
+          ['ON', 'OFF'].map((option) => {
+            const isOnOption = option === 'ON';
+            const isSelected = showCallouts ? isOnOption : !isOnOption;
+            return createElement(
+              'button',
+              {
+                key: option,
+                type: 'button',
+                disabled: !hasData,
+                onClick: () => onUpdateDevice(dev.id, { showCallouts: isOnOption }),
+                className:
+                  (isSelected ? compactToggleOptionActiveClass : compactToggleOptionInactiveClass) +
+                  ' ' +
+                  compactToggleOptionBaseClass +
+                  (!hasData ? ' cursor-not-allowed' : ''),
+              },
+              option
+            );
+          })
+        ),
+      ]
+    );
+  const renderDisplayToggles = () =>
+    createElement(
+      'div',
+      {
+        key: 'display-toggles',
+        className: 'flex flex-wrap items-center gap-2',
+      },
+      [renderLayerBar(), renderCalloutsToggle()].filter(Boolean)
+    );
 
   const handleShare = () => {
     if (!hasData) return;
@@ -1174,7 +1239,9 @@ export function DeviceSlot({
       onDragLeave: onDragLeave,
       onDrop: (e) => onDrop(e, dev.id),
       className:
-        (isLightApp ? 'bg-white/80 border-slate-200' : 'bg-slate-900/40 border-slate-800') +
+        (isLightApp
+          ? 'bg-white/80 border-slate-200'
+          : 'bg-slate-900/65 border-slate-700 shadow-[0_18px_45px_rgba(2,8,23,0.28)]') +
         ' relative min-w-0 flex flex-col rounded-[2rem] border-2 transition-all px-4 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-8 ' +
         (dragOverTarget === dev.id ? 'border-blue-400 scale-[1.01]' : ''),
     },
@@ -1389,27 +1456,6 @@ export function DeviceSlot({
                     createElement(
                       'button',
                       {
-                        key: 'callouts-btn',
-                        onClick: () => onUpdateDevice(dev.id, { showCallouts: !showCallouts }),
-                        disabled: !hasData,
-                        className:
-                          (showCallouts
-                            ? isLightApp
-                              ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 border-transparent'
-                              : 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border-blue-500/30'
-                            : isLightApp
-                              ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200'
-                              : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 border-slate-700/50') +
-                          ' ' +
-                          actionButtonClass +
-                          ' ' +
-                          (!hasData ? 'opacity-40 cursor-not-allowed border-dashed ' : ''),
-                      },
-                      'CALLOUTS'
-                    ),
-                    createElement(
-                      'button',
-                      {
                         key: 'share-btn',
                         onClick: handleShare,
                         disabled: !hasData,
@@ -1432,16 +1478,16 @@ export function DeviceSlot({
                       {
                         key: 'export-btn',
                         onClick: () => onSetExportModal(dev),
-                        className: primaryActionButtonClass,
+                        className: neutralActionButtonClass,
                       },
                       'EXPORT'
                     ),
                   ]
                 ),
-                renderLayerBar(),
+                renderDisplayToggles(),
               ]
             : [
-                renderLayerBar(),
+                renderDisplayToggles(),
                 createElement(
                   'div',
                   {
@@ -1470,27 +1516,6 @@ export function DeviceSlot({
                     createElement(
                       'button',
                       {
-                        key: 'callouts-btn',
-                        onClick: () => onUpdateDevice(dev.id, { showCallouts: !showCallouts }),
-                        disabled: !hasData,
-                        className:
-                          (showCallouts
-                            ? isLightApp
-                              ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 border-transparent'
-                              : 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border-blue-500/30'
-                            : isLightApp
-                              ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200'
-                              : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 border-slate-700/50') +
-                          ' ' +
-                          actionButtonClass +
-                          ' ' +
-                          (!hasData ? 'opacity-40 cursor-not-allowed border-dashed ' : ''),
-                      },
-                      'CALLOUTS'
-                    ),
-                    createElement(
-                      'button',
-                      {
                         key: 'share-btn',
                         onClick: handleShare,
                         disabled: !hasData,
@@ -1513,7 +1538,7 @@ export function DeviceSlot({
                       {
                         key: 'export-btn',
                         onClick: () => onSetExportModal(dev),
-                        className: primaryActionButtonClass,
+                        className: neutralActionButtonClass,
                       },
                       'EXPORT'
                     ),
@@ -1577,7 +1602,7 @@ export function DeviceSlot({
                     layoutOptions: dev.layoutOptions || {},
                     onScaleMetricsChange: handleScaleMetricsChange,
                     keyAnnotations: currentLayerAnnotations,
-                    showCallouts,
+                    showCallouts: shouldRenderCallouts,
                     onEditKey: handleOpenKeyEdit,
                     onKeysChange: setLocalFilteredKeys,
                     onKeyHover: handleKeyHover,

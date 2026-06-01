@@ -232,7 +232,11 @@ export function Keyboard({
 
     let border, boxShadow;
 
-    if (isLight) {
+    if (isLight && isAppDark) {
+      border = '2px solid rgba(226, 232, 240, 0.92)';
+      boxShadow =
+        '0 16px 36px -16px rgba(2, 8, 23, 0.38), inset 0 2px 4px rgba(255,255,255,0.95), inset 0 -8px 18px rgba(100,116,139,0.22)';
+    } else if (isLight) {
       border = '2px solid rgba(203, 213, 225, 0.5)';
       boxShadow = 'inset 0 2px 10px rgba(0,0,0,0.05)';
     } else if (isAppDark) {
@@ -346,7 +350,10 @@ export function Keyboard({
     if (isSeparationEnabled && splitX !== null) return null;
 
     let background;
-    if (isLight) {
+    if (isLight && isAppDark) {
+      background =
+        'linear-gradient(145deg, rgba(248,250,252,0.98) 0%, rgba(224,231,239,0.96) 26%, rgba(191,201,215,0.98) 56%, rgba(232,238,245,0.97) 100%)';
+    } else if (isLight) {
       background = 'rgba(226, 232, 240, 0.8)';
     } else if (isAppDark) {
       background =
@@ -369,7 +376,10 @@ export function Keyboard({
 
   const getCaseBgFillStyle = () => {
     let background;
-    if (isLight) {
+    if (isLight && isAppDark) {
+      background =
+        'linear-gradient(145deg, rgba(248,250,252,0.98) 0%, rgba(224,231,239,0.96) 26%, rgba(191,201,215,0.98) 56%, rgba(232,238,245,0.97) 100%)';
+    } else if (isLight) {
       background = 'rgba(226, 232, 240, 0.8)';
     } else if (isAppDark) {
       background =

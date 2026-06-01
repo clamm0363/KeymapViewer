@@ -3,8 +3,8 @@ const { createElement, useRef, useLayoutEffect, useState } = React;
 // エンコーダのアクション行を描画する純粋ヘルパー関数
 function renderEncoderActionRow(label, actionInfo, isLight, key) {
   const labelColClass = isLight ? 'text-slate-400' : 'text-slate-500';
-  const secondaryTextClass = isLight ? 'text-slate-600' : 'text-slate-300';
-  const tertiaryTextClass = isLight ? 'text-slate-500' : 'text-slate-400';
+  const secondaryTextClass = isLight ? 'text-slate-600' : 'text-slate-200';
+  const tertiaryTextClass = isLight ? 'text-slate-500' : 'text-slate-300';
   return createElement(
     'div',
     { key, className: 'flex flex-col gap-0.5' },
@@ -163,9 +163,9 @@ export function KeycapTooltipOverlay({ activeTooltip, isLight }) {
 
   const labelColClass = isLight ? 'text-slate-400' : 'text-slate-500';
   const annotationTitleClass = isLight ? 'text-blue-600' : 'text-blue-400';
-  const secondaryTextClass = isLight ? 'text-slate-600' : 'text-slate-300';
-  const tertiaryTextClass = isLight ? 'text-slate-500' : 'text-slate-400';
-  const debugTextClass = isLight ? 'text-slate-500' : 'text-slate-500';
+  const secondaryTextClass = isLight ? 'text-slate-600' : 'text-slate-200';
+  const tertiaryTextClass = isLight ? 'text-slate-500' : 'text-slate-300';
+  const debugTextClass = isLight ? 'text-slate-500' : 'text-slate-300';
 
   const children = [];
 
