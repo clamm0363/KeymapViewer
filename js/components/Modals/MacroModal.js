@@ -12,12 +12,12 @@ export function MacroModal({ isLightApp, device, macroModalState, onClose, onUpd
 
   return createElement(
     'div',
-    {
-      key: 'macro-modal',
-      className:
-        'fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm',
-      onClick: onClose,
-    },
+        {
+          key: 'macro-modal',
+          className:
+            'fixed inset-0 z-[240] flex items-center justify-center bg-black/60 backdrop-blur-sm',
+          onClick: onClose,
+        },
     [
       createElement(
         'div',

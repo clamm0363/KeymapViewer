@@ -5,6 +5,9 @@ export function KeyAnnotationModal({
   matrixKey,
   layer = 0,
   currentAnnotation, // null or { customText, description, iconKey }
+  macroId = null,
+  macroAlias = '',
+  macroContent = '',
   onSave,            // ({ customText, description, iconKey }) => void
   onClear,           // () => void
   onClose,           // () => void
@@ -12,6 +15,8 @@ export function KeyAnnotationModal({
   const [customText, setCustomText] = useState(currentAnnotation?.customText || '');
   const [description, setDescription] = useState(currentAnnotation?.description || '');
   const [iconKey] = useState(currentAnnotation?.iconKey || '');
+  const [alias, setAlias] = useState(macroAlias || '');
+  const hasMacro = macroId !== null && macroId !== undefined;
 
   const bgClass = isLightApp ? 'bg-slate-50 text-slate-800' : 'bg-slate-900 text-slate-100';
   const borderClass = isLightApp ? 'border-slate-200' : 'border-slate-800';
@@ -26,6 +31,7 @@ export function KeyAnnotationModal({
       customText: customText.trim(),
       description: description.trim(),
       iconKey,
+      macroAlias: alias.trim(),
     });
   };
 
@@ -55,7 +61,7 @@ export function KeyAnnotationModal({
                 className: 'text-sm font-black uppercase tracking-widest text-blue-500',
                 style: { fontFamily: "'Outfit', sans-serif" },
               },
-              `Key Annotation (L${layer} / ${matrixKey})`
+              `Key Editor (L${layer} / ${matrixKey})`
             ),
             createElement(
               'button',
@@ -94,6 +100,55 @@ export function KeyAnnotationModal({
             }),
           ]),
 
+          hasMacro &&
+            createElement('div', { key: 'field-macro', className: 'flex flex-col gap-3' }, [
+              createElement(
+                'div',
+                {
+                  key: 'macro-card',
+                  className:
+                    'rounded-2xl border px-4 py-3 ' +
+                    (isLightApp ? 'bg-blue-50/70 border-blue-100' : 'bg-slate-950 border-slate-800'),
+                },
+                [
+                  createElement(
+                    'div',
+                    {
+                      key: 'macro-heading',
+                      className: 'text-[10px] font-black uppercase tracking-widest text-blue-500',
+                      style: { fontFamily: "'Outfit', sans-serif" },
+                    },
+                    `Macro M(${macroId})`
+                  ),
+                  createElement(
+                    'div',
+                    {
+                      key: 'macro-content',
+                      className:
+                        'mt-1 text-[11px] leading-relaxed break-all whitespace-pre-wrap ' +
+                        (isLightApp ? 'text-slate-600' : 'text-slate-400'),
+                    },
+                    macroContent || 'Empty'
+                  ),
+                ]
+              ),
+              createElement('div', { key: 'macro-alias-wrap' }, [
+                createElement(
+                  'label',
+                  { className: labelClass, style: { fontFamily: "'Outfit', sans-serif" } },
+                  'Macro Alias'
+                ),
+                createElement('input', {
+                  type: 'text',
+                  value: alias,
+                  onChange: (e) => setAlias(e.target.value),
+                  placeholder: 'e.g. TASK VIEW',
+                  className: `w-full px-4 py-3 rounded-xl border ${inputBgClass} ${inputFocusClass} text-xs font-semibold`,
+                  maxLength: 60,
+                }),
+              ]),
+            ]),
+
           // Field: Icon selection (Future Expansion)
           createElement('div', { key: 'field-icon' }, [
             createElement('label', { className: labelClass, style: { fontFamily: "'Outfit', sans-serif" } }, 'SVG Icon'),
@@ -107,7 +162,7 @@ export function KeyAnnotationModal({
           ]),
 
           // Actions
-          createElement('div', { key: 'modal-actions', className: 'flex gap-3 justify-end mt-2' }, [
+          createElement('div', { key: 'modal-actions', className: 'flex gap-3 mt-2' }, [
             // Delete Annotation Button (Visible only if currentAnnotation exists)
             currentAnnotation &&
               createElement(
@@ -116,10 +171,11 @@ export function KeyAnnotationModal({
                   key: 'btn-clear',
                   type: 'button',
                   onClick: onClear,
-                  className: 'mr-auto py-2.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl text-2xs font-black uppercase tracking-widest transition-all',
+                  className:
+                    'flex-1 py-2.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl text-2xs font-black uppercase tracking-widest transition-all text-center',
                   style: { fontFamily: "'Outfit', sans-serif" },
                 },
-                'Clear / 削除'
+                'CLEAR'
               ),
 
             // Cancel Button
@@ -129,9 +185,11 @@ export function KeyAnnotationModal({
                 key: 'btn-cancel',
                 type: 'button',
                 onClick: onClose,
-                className: 'py-2.5 px-4 opacity-70 hover:opacity-100 text-xs font-bold transition-all',
+                className:
+                  'flex-1 py-2.5 px-4 rounded-xl border border-slate-300/60 bg-transparent opacity-70 hover:opacity-100 text-2xs font-black uppercase tracking-widest transition-all text-center',
+                style: { fontFamily: "'Outfit', sans-serif" },
               },
-              'Cancel'
+              'CANCEL'
             ),
 
             // Save Button
@@ -140,10 +198,11 @@ export function KeyAnnotationModal({
               {
                 key: 'btn-save',
                 type: 'submit',
-                className: 'py-2.5 px-5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-2xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20',
+                className:
+                  'flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-2xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20 text-center',
                 style: { fontFamily: "'Outfit', sans-serif" },
               },
-              'Save / 保存'
+              'SAVE'
             ),
           ]),
         ]

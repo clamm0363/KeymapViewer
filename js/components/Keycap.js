@@ -24,7 +24,6 @@ export function Keycap({
   displayMode,
   keyStyle,
   macroAliases,
-  onMacroClick,
   encoderStyles,
   inputDeviceSettings,
   layer,
@@ -34,7 +33,7 @@ export function Keycap({
   isAppDark,
   matrixKey,
   annotation,
-  onAnnotateKey,
+  onEditKey,
   onKeyHover,
   onKeyHoverLeave,
 }) {
@@ -109,7 +108,6 @@ export function Keycap({
       i,
       val,
       fullRaw,
-      onMacroClick,
       encoderStyles,
       inputDeviceSettings,
       encodersSource,
@@ -121,7 +119,7 @@ export function Keycap({
       isAppDark,
       matrixKey,
       annotation,
-      onAnnotateKey,
+      onEditKey,
       onKeyHover,
       onKeyHoverLeave,
     });
@@ -329,15 +327,12 @@ export function Keycap({
       'data-key-raw': displayRaw,
       onClick: (e) => {
         const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);
-        if (macroMatch && onMacroClick) {
+        if (onEditKey) {
           e.stopPropagation();
-          onMacroClick(parseInt(macroMatch[1], 10));
-        }
-      },
-      onContextMenu: (e) => {
-        if (onAnnotateKey) {
-          e.preventDefault();
-          onAnnotateKey(matrixKey);
+          onEditKey({
+            matrixKey,
+            macroId: macroMatch ? parseInt(macroMatch[1], 10) : null,
+          });
         }
       },
       onMouseEnter: (e) => {

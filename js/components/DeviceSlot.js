@@ -148,36 +148,55 @@ export function DeviceSlot({
   onScaleMetricsChange,
 }) {
   const [copied, setCopied] = useState(false);
-  const [annotatingKey, setAnnotatingKey] = useState(null);
+  const [editingKey, setEditingKey] = useState(null);
   const [localScaleMetrics, setLocalScaleMetrics] = useState(null);
   const [localFilteredKeys, setLocalFilteredKeys] = useState([]);
   const currentLayer = Number(dev.layer) || 0;
   const currentLayerAnnotations = getLayerAnnotations(dev.keyAnnotations || {}, currentLayer);
 
-  const handleAnnotationSave = (data) => {
-    if (!annotatingKey) return;
-    onUpdateDevice(dev.id, {
+  const handleKeyEditSave = (data) => {
+    if (!editingKey) return;
+
+    const nextUpdate = {
       keyAnnotations: setAnnotation(
         dev.keyAnnotations || {},
-        annotatingKey.matrixKey,
+        editingKey.matrixKey,
         data,
-        annotatingKey.layer
-      )
-    });
-    setAnnotatingKey(null);
+        editingKey.layer
+      ),
+    };
+
+    if (editingKey.macroId !== null && editingKey.macroId !== undefined) {
+      nextUpdate.macroAliases = {
+        ...(dev.macroAliases || {}),
+        [editingKey.macroId]: data?.macroAlias || '',
+      };
+    }
+
+    onUpdateDevice(dev.id, nextUpdate);
+    setEditingKey(null);
   };
   
   const handleAnnotationClear = () => {
-    if (!annotatingKey) return;
+    if (!editingKey) return;
     onUpdateDevice(dev.id, {
       keyAnnotations: clearAnnotation(
         dev.keyAnnotations || {},
-        annotatingKey.matrixKey,
-        annotatingKey.layer
-      )
+        editingKey.matrixKey,
+        editingKey.layer
+      ),
     });
-    setAnnotatingKey(null);
+    setEditingKey(null);
   };
+  const handleOpenKeyEdit = useCallback(
+    (payload) => {
+      setEditingKey({
+        ...payload,
+        layer: currentLayer,
+      });
+    },
+    [currentLayer]
+  );
   const isGridLayout = layoutMode === 'grid';
   const hasData = !!dev.design;
   const encoderIndices = getEncoderIndices(dev.design);
@@ -1550,7 +1569,6 @@ export function DeviceSlot({
                     theme: dev.theme || 'System',
                     appTheme: appTheme,
                     macroAliases: dev.macroAliases || {},
-                    onMacroClick: (macroId) => onSetMacroModal({ deviceId: dev.id, macroId }),
                     keyStyle: dev.keyStyle || 'Windows',
                     userScale: currentDisplayScale,
                     separation: dev.separation || 'DISABLE',
@@ -1560,7 +1578,7 @@ export function DeviceSlot({
                     onScaleMetricsChange: handleScaleMetricsChange,
                     keyAnnotations: currentLayerAnnotations,
                     showCallouts,
-                    onAnnotateKey: (matrixKey) => setAnnotatingKey({ matrixKey, layer: currentLayer }),
+                    onEditKey: handleOpenKeyEdit,
                     onKeysChange: setLocalFilteredKeys,
                     onKeyHover: handleKeyHover,
                     onKeyHoverLeave: handleKeyHoverLeave,
@@ -1620,20 +1638,29 @@ export function DeviceSlot({
               'Waiting for Data'
             ),
           ]),
-      annotatingKey !== null &&
+      editingKey !== null &&
         createElement(KeyAnnotationModal, {
           key: 'annotation-modal',
           isLightApp,
-          matrixKey: annotatingKey.matrixKey,
-          layer: annotatingKey.layer,
+          matrixKey: editingKey.matrixKey,
+          layer: editingKey.layer,
           currentAnnotation: getAnnotation(
             dev.keyAnnotations || {},
-            annotatingKey.matrixKey,
-            annotatingKey.layer
+            editingKey.matrixKey,
+            editingKey.layer
           ),
-          onSave: handleAnnotationSave,
+          macroId: editingKey.macroId,
+          macroAlias:
+            editingKey.macroId !== null && editingKey.macroId !== undefined
+              ? (dev.macroAliases && dev.macroAliases[editingKey.macroId]) || ''
+              : '',
+          macroContent:
+            editingKey.macroId !== null && editingKey.macroId !== undefined
+              ? ((dev.keymapJson && dev.keymapJson.macros) || [])[editingKey.macroId] || ''
+              : '',
+          onSave: handleKeyEditSave,
           onClear: handleAnnotationClear,
-          onClose: () => setAnnotatingKey(null),
+          onClose: () => setEditingKey(null),
         }),
     ]
   );

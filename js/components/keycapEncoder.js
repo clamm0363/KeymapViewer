@@ -304,7 +304,6 @@ export function renderEncoderKeycap({
   i,
   val,
   fullRaw,
-  onMacroClick,
   encoderStyles,
   inputDeviceSettings,
   encodersSource,
@@ -316,7 +315,7 @@ export function renderEncoderKeycap({
   isAppDark,
   matrixKey,
   annotation,
-  onAnnotateKey,
+  onEditKey,
   onKeyHover,
   onKeyHoverLeave,
 }) {
@@ -377,15 +376,13 @@ export function renderEncoderKeycap({
       'data-key-raw': displayRaw,
       onClick: (e) => {
         const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);
-        if (macroMatch && onMacroClick) {
+        if (onEditKey) {
           e.stopPropagation();
-          onMacroClick(parseInt(macroMatch[1], 10));
-        }
-      },
-      onContextMenu: (e) => {
-        if (onAnnotateKey) {
-          e.preventDefault();
-          onAnnotateKey(matrixKey);
+          onEditKey({
+            matrixKey,
+            macroId: macroMatch ? parseInt(macroMatch[1], 10) : null,
+            isEncoder: true,
+          });
         }
       },
       onMouseEnter: (e) => {
