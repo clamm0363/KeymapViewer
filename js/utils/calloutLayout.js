@@ -1,4 +1,4 @@
-export const CALLOUT_MAX_WIDTH = 280;
+export const CALLOUT_MAX_WIDTH = 300;
 export const CALLOUT_MIN_WIDTH = 160;
 export const CALLOUT_LINE_LENGTH = 48;
 export const CALLOUT_SAFE_PADDING = 4;
@@ -8,16 +8,30 @@ export const CALLOUT_TOP_OFFSET = 4;
 export const CALLOUT_COLUMN_GAP = 16;
 export const CALLOUT_ROW_GAP = 20;
 
-const TITLE_LINE_HEIGHT = 15;
-const DESCRIPTION_LINE_HEIGHT = 14;
-const BOX_VERTICAL_PADDING = 16;
-const TITLE_BOTTOM_GAP = 4;
-const WIDTH_PER_CHARACTER = 9;
+const TITLE_LINE_HEIGHT = 17;
+const DESCRIPTION_LINE_HEIGHT = 16;
+const BOX_VERTICAL_PADDING = 20;
+const TITLE_BOTTOM_GAP = 6;
 const INNER_HORIZONTAL_PADDING = 28;
-const STACK_HEIGHT_SAFETY = 10;
+const STACK_HEIGHT_SAFETY = 18;
 
 function normalizeAnnotationText(value) {
   return String(value || '').trim();
+}
+
+function getVisualLength(text) {
+  if (!text) return 0;
+  let len = 0;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    // ASCII/制御文字は半角(1)、それ以外は全角(2)として幅を換算
+    if (code >= 0x00 && code <= 0x7f) {
+      len += 1;
+    } else {
+      len += 2;
+    }
+  }
+  return len;
 }
 
 function estimateWrappedLineCount(text, charsPerLine) {
@@ -25,7 +39,7 @@ function estimateWrappedLineCount(text, charsPerLine) {
 
   return text
     .split('\n')
-    .map((line) => Math.max(1, Math.ceil(line.length / charsPerLine)))
+    .map((line) => Math.max(1, Math.ceil(getVisualLength(line) / charsPerLine)))
     .reduce((sum, count) => sum + count, 0);
 }
 
@@ -40,8 +54,8 @@ function estimateCalloutWidth({ customText, description }) {
     return CALLOUT_MIN_WIDTH;
   }
 
-  const longestLine = lines.reduce((max, line) => Math.max(max, line.length), 0);
-  const estimatedWidth = longestLine * WIDTH_PER_CHARACTER + INNER_HORIZONTAL_PADDING;
+  const longestLine = lines.reduce((max, line) => Math.max(max, getVisualLength(line)), 0);
+  const estimatedWidth = (longestLine * 7.8 + INNER_HORIZONTAL_PADDING) * 1.25;
 
   return clamp(estimatedWidth, CALLOUT_MIN_WIDTH, CALLOUT_MAX_WIDTH);
 }
@@ -49,7 +63,7 @@ function estimateCalloutWidth({ customText, description }) {
 function estimateCalloutHeight({ customText, description, estimatedWidth }) {
   const usableCharsPerLine = Math.max(
     8,
-    Math.floor((estimatedWidth - INNER_HORIZONTAL_PADDING) / WIDTH_PER_CHARACTER)
+    Math.floor((estimatedWidth - INNER_HORIZONTAL_PADDING) / 7.8)
   );
   const titleCharsPerLine = Math.max(6, usableCharsPerLine - 2);
   const descriptionCharsPerLine = usableCharsPerLine;
@@ -66,6 +80,67 @@ function estimateCalloutHeight({ customText, description, estimatedWidth }) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function resolveOverlap(calloutsList, keyboardBottomY) {
+  if (calloutsList.length <= 1) return;
+
+  // 1. 本来の物理的位置 (lineStartY) で昇順ソートする
+  calloutsList.sort((a, b) => a.lineStartY - b.lineStartY);
+
+  const GAP = 12; // コールアウト間の最小隙間
+
+  // 2. 上から下へのスキャン（下方向への押し出しで重なりを解決）
+  for (let i = 1; i < calloutsList.length; i++) {
+    const prev = calloutsList[i - 1];
+    const curr = calloutsList[i];
+    const minTop = prev.boxTop + prev.estimatedHeight + GAP;
+    if (curr.boxTop < minTop) {
+      curr.boxTop = minTop;
+    }
+  }
+
+  // 3. 上方スペースの最大活用（アグレッシブ・トップシフト）
+  // 複数アノテーションがある場合、最上部の boxTop が CALLOUT_SAFE_PADDING に達するまで
+  // 全体を上にシフトして、上部の広大なデッドスペースを最大限に活用します。
+  if (calloutsList.length >= 2) {
+    const maxUpShift = calloutsList[0].boxTop - CALLOUT_SAFE_PADDING;
+    if (maxUpShift > 0) {
+      for (let i = 0; i < calloutsList.length; i++) {
+        calloutsList[i].boxTop -= maxUpShift;
+      }
+    }
+  }
+
+  // 4. 下端オーバーフロー時の上方向への押し戻し
+  const maxBottom = keyboardBottomY - CALLOUT_SAFE_PADDING;
+  const lastIndex = calloutsList.length - 1;
+  if (calloutsList[lastIndex].boxTop + calloutsList[lastIndex].estimatedHeight > maxBottom) {
+    calloutsList[lastIndex].boxTop = maxBottom - calloutsList[lastIndex].estimatedHeight;
+
+    for (let i = lastIndex - 1; i >= 0; i--) {
+      const next = calloutsList[i + 1];
+      const curr = calloutsList[i];
+      const maxTop = next.boxTop - curr.estimatedHeight - GAP;
+      if (curr.boxTop > maxTop) {
+        curr.boxTop = maxTop;
+      }
+    }
+  }
+
+  // 5. 最上部が安全領域を越えないように上端を最終クランプ（押し戻しによって上にはみ出た場合）
+  if (calloutsList[0].boxTop < CALLOUT_SAFE_PADDING) {
+    calloutsList[0].boxTop = CALLOUT_SAFE_PADDING;
+    // 上端を固定したので、再度下方向へ順に押し下げていく
+    for (let i = 1; i < calloutsList.length; i++) {
+      const prev = calloutsList[i - 1];
+      const curr = calloutsList[i];
+      const minTop = prev.boxTop + prev.estimatedHeight + GAP;
+      if (curr.boxTop < minTop) {
+        curr.boxTop = minTop;
+      }
+    }
+  }
 }
 
 function getColumnLefts(svgWidth) {
@@ -110,7 +185,8 @@ export function buildCalloutOverlayModel({
   const keyboardHeight = maxHeight * finalScale + CALLOUT_TOP_OFFSET * 2;
   const keyboardBottomY = CALLOUT_TOP_OFFSET + maxHeight * finalScale;
 
-  const callouts = [];
+  const leftSideCallouts = [];
+  const rightSideCallouts = [];
   const fallbackCandidates = [];
 
   keys.forEach((key) => {
@@ -164,7 +240,7 @@ export function buildCalloutOverlayModel({
       return;
     }
 
-    callouts.push({
+    const calloutObj = {
       keyId: matrixKey,
       placement: isLeftSide ? 'left' : 'right',
       lineStartX: isLeftSide ? screenKeyLeftEdge : screenKeyRightEdge,
@@ -172,14 +248,36 @@ export function buildCalloutOverlayModel({
       lineEndX: isLeftSide
         ? sideBoxLeft + estimatedWidth
         : sideBoxLeft,
-      lineEndY: clamp(screenCenterY, sideBoxTop, sideBoxTop + estimatedHeight),
+      lineEndY: screenCenterY, // 衝突解決後に再計算するため一時的に代入
       boxLeft: sideBoxLeft,
       boxTop: sideBoxTop,
       estimatedHeight,
       estimatedWidth,
       customText,
       description,
-    });
+    };
+
+    if (isLeftSide) {
+      leftSideCallouts.push(calloutObj);
+    } else {
+      rightSideCallouts.push(calloutObj);
+    }
+  });
+
+  // 左右それぞれで重なりを解消
+  resolveOverlap(leftSideCallouts, keyboardBottomY);
+  resolveOverlap(rightSideCallouts, keyboardBottomY);
+
+  const callouts = [];
+
+  // スライドされた boxTop に基づいて lineEndY を正しく再計算し、最終リストに集約
+  [...leftSideCallouts, ...rightSideCallouts].forEach((callout) => {
+    callout.lineEndY = clamp(
+      callout.lineStartY,
+      callout.boxTop,
+      callout.boxTop + callout.estimatedHeight
+    );
+    callouts.push(callout);
   });
 
   if (fallbackCandidates.length > 0) {
@@ -239,17 +337,20 @@ export function buildCalloutOverlayModel({
     return null;
   }
 
+  const hasBelow = callouts.some((callout) => callout.placement === 'below');
   const fallbackBottom =
     callouts
-      .filter((callout) => callout.placement === 'below')
       .reduce((max, callout) => Math.max(max, callout.boxTop + callout.estimatedHeight), 0) || 0;
-  const bottomPadding =
-    fallbackBottom > 0
-      ? Math.max(
-          CALLOUT_BOTTOM_PADDING,
-          Math.ceil(fallbackBottom - keyboardHeight + CALLOUT_SAFE_PADDING)
-        )
-      : 0;
+
+  let bottomPadding = 0;
+  if (fallbackBottom > 0) {
+    const overflowDiff = Math.ceil(fallbackBottom - keyboardHeight + CALLOUT_SAFE_PADDING);
+    if (hasBelow) {
+      bottomPadding = Math.max(CALLOUT_BOTTOM_PADDING, overflowDiff);
+    } else {
+      bottomPadding = Math.max(0, overflowDiff);
+    }
+  }
 
   return {
     callouts,

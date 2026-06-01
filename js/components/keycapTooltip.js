@@ -121,7 +121,7 @@ export function buildStandardKeyTooltip(
   const lines = [];
 
   if (annotation) {
-    if (annotation.customText) lines.push(`📌 ${annotation.customText}`);
+    if (annotation.customText) lines.push(`${annotation.customText}`);
     if (annotation.description) lines.push(`   ${annotation.description}`);
     if (annotation.customText || annotation.description) lines.push('----');
   }
@@ -171,7 +171,7 @@ export function buildEncoderTooltip({
   const lines = [];
 
   if (annotation) {
-    if (annotation.customText) lines.push(`📌 ${annotation.customText}`);
+    if (annotation.customText) lines.push(`${annotation.customText}`);
     if (annotation.description) lines.push(`   ${annotation.description}`);
     if (annotation.customText || annotation.description) lines.push('----');
   }
@@ -207,4 +207,97 @@ export function buildEncoderTooltip({
     buildEncoderActionTooltip('CCW (Counter-Clockwise)', ccwLabel, ccwCode, keyStyle, macros)
   );
   return joinTooltipLines(lines);
+}
+
+export function buildStandardHoverInfo(
+  code,
+  keyStyle = 'Windows',
+  macros = [],
+  inspectorData = null,
+  annotation = null
+) {
+  const tooltipInfo = getKeycodeTooltipInfo(code, code, keyStyle);
+  const debugLines = buildKeyInspectorTooltipLines(inspectorData);
+
+  const macroInfo = getMacroContentInfo(code, macros);
+  let macroSteps = null;
+  if (macroInfo && macroInfo.content) {
+    macroSteps = translateMacroContent(macroInfo.content, keyStyle);
+  }
+
+  return {
+    annotation,
+    officialCode: tooltipInfo.officialCode,
+    description: tooltipInfo.description,
+    inputCode: tooltipInfo.inputCode,
+    isAliasInput: tooltipInfo.isAliasInput,
+    macros: macroSteps,
+    debugLines,
+    isEncoder: false,
+  };
+}
+
+export function buildEncoderHoverInfo({
+  encoderIndex,
+  pushText,
+  pushCode,
+  macros = [],
+  keyStyle = 'Windows',
+  currentStyle,
+  ccwActions,
+  ccwLabel,
+  cwLabel,
+  ccwCode,
+  cwCode,
+  trackballCwPrefix = 'CW-MAPPED',
+  trackballCcwPrefix = 'CCW-MAPPED',
+  annotation = null,
+}) {
+  const pushInfo = {
+    label: pushText,
+    code: pushCode || 'KC_NO',
+    desc: getKeycodeTooltipInfo(pushCode || 'KC_NO', pushCode || 'KC_NO', keyStyle).description,
+  };
+
+  let cwInfo = null;
+  let ccwInfo = null;
+
+  if (ccwActions) {
+    let cwPrefix = 'CW (Clockwise)';
+    let ccwPrefix = 'CCW (Counter-Clockwise)';
+
+    if (currentStyle === 'VerticalWheel') {
+      cwPrefix = 'UP';
+      ccwPrefix = 'DOWN';
+    } else if (currentStyle === 'HorizontalWheel') {
+      cwPrefix = 'RIGHT';
+      ccwPrefix = 'LEFT';
+    } else if (currentStyle === 'Trackball' || currentStyle === 'Touchpad') {
+      cwPrefix = trackballCwPrefix;
+      ccwPrefix = trackballCcwPrefix;
+    }
+
+    cwInfo = {
+      prefix: cwPrefix,
+      label: cwLabel,
+      code: cwCode,
+      desc: getKeycodeTooltipInfo(cwCode, cwCode, keyStyle).description,
+    };
+
+    ccwInfo = {
+      prefix: ccwPrefix,
+      label: ccwLabel,
+      code: ccwCode,
+      desc: getKeycodeTooltipInfo(ccwCode, ccwCode, keyStyle).description,
+    };
+  }
+
+  return {
+    annotation,
+    isEncoder: true,
+    encoderIndex,
+    pushInfo,
+    cwInfo,
+    ccwInfo,
+  };
 }

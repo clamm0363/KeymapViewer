@@ -13,6 +13,7 @@ import { setAnnotation, clearAnnotation } from '../utils/keyAnnotations.js';
 import { buildCalloutOverlayModel } from '../utils/calloutLayout.js';
 import { KeyAnnotationModal } from './KeyAnnotationModal.js';
 import { KeyCalloutOverlay } from './KeyCalloutOverlay.js';
+import { KeycapTooltipOverlay } from './KeycapTooltipOverlay.js';
 
 const MIN_DISPLAY_SCALE = 0.35;
 const MAX_DISPLAY_SCALE = 1.6;
@@ -175,6 +176,22 @@ export function DeviceSlot({
   const currentDisplayScale = normalizeDisplayScale(dev.displayScale);
   const isScaleFollowing = !!dev.followScale;
   const showCallouts = !!dev.showCallouts;
+  const [activeTooltip, setActiveTooltip] = useState(null);
+
+  const handleKeyHover = (e, hoverContentInfo) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setActiveTooltip({
+      x: rect.left + rect.width / 2,
+      y: rect.bottom,
+      keycapHeight: rect.height,
+      contentInfo: hoverContentInfo,
+      isFixed: true,
+    });
+  };
+
+  const handleKeyHoverLeave = () => {
+    setActiveTooltip(null);
+  };
   const layerOptions = (dev.keymapJson && dev.keymapJson.layers) ||
     (dev.design && dev.design.layers) || [0, 1, 2, 3];
   const totalLayerPages = Math.max(1, Math.ceil(layerOptions.length / MAX_VISIBLE_LAYER_BUTTONS));
@@ -1511,6 +1528,8 @@ export function DeviceSlot({
                     showCallouts,
                     onAnnotateKey: (matrixKey) => setAnnotatingKey(matrixKey),
                     onKeysChange: setLocalFilteredKeys,
+                    onKeyHover: handleKeyHover,
+                    onKeyHoverLeave: handleKeyHoverLeave,
                   })
                 )
               ),
@@ -1541,6 +1560,20 @@ export function DeviceSlot({
                     model: calloutOverlayModel,
                     isLight,
                     isAppDark: !isLightApp,
+                  });
+                })(),
+              activeTooltip &&
+                (() => {
+                  const isLight =
+                    dev.theme === 'Light' ||
+                    (dev.theme === 'System' &&
+                      window.matchMedia &&
+                      window.matchMedia('(prefers-color-scheme: light)').matches);
+                  
+                  return createElement(KeycapTooltipOverlay, {
+                    key: 'active-tooltip-overlay',
+                    activeTooltip,
+                    isLight,
                   });
                 })(),
             ]

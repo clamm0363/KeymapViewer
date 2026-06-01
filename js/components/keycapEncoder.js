@@ -2,7 +2,7 @@ const { createElement } = React;
 
 import { parseKeyLabel } from '../utils/labelParser.js';
 import { buildDisplayRaw } from './keycapIconUtils.js';
-import { buildEncoderTooltip } from './keycapTooltip.js';
+import { buildEncoderHoverInfo } from './keycapTooltip.js';
 import { getEncoderActions, getKeycapFrameStyle } from './keycapStyles.js';
 import { resolveInputDeviceSetting } from './inputDeviceSettings.js';
 
@@ -317,6 +317,8 @@ export function renderEncoderKeycap({
   matrixKey,
   annotation,
   onAnnotateKey,
+  onKeyHover,
+  onKeyHoverLeave,
 }) {
   const currentSetting = resolveInputDeviceSetting(
     inputDeviceSettings,
@@ -342,7 +344,7 @@ export function renderEncoderKeycap({
   const parsedPush = parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases, k.isJIS);
   const pushText = parsedPush.displayText;
   const { cwPrefix, ccwPrefix } = getTrackballTooltipPrefixes(cwCode, ccwCode);
-  const tooltipText = buildEncoderTooltip({
+  const hoverContentInfo = buildEncoderHoverInfo({
     encoderIndex: k.encoderIndex,
     pushText,
     pushCode: val,
@@ -372,7 +374,6 @@ export function renderEncoderKeycap({
     {
       key: i,
       className: containerClass,
-      title: tooltipText,
       'data-key-raw': displayRaw,
       onClick: (e) => {
         const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);
@@ -385,6 +386,16 @@ export function renderEncoderKeycap({
         if (onAnnotateKey) {
           e.preventDefault();
           onAnnotateKey(matrixKey);
+        }
+      },
+      onMouseEnter: (e) => {
+        if (onKeyHover) {
+          onKeyHover(e, hoverContentInfo);
+        }
+      },
+      onMouseLeave: () => {
+        if (onKeyHoverLeave) {
+          onKeyHoverLeave();
         }
       },
       style: getKeycapFrameStyle({

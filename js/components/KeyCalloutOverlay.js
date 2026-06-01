@@ -20,8 +20,9 @@ export function KeyCalloutOverlay({ model, isLight, _isAppDark }) {
       style: {
         position: 'absolute',
         top: 0,
-        left: 0,
-        width: '100%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: `${model.svgWidth}px`,
         height: `${model.overlayHeight}px`,
         pointerEvents: 'none',
         zIndex: 90,
@@ -85,8 +86,9 @@ export function KeyCalloutOverlay({ model, isLight, _isAppDark }) {
             'div',
             {
               style: {
-                width: 'fit-content',
+                width: `${callout.estimatedWidth}px`,
                 maxWidth: `${callout.estimatedWidth}px`,
+                flexShrink: 0,
                 padding: '8px 12px',
                 border: `1.2px solid ${borderCol}`,
                 borderRadius: '8px',
@@ -105,17 +107,17 @@ export function KeyCalloutOverlay({ model, isLight, _isAppDark }) {
                       key: 'custom-text',
                       style: {
                         fontFamily: "'Outfit', 'Noto Sans JP', sans-serif",
-                        fontSize: '11px',
+                        fontSize: '13px',
                         fontWeight: '700',
                         lineHeight: '1.35',
-                      marginBottom: callout.description ? '4px' : '0',
-                      color: textCol,
-                      textAlign: 'left',
-                      whiteSpace: 'pre-wrap',
-                      overflowWrap: 'anywhere',
+                        marginBottom: callout.description ? '6px' : '0',
+                        color: textCol,
+                        textAlign: 'left',
+                        whiteSpace: 'pre-wrap',
+                        overflowWrap: 'anywhere',
+                      },
                     },
-                  },
-                  callout.customText
+                    callout.customText
                   )
                 : null,
               callout.description
@@ -125,7 +127,7 @@ export function KeyCalloutOverlay({ model, isLight, _isAppDark }) {
                       key: 'description',
                       style: {
                         fontFamily: "'Outfit', 'Noto Sans JP', sans-serif",
-                        fontSize: '10px',
+                        fontSize: '12px',
                         fontWeight: '400',
                         opacity: 0.9,
                         lineHeight: '1.4',

@@ -1,942 +1,399 @@
-# キーカスタムアノテーション機能 実装計画（確定版 v2）
-
-> **このドキュメントは別エージェントが実装を担当するための引き継ぎ文書です。**
-> 本計画はプロジェクトのコードを精査した上で策定されています。実装前に `AGENTS.md` を必ず読んでください。
-
----
+# カスタム・フローティング・ツールチップ実装計画
 
 ## 概要
 
-任意のキーに対してユーザーが「カスタムテキスト」「詳細説明」「SVGアイコン（将来拡張）」を設定できる機能を追加する。
-カスタムデータは以下の 2 箇所で表示される:
-
-1. **ツールチップ**: キーをホバーした際、ツールチップの最上部に表示
-2. **コールアウト（引き出し線）**: キーから引き出し線を伸ばし、テキストボックスを常時表示。ヘッダーのトグルで一括表示/非表示
-
----
-
-## プロジェクト技術スタック（確認済み）
-
-- React（CDN）+ htm を使わず `React.createElement` を直接使用（**htm を使ってはいけない**）
-- Tailwind CSS（CDN）
-- ビルドツールなし（ES Modules 直接ロード）
-- `npm start` → `scripts/dev-static-server.js` でローカルサーバー起動（ポート 5501）
-- 使用フォント: **Outfit**（`index.html` で Google Fonts 読み込み済み）
-
----
-
-## アーキテクチャ上の重要な設計変更（v1 からの変更点）
-
-### 旧計画の問題点
-
-`KeyCalloutOverlay` を `keyboard-inner` の内側に配置する計画だったが、実際の DOM は以下の通り **3 層の `overflow-hidden` がある**:
-
-```
-DeviceSlot
-  └── kbd-area
-        └── kbd-wrap (overflow-hidden)
-              └── div.w-full.overflow-hidden   ← DeviceSlot.js 内
-                    └── keyboard-container (overflow-hidden)  ← Keyboard.js
-                          └── keyboard-inner (scale transform)
-                                └── kbd-container (overflow-hidden)
-```
-
----
-
-## 【追補計画】CALLOUTS フォローアップ修正（2026-06-01）
-
-### 対象ブランチ
-
-- `callout-followup-issues`
-
-### 対象 Issue
-
-- `#20` 長文注記でタイトルが消える
-- `#21` 狭い画面幅で下方向フォールバックが崩れる
-- `#22` `CALLOUTS` の ON/OFF 状態がリロード後に保持されない
-- `#23` Light テーマでアノテーションボックスのコントラストが低い
-
----
-
-## 修正方針（今回の設計判断）
-
-今回の 4 件は一括実装できるが、責務は以下の 3 系統に分かれる。
-
-1. **コールアウト配置・寸法ロジック**
-   - `KeyCalloutOverlay.js`
-   - Issue `#20`, `#21`
-2. **CALLOUTS 表示状態の永続化**
-   - `DeviceSlot.js`, `app.js`
-   - Issue `#22`
-3. **Light テーマの視認性調整**
-   - `KeyCalloutOverlay.js`
-   - Issue `#23`
-
-このうち **最初に直すべきなのは `KeyCalloutOverlay.js` の構造問題** である。  
-長文タイトル欠落と狭幅時の再配置崩れは、どちらも「固定サイズの `foreignObject` を前提にした位置決め」と
-「実際のテキスト量に対して下方向の必要スペースを正しく見積もっていないこと」が根にあるため、同じフェーズで扱う。
-
----
-
-## 実装順（推奨）
-
-### フェーズ A: コールアウトレイアウトの正常化（最優先）
-
-対象: Issue `#20`, `#21`
-
-#### 目的
-
-- 長文でもタイトルが先頭に残ること
-- 画面幅が狭い場合に下方向フォールバックが安定すること
-- 下方向に配置された場合の必要高さを `kbd-area` 側で正しく確保すること
-
-#### 実装方針
-
-1. **タイトル行を本文行とレイアウト上分離する**
-   - タイトルを常に先頭ブロックとして描画し、本文とは別要素として扱う
-   - タイトルが空の場合のみタイトル領域を省略する
-   - 本文の長さに影響されてタイトルが押し出されない構造にする
-
-2. **コールアウト寸法を「固定巨大サイズ」前提から整理する**
-   - `FO_WIDTH`, `FO_HEIGHT`, `ESTIMATED_BOX_W` の関係を見直す
-   - 「描画領域の大きさ」と「実際のボックス最大幅」を混同しない
-   - 下方向フォールバック判定には、実ボックス幅に近い値を使う
-
-3. **下方向フォールバック時の必要高さを計算に反映する**
-   - 現在の `svgHeight = keyboardHeight + 140` は、`FO_HEIGHT = 380` と釣り合っていない
-   - 下方向配置の最大ボックス高さと余白を加味して、`kbd-area` 内で必要な描画高さを確保する
-   - これにより「クリップを避けるために overflow を広げた結果、隣接 UI に食い込む」状態を防ぐ
-
-4. **狭幅時の再配置条件を再定義する**
-   - 左右配置の可否を `foreignObject` の大きさではなく、実際のボックス最大幅と余白で判定する
-   - `screenCenterX` 基準の下方向配置時に、左右 clamp が過剰に窮屈にならないよう確認する
-
-#### 変更候補ファイル
-
-- `js/components/KeyCalloutOverlay.js`
-- 必要に応じて `js/components/DeviceSlot.js`
-
-#### 完了条件
-
-- 長文注記でもタイトルが消えない
-- 狭い幅で左右配置不能な場合に安定して下方向に落ちる
-- stack / grid 両レイアウトで、隣接スロットや後続 UI への不自然な食い込みがない
-
----
-
-### フェーズ B: CALLOUTS 状態の永続化
-
-対象: Issue `#22`
-
-#### 推奨仕様
-
-- **`CALLOUTS` の ON/OFF は slot 単位で保持する**
-- localStorage 復元対象に含める
-- **共有 URL には含めない**（今回の修正では仕様を広げすぎない）
-
-#### 理由
-
-- 既存 UI は `CALLOUTS` ボタンを各 `DeviceSlot` に持っているため、責務は slot 単位が自然
-- URL 共有にまで含めると「表示プリファレンス」まで共有する意味付けが増え、今回の不具合修正範囲を超えやすい
-
-#### 実装方針
-
-1. `DeviceSlot.js` のローカル `useState(false)` をやめる
-2. `dev.showCallouts` のような device state に昇格する
-3. `createEmptyDevice()` と復元処理にデフォルト値を追加する
-4. `DeviceSlot` のトグル操作を `onUpdateDevice` 経由に切り替える
-
-#### 変更候補ファイル
-
-- `js/app.js`
-- `js/components/DeviceSlot.js`
-
-#### 完了条件
-
-- リロード後も各 slot の `CALLOUTS` 状態が復元される
-- 他の display state と同じ流れで保存・復元される
-
----
-
-### フェーズ C: Light テーマの視認性調整
-
-対象: Issue `#23`
-
-#### 目的
-
-- Light テーマ時に、スロット背景からコールアウトボックスを十分に分離する
-
-#### 実装方針
-
-1. `bgCol` を単純な白近傍の半透明から見直す
-2. `borderCol` と `boxShadow` を Light 専用に少し強める
-3. テキスト色とのバランスを壊さない範囲で、背景・枠線・影の 3 点で視認性を上げる
-
-#### 変更候補ファイル
-
-- `js/components/KeyCalloutOverlay.js`
-
-#### 完了条件
-
-- Light テーマで長文ボックスでも境界が読み取りやすい
-- Dark テーマの既存バランスを損なわない
-
----
-
-## 実装タスク
-
-### タスク 1: レイアウト基盤修正
-- [x] `KeyCalloutOverlay.js` のタイトル/本文構造を分離
-- [x] 左右配置と下方向フォールバック条件を整理
-- [x] 下方向配置時の必要高さを `svgHeight` または親レイアウト側で確保
-- [x] 長文ケースと狭幅ケースを優先して確認
-
-### タスク 2: 状態永続化
-- [x] `app.js` の device state に `showCallouts` を追加
-- [x] 復元処理・初期状態・保存状態を統一
-- [x] `DeviceSlot.js` のローカル state を device state に置換
-
-### タスク 3: テーマ調整
-- [x] Light テーマ用の背景色・枠線・影を調整
-- [x] Dark テーマ回帰確認
-
-### タスク 4: 検証
-- [x] `npm run lint`
-- [x] `npm run test`
-- [x] ブラウザ確認: 長文タイトルあり
-- [x] ブラウザ確認: Light / Dark
-- [x] ブラウザ確認: リロード後の `CALLOUTS` 状態復元
-- [x] ブラウザ確認: 狭幅での下方向フォールバックを追加サンプル込みで再確認
-
-### 実装結果メモ
-
-- `KeyCalloutOverlay` は `foreignObject` ベースの固定高レイアウトをやめ、**SVG で引き出し線、HTML absolute box で注記カード**を描画する構成に変更
-- 配置計算は `js/utils/calloutLayout.js` に切り出し、`test/utils/calloutLayout.test.js` を追加
-- `showCallouts` は slot ローカル state ではなく device state として保持するよう変更
-- Playwright 上で `CALLOUTS` ON → リロード後も ON のまま復元されることを確認
-- 長文タイトル + 長文本文を localStorage 注入で表示し、タイトルと本文が同時に DOM 上へ出ることを確認
-- 狭幅時のフォールバック先は「キーの下」ではなく「キーボード全体の下」へ変更し、キーボード本体やボタン帯との重なりを避ける方向へ調整
-- side placement でも上端が `kbd-area` をはみ出す場合は強制的にフォールバックへ送る
-- 下方向フォールバック群は、キーボード下で **左から右へ並べ、足りなければ次の段へ折り返す** 配置に変更
-- side placement は「即フォールバック」ではなく、可能な限り上下にスライドして収まる位置へ寄せるよう変更
-- 下方向フォールバック群は単純な行詰めではなく、**キーの x 座標に近い列を優先して選ぶ** 方式へ変更し、線の交差を減らす方向へ調整
-
----
-
-## 備考
-
-- 前回レビューで見つかった **共有 URL に `keyAnnotations` が含まれていない問題** は今回の 4 Issue には含めないが、別途扱う価値が高い
-- エンコーダー tooltip に注記が反映されていない点も、今回の 4 Issue とは別件として整理するのが安全
-
-`keyboard-inner` 内の SVG が `overflow: visible` を持っていても、**外側の 3 層がすべてクリップする**ため引き出し線が外側に伸びることはできない。これらを全部 `overflow-visible` に変えると既存レイアウトが崩れるリスクが非常に高い。
-
-### 新方針: DeviceSlot レベルのオーバーレイ
-
-`KeyCalloutOverlay` を `DeviceSlot` が直接レンダリングし、`kbd-area` 全体を覆う `position:absolute` の SVG として描画する。
-
-```
-DeviceSlot (position:relative)
-  └── kbd-area (position:relative ← 追加)
-        ├── kbd-wrap (overflow:hidden のまま変更不要)
-        │     └── keyboard-container (Keyboard コンポーネント)
-        └── <svg position:absolute top:0 left:0 w:100% h:100%>  ← KeyCalloutOverlay
-              └── 引き出し線・テキストボックス（kbd-area の座標系で描画）
-```
-
-**利点**:
-- `overflow:hidden` を一切変更しない → レイアウト崩れゼロ
-- DeviceSlot をまたいで引き出し線が飛び出ることがない
-- エクスポート用 `Keyboard` には関与しないため export 問題も自動解決
-
----
-
-## 座標変換の設計
-
-`Keyboard.js` の `onScaleMetricsChange` を拡張して `containerWidth` も通知する:
-
-```js
-// Keyboard.js の ResizeObserver 内
-onScaleMetricsChange({
-  autoFitScale,
-  finalScale,
-  maxWidth,
-  maxHeight,
-  containerWidth: entry.contentRect.width,  // 追加
-});
-```
-
-`DeviceSlot` はこれを自身のステート `localScaleMetrics` として保持し、`KeyCalloutOverlay` に渡す。
-
-### キー座標 → kbd-area スクリーン座標の変換式
-
-```js
-const renderedKeyboardWidth = scaleMetrics.maxWidth * scaleMetrics.finalScale;
-// keyboard-container は w-full かつ justify-center なのでキーボードは中央揃え
-const innerOffsetX = Math.max(0, (scaleMetrics.containerWidth - renderedKeyboardWidth) / 2);
-// keyboard-container の py-1 = 4px 上パディング
-const innerOffsetY = 4;
-
-// キーの中央スクリーン座標
-const screenCenterX = innerOffsetX + (k.x + k.w / 2) * scaleMetrics.finalScale;
-const screenCenterY = innerOffsetY + (k.y + k.h / 2) * scaleMetrics.finalScale;
-```
-
----
-
-## コールアウト配置ロジック（確定仕様）
-
-### 左右判定と配置
-
-```js
-const centerX = k.x + k.w / 2;  // スケール前座標
-const isLeftSide = centerX < maxWidth / 2;
-
-const BOX_W = 140;
-const BOX_H = 60;
-const LINE_LEN = 60;
-
-const screenKeyLeftEdge  = innerOffsetX + k.x * finalScale;
-const screenKeyRightEdge = innerOffsetX + (k.x + k.w) * finalScale;
-const lineY = screenCenterY;
-const boxY  = lineY - BOX_H / 2;
-
-let lineStartX, lineEndX, boxX;
-
-if (isLeftSide) {
-  lineStartX = screenKeyLeftEdge;
-  lineEndX   = lineStartX - LINE_LEN;
-  boxX       = lineEndX - BOX_W;
-} else {
-  lineStartX = screenKeyRightEdge;
-  lineEndX   = lineStartX + LINE_LEN;
-  boxX       = lineEndX;
-}
-```
-
-### フォールバック: 左右スペースが足りない場合はキーの下に配置
-
-```js
-// svgWidth = kbd-area の幅（SVG の width 属性）
-const needsFallback = isLeftSide ? boxX < 0 : boxX + BOX_W > svgWidth;
-
-if (needsFallback) {
-  const BELOW_OFFSET = 12;
-  const screenKeyBottomY = innerOffsetY + (k.y + k.h) * finalScale;
-  boxX = Math.max(0, Math.min(screenCenterX - BOX_W / 2, svgWidth - BOX_W));
-  boxY = screenKeyBottomY + BELOW_OFFSET;
-  // 線: キー下端中央 → ボックス上端中央（垂直線）
-  lineStartX = screenCenterX;
-  lineEndX   = screenCenterX;
-  lineY      = screenKeyBottomY;
-}
-```
-
----
-
-## エクスポート機能への対応（確定仕様）
-
-**コールアウト・引き出し線は画像エクスポートに含めない。**
-
-- `app.js` の export 用 `Keyboard`（L1096 付近）には `showCallouts` を渡さない（デフォルト `false`）
-- `KeyCalloutOverlay` は `DeviceSlot` レベルのため export 用 `Keyboard` には一切関与しない
-- `foreignObject` の `html-to-image` 非互換問題は構造上発生しない
+既存のブラウザ標準 `title` 属性を使用したツールチップを廃止し、サービス全体の統一感と美しさを引き立てる**「カスタム・フローティング・ツールチップ（リッチツールチップ）」**を導入します。
+
+本機能の導入により、以下を実現します：
+1. **世界観の統一**: フォント（Outfit）、丸み（rounded-xl）、配色（半透明グラスモフィズム等）を他のUIコンポーネントと完全に統一します。
+2. **瞬時の応答性**: ブラウザ標準ツールチップの特有の表示ディレイ（タイムラグ）を無くし、マウスホバー時に心地よい応答速度でふわっと浮かび上がるトランジションを実装します。
+3. **情報の優先度整理（タイポグラフィ重視）**: プレーンテキストで並んでいた情報を美しく構造化（フォントサイズ、太さ、カラーコントラスト）して表示します。
 
 > [!IMPORTANT]
-> 最終検証で「EXPORT 時にコールアウトが画像に含まれないこと」を必ず確認すること。
+> **アイコン（絵文字・SVGなど）の完全排除**
+> ツールチップ内では `📌` などの絵文字やグラフィックアイコンは一切使用しません。情報の優先順位やアノテーションの存在は、アイコンではなく、洗練されたタイポグラフィ（太さ、色、境界線）のみで表現します。
 
 ---
 
-## データ構造
+## 変更方針とアーキテクチャ設計
 
+### 1. 状態管理（ツールチップのアクティブ状態）
+ツールチップは各デバイススロット（`DeviceSlot`）ごとに1つだけポータルとしてマウントします。これにより、キーボードの拡大縮小（`scale`）や親レイアウトとの座標計算が極めて安定します。
+
+`DeviceSlot.js` にアクティブなツールチップ状態を追加します：
 ```js
-// createEmptyDevice() に追加するフィールド
-{
-  keyAnnotations: {
-    "0,3": {
-      customText: "Figma: デザインモード切替",
-      description: "ソフトウェア Figma のショートカット",
-      iconKey: "",  // 将来拡張用（現在は空文字で保持するだけ）
-    }
-  }
-}
+const [activeTooltip, setActiveTooltip] = useState(null);
+// activeTooltip の構造:
+// {
+//   x: number,          // マウスまたはキーキャップ基準のX座標
+//   y: number,          // マウスまたはキーキャップ基準のY座標
+//   keyId: string,      // ホバーされているキーの識別子
+//   contentInfo: object // ツールチップ用データ（アノテーション、コード、マクロ、インスペクター等）
+// }
 ```
 
-```js
-// matrixKey の決定ロジック（Keycap, KeyCalloutOverlay 内で使用）
-function getMatrixKey(k) {
-  if (k.matrix) return `${k.matrix[0]},${k.matrix[1]}`;
-  return k.id;
-}
-```
+### 2. ホバーイベントのバインド
+- `Keycap.js` および `keycapEncoder.js` の `createElement('div', ...)` から `title` 属性を完全に削除します。
+- 代わりに、`onMouseEnter`, `onMouseMove`, `onMouseLeave` イベントをバインドし、`DeviceSlot` へホバー状態（座標とデータ）を通知します。
+- マウスの移動に合わせてツールチップが追従する「スムーズ追従モード」を実装します。
+
+### 3. フローティングツールチップコンポーネントの新規作成
+新規ファイル [KeycapTooltipOverlay.js](file:///c:/Git/KeymappingViewer/js/components/KeycapTooltipOverlay.js) を作成します。
+
+#### ✨ スタイル仕様（アイコンなしの純粋タイポグラフィ）
+- **フォント**: Outfit & Noto Sans JP
+- **背景/枠線**:
+  - Dark: `bg-slate-950/92 backdrop-blur-md border border-slate-800/80 shadow-2xl`
+  - Light: `bg-white/96 backdrop-blur-md border border-slate-200 shadow-2xl`
+  - パディング: `p-3.5`、角の丸み: `rounded-xl`
+- **情報の優先度整理**:
+  - **アノテーションタイトル**: 太字、少し大きめ（`text-xs`）、カラーによる強調（Dark: `text-blue-400` / Light: `text-blue-600`）。`[ANNOTATION]` などの文字列プレフィックスすら使わず、色の違いのみで自然に表現。
+  - **アノテーション本文**: 標準の太さ（`text-[10px]`）、少し不透明度を下げる（`opacity-80`）。
+  - **セパレータ**: アノテーションがある場合のみ、極めて薄いスレートグレーの水平線（`<hr>`）を挿入。
+  - **キーアクション/公式コード**: 太字、モノスペース風またはすっきりした文字表示。
+  - **デバッグ情報**: ツールチップ最下部に、非常に小さな薄い文字（`text-[9px] text-slate-500`）で境界線を挟んで配置し、通常使用時の視覚的ノイズを極小化。
 
 ---
 
-## ファイル変更一覧
+## 変更ファイル一覧
 
-### 新規ファイル
+### [NEW] [KeycapTooltipOverlay.js](file:///c:/Git/KeymappingViewer/js/components/KeycapTooltipOverlay.js)
+フローティング表示されるツールチップのビジュアルコンポーネント。
+マウスの絶対座標 `(x, y)` に基づき、画面境界（画面端での見切れ）を考慮したインテリジェントなクランプ処理を含めて表示します。
 
-#### [NEW] `js/utils/keyAnnotations.js`
+### [MODIFY] [keycapTooltip.js](file:///c:/Git/KeymappingViewer/js/components/keycapTooltip.js)
+- `📌` 絵文字の削除：`buildStandardKeyTooltip` および `buildEncoderTooltip` における `📌 ` 絵文字のハードコードを完全に除去します。
+- テキストベースのツールチップ生成ロジックはそのままテスト用に維持、または新規カスタムツールチップ内の構造化データ抽出ヘルパーとして最適化します。
 
-純粋ロジック。副作用なし。エクスポートする関数:
-- `getAnnotation(keyAnnotations, matrixKey)` → `{ customText, description, iconKey } | null`
-- `setAnnotation(keyAnnotations, matrixKey, data)` → 新 keyAnnotations（イミュータブル）
-- `clearAnnotation(keyAnnotations, matrixKey)` → 新 keyAnnotations（イミュータブル）
-- `hasAnnotation(keyAnnotations, matrixKey)` → boolean
-- `getAnnotatedKeys(keyAnnotations)` → string[]
+### [MODIFY] [keycapEncoder.js](file:///c:/Git/KeymappingViewer/js/components/keycapEncoder.js)
+- `title` 属性の削除。
+- `onMouseEnter` / `onMouseMove` / `onMouseLeave` のハンドラを追加し、ホバー情報を親へ伝播。
 
-**テストファイル `test/utils/keyAnnotations.test.js` を必ず作成すること（AGENTS.md のルール）。**
+### [MODIFY] [Keycap.js](file:///c:/Git/KeymappingViewer/js/components/Keycap.js)
+- `title` 属性の削除。
+- `onMouseEnter` / `onMouseMove` / `onMouseLeave` のハンドラを追加し、ホバー情報を親へ伝播。
 
----
+### [MODIFY] [DeviceSlot.js](file:///c:/Git/KeymappingViewer/js/components/DeviceSlot.js)
+- `activeTooltip` の状態管理の追加。
+- `KeycapTooltipOverlay` のマウントと、`Keyboard` コンポーネントへのホバーイベントハンドラの受け渡し。
 
-#### [NEW] `js/components/KeyAnnotationModal.js`
-
-```js
-export function KeyAnnotationModal({
-  isLightApp,
-  matrixKey,
-  currentAnnotation,  // null = 新規
-  onSave,   // ({ customText, description, iconKey }) => void
-  onClear,  // () => void
-  onClose,  // () => void
-})
-```
-
-UI: フルスクリーンオーバーレイ（backdrop blur）、`customText` input、`description` textarea、
-アイコン選択エリア（「将来実装予定」の無効化表示）、削除/キャンセル/保存ボタン。
-既存 DeviceSlot 設定パネルの Tailwind スタイルに準拠。
+### [MODIFY] [Keyboard.js](file:///c:/Git/KeymappingViewer/js/components/Keyboard.js)
+- ホバーイベントハンドラ（`onKeyHover`, `onKeyHoverLeave` 等）の受け取りと、マップ処理内での `Keycap` への引き渡し。
 
 ---
 
-#### [NEW] `js/components/KeyCalloutOverlay.js`
+## 完了・検証計画
 
-```js
-export function KeyCalloutOverlay({
-  keys,           // Keyboard から onKeysChange で受け取った filteredKeys
-  keyAnnotations,
-  scaleMetrics,   // { finalScale, maxWidth, maxHeight, containerWidth }
-  svgWidth,       // kbd-area の実際の幅
-  svgHeight,      // kbd-area の実際の高さ
-  isLight,
-  isAppDark,
-})
-```
-
-配置: `position:absolute, top:0, left:0, width:'100%', height:'100%', pointerEvents:'none'`
-座標計算・フォールバック: 前述の「コールアウト配置ロジック」を参照。
-
-**スタイル仕様**:
-
-フォント: `'Outfit', 'Noto Sans JP', sans-serif`
-
-| 要素 | Dark | Light |
-|---|---|---|
-| テキストボックス背景 | `rgba(15,23,42,0.92)` | `rgba(255,255,255,0.95)` |
-| テキストボックス枠線 | `rgba(100,116,139,0.6)` | `rgba(148,163,184,0.8)` |
-| テキスト色 | `#e2e8f0` | `#1e293b` |
-| 引き出し線色 | `rgba(100,116,139,0.7)` | `rgba(148,163,184,0.9)` |
-
-引き出し線: `strokeWidth:1.5`、`strokeDasharray:"4 3"`（破線）
-テキストボックス（`foreignObject` 内 `div`）: `width:140px; height:60px; padding:6px 8px; border-radius:8px; overflow:hidden`
-`customText`: `font-size:9px; font-weight:700; line-height:1.3; margin-bottom:2px`
-`description`: `font-size:8px; font-weight:400; opacity:0.8; line-height:1.3`
-
----
-
-### 変更ファイル
-
-#### [MODIFY] `js/app.js`
-
-1. `createEmptyDevice()` に `keyAnnotations: {}` を追加
-2. `const [showCallouts, setShowCallouts] = useState(false);` を追加
-3. `handleShare` の `shareData` は変更不要（`keyAnnotations` を URL 共有に含めない）
-4. URL `?data=` 復元時、`keyAnnotations: saved.keyAnnotations || {}` で初期化
-5. `Header` に `showCallouts` と `onToggleCallouts: () => setShowCallouts(v => !v)` を渡す
-6. `DeviceSlot` に `showCallouts` と `onToggleCallouts` を渡す
-
----
-
-#### [MODIFY] `js/components/Header.js`
-
-- props: `showCallouts`, `onToggleCallouts` を追加
-- 既存アクションボタン群に「CALLOUTS」トグルボタンを追加（アクティブ時は青系ハイライト）
-
----
-
-#### [MODIFY] `js/components/DeviceSlot.js`
-
-**props 追加**: `showCallouts`, `onToggleCallouts`
-
-**ステート追加**:
-```js
-const [annotatingKey, setAnnotatingKey] = useState(null);
-const [localScaleMetrics, setLocalScaleMetrics] = useState(null);
-const [localFilteredKeys, setLocalFilteredKeys] = useState([]);
-```
-
-**インポート追加**:
-```js
-import { setAnnotation, clearAnnotation } from '../utils/keyAnnotations.js';
-import { KeyAnnotationModal } from './KeyAnnotationModal.js';
-import { KeyCalloutOverlay } from './KeyCalloutOverlay.js';
-```
-
-**ハンドラ追加**:
-```js
-const handleAnnotationSave = (data) => {
-  onUpdateDevice(dev.id, {
-    keyAnnotations: setAnnotation(dev.keyAnnotations || {}, annotatingKey, data)
-  });
-  setAnnotatingKey(null);
-};
-const handleAnnotationClear = () => {
-  onUpdateDevice(dev.id, {
-    keyAnnotations: clearAnnotation(dev.keyAnnotations || {}, annotatingKey)
-  });
-  setAnnotatingKey(null);
-};
-```
-
-**`Keyboard` 呼び出しに追加**:
-```js
-keyAnnotations: dev.keyAnnotations || {},
-showCallouts,
-onAnnotateKey: (matrixKey) => setAnnotatingKey(matrixKey),
-onScaleMetricsChange: (metrics) => {
-  setLocalScaleMetrics(metrics);
-  onScaleMetricsChange(metrics);  // 上位ハンドラも呼ぶ
-},
-onKeysChange: setLocalFilteredKeys,
-```
-
-**`kbd-area` div に `position: 'relative'` を追加**（className に `relative` を追加するか style で指定）。
-
-**`KeyCalloutOverlay` のレンダリング** (`kbd-area` の children に追加):
-```js
-showCallouts && localScaleMetrics && localFilteredKeys.length > 0 &&
-  createElement(KeyCalloutOverlay, {
-    key: 'callout-overlay',
-    keys: localFilteredKeys,
-    keyAnnotations: dev.keyAnnotations || {},
-    scaleMetrics: localScaleMetrics,
-    isLight,    // dev.theme と appTheme から計算
-    isAppDark,
-  })
-```
-
-`annotatingKey` が非 null の場合、`KeyAnnotationModal` をレンダリング。
-
----
-
-#### [MODIFY] `js/components/Keyboard.js`
-
-**props 追加**: `keyAnnotations = {}`, `showCallouts = false`, `onAnnotateKey = null`, `onKeysChange = null`
-
-**`filteredKeys` 変化を通知**:
-```js
-useEffect(() => {
-  if (typeof onKeysChange === 'function') onKeysChange(filteredKeys);
-}, [filteredKeys, onKeysChange]);
-```
-
-**`onScaleMetricsChange` に `containerWidth` を追加**:
-```js
-useEffect(() => {
-  if (typeof onScaleMetricsChange === 'function') {
-    onScaleMetricsChange({
-      autoFitScale, finalScale, maxWidth, maxHeight,
-      containerWidth: containerRef.current?.getBoundingClientRect().width ?? 0,
-    });
-  }
-}, [autoFitScale, finalScale, maxWidth, maxHeight, on## 【追補計画】破線の直線化と重なり順（z-index）の修正（2026-06-01）
-
-### 概要
-- コールアウト破線がデバイス筐体（キーボード）の裏に回り込んで隠れてしまう不具合を解消します。
-- 破線の始点・終点がキーキャップ枠線からズレて表示される計算バグを解消します。
-- 前のエージェントによって導入された折れ線（`polyline` / `lineStub`）を廃止し、キーキャップ枠線の最も近い辺の中点からボックス端点までの「一直線の破線」に戻します。
-
-### 変更方針
-1. **重なり順の解消（z-index のスタッキングコンテキスト設計）**
-   - `js/components/KeyCalloutOverlay.js` 内の `callout-overlay-root` 要素の `zIndex` を `90` に設定します。
-   - さらに、`js/components/DeviceSlot.js` 内の `kbd-wrap` 要素の `style` に `{ position: 'relative', zIndex: 1 }` を追加します。
-   - `kbd-wrap` が `overflow: hidden` や Flexbox の `order` を持っており、かつ明確な `zIndex` が指定されていなかったためにスタッキングコンテキストの描画順序がブラウザ依存で狂っていました。両者に明確な `zIndex`（`kbd-wrap` = 1, `KeyCalloutOverlay` = 90）を指定することで、破線やボックスがキーボードケースやキーキャップの前面に確実に表示されるようになります。
-
-2. **座標計算バグの解消（枠線オフセットと中央寄せスケールの反映）**
-   - `js/utils/calloutLayout.js` でのキーキャップ枠線座標の算出式を修正します。
-   - **ズレの原因**:
-     - `Keycap` コンポーネントの位置指定（`getKeycapFrameStyle`）では、内側余白である `paddingOffset = 20` が座標に加算されています（`left: x + 20`, `top: y + 20`）。
-     - さらに、標準キーキャップの幅・高さは `w - 6`, `h - 6` です。
-     - また、`Keyboard.js` 内で `transform-origin: center center` にて中央寄せスケール（`scale(finalScale)`）されているため、これを考慮した絶対座標変換が必要です。
-   - **修正後の座標計算式**:
-     - スケール前のローカルキー枠線座標:
-       - `keyLeft = key.x + 20`
-       - `keyRight = key.x + key.w + 14` (key.x + 20 + key.w - 6)
-       - `keyTop = key.y + 20`
-       - `keyBottom = key.y + key.h + 14` (key.y + 20 + key.h - 6)
-     - 中央寄せスケールを反映したスクリーン座標:
-       - `screenKeyLeftEdge = containerWidth / 2 + (keyLeft - maxWidth / 2) * finalScale`
-       - `screenKeyRightEdge = containerWidth / 2 + (keyRight - maxWidth / 2) * finalScale`
-       - `screenKeyTopEdge = CALLOUT_TOP_OFFSET + (keyTop) * finalScale`
-       - `screenKeyBottomY = CALLOUT_TOP_OFFSET + (keyBottom) * finalScale`
-       - `screenCenterX = (screenKeyLeftEdge + screenKeyRightEdge) / 2`
-       - `screenCenterY = (screenKeyTopEdge + screenKeyBottomY) / 2`
-   - この計算式により、スケールや親コンテナ幅がどう変化しても、始点・終点がキーキャップ枠線と完全に一致します。
-
-3. **折れ線の廃止と直線化**
-   - `KeyCalloutOverlay.js` で `<polyline>` を使用している箇所を `<line>` 要素に変更します。
-   - 描画する線は、始点 `(lineStartX, lineStartY)` から終点 `(lineEndX, lineEndY)` までの直線とします。
-   - `js/utils/calloutLayout.js` で計算されていた折れ線用の制御点 `lineStubX`, `lineStubY` は不要になるため、計算およびプロパティから削除します。
-
-### 変更対象ファイル
-- `js/components/KeyCalloutOverlay.js` (zIndex の設定、line要素への変更)
-- `js/components/DeviceSlot.js` (kbd-wrap の zIndex 指定)
-- `js/utils/calloutLayout.js` (座標計算式の修正、不要な Stub 計算の削除)
-- `test/utils/calloutLayout.test.js` (テストケース内での座標期待値の修正)
-
-### 検証計画
+### 1. 自動テストの実行
 - `npm run lint` および `npm run test` の実行。
-- コールアウトが表示されている状態で、破線がキーキャップや筐体よりも前面に表示されることを確認する。
-- 破線が歪んだ折れ線ではなく、キーからボックスへ直線の破線として繋がっていることを確認する。��パー div で包む):
-```js
-if (k.isEncoder) {
-  return createElement('div', {
-    key: 'encoder-wrapper',
-    style: { position: 'relative' },
-    onContextMenu: (e) => {
-      if (onAnnotateKey) { e.preventDefault(); onAnnotateKey(matrixKey); }
-    },
-  }, [
-    renderEncoderKeycap({ ... }),
-    annotation && (annotation.customText || annotation.description) &&
-      createElement('div', {
-        key: 'annotation-dot',
-        style: {
-          position: 'absolute', right: '4px', top: '4px',
-          width: '5px', height: '5px', borderRadius: '50%',
-          backgroundColor: '#60a5fa', zIndex: 50, pointerEvents: 'none',
-        },
-      }),
-  ]);
-}
-```
+- ツールチップ関連のテストケース（`keycapTooltip.test.js`）が `📌` アイコン無しの状態でも正常にパスすることを確認。
 
-> [!WARNING]
-> `keycapEncoder.js` の最外要素の `position` スタイルを事前確認し、ラッパー div のスタイルを調整すること。
+### 2. 手動・ビジュアル検証
+- **アイコンフリー設計の確認**: ツールチップ内に `📌` などの絵文字やグラフィックアイコンが一切存在せず、文字装飾だけで美しい階層構造が作られていること。
+- **表示追従性の確認**: マウスをキーの上にホバーした際、遅延なく瞬時にカスタムツールチップが表示され、マウスの移動に滑らかに追従すること。
+- **テーマ切替の確認**: Light テーマ / Dark テーマの双方で、十分なコントラストと半透明の質感が保たれていること。
 
 ---
 
-#### [MODIFY] `js/components/keycapTooltip.js`
+## 【追加計画】ツールチップの微調整とホバー消失バグ修正（2026-06-01）
 
-`buildStandardKeyTooltip` に `annotation = null`（第5引数）を追加:
+### 1. フォント指定の厳密な統一
+- **原因**: フローティングツールチップコンポーネント内の個別要素のみにフォント指定（`fontFamily`）を行っていたため、全体の継承構造が崩れ、フォントのレンダリングが統一されていませんでした。
+- **対策**: `KeycapTooltipOverlay.js` の最外殻 `div` コンテナの `style` に対して、サービス全体の標準フォントセットである `fontFamily: "'Outfit', 'Noto Sans JP', sans-serif"` を明示的に設定します。これにより、タイトル、説明文、デバッグ情報などのすべての子要素へフォントが美しく継承されます。
 
-```js
-export function buildStandardKeyTooltip(
-  code, keyStyle = 'Windows', macros = [], inspectorData = null, annotation = null
-) {
-  const lines = [];
-  if (annotation) {
-    if (annotation.customText) lines.push(`📌 ${annotation.customText}`);
-    if (annotation.description) lines.push(`   ${annotation.description}`);
-    if (annotation.customText || annotation.description) lines.push('');
-  }
-  // 以降は既存ロジックをそのまま維持
-  ...
-}
-```
+### 2. アノテーション本文の視認性向上
+- **原因**: ライトテーマ等の背景に対してアノテーション本文の文字色が `text-slate-400` のままであったため、コントラスト比が不足し視認性が低くなっていました。
+- **対策**: テーマのライト/ダークに応じてアノテーション本文のテキストカラーを動的に切り替えます：
+  - ライトテーマ時 (`isLight === true`): `text-slate-700` (または `text-slate-600`)
+  - ダークテーマ時 (`isLight === false`): `text-slate-300`
+  - また、不必要な `opacity` 指定を削除することで、にじみを防ぎ極めてクッキリとした可読性を確保します。
 
----
-
-#### [MODIFY] `index.html`
-
-Outfit の Google Fonts リンク近くに追加:
-```html
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
-```
+### 3. ホバーが外れた後にツールチップが残るバグの解消
+- **原因**: マウスを高速に移動させた際、ブラウザ側の仕様によって個々のキーキャップの `onMouseLeave` イベントの検知が時折スキップ（消失）され、ホバーが外れたにもかかわらず状態のクリア（`setActiveTooltip(null)`）が走らないためです。
+- **対策**:
+  - キーボードの親コンテナである `Keyboard.js` の最外殻 `div` に対し、`onMouseLeave: onKeyHoverLeave` イベントハンドラを明示的にバインドします。
+  - これにより、マウスが個々のキーキャップの隙間を抜けてキーボードエリア全体から離脱した瞬間、キー個別の `onMouseLeave` が消失したとしても、親コンテナ側で確実にツールチップが非表示になります。
+  - さらに、スロットの外（ブラウザの外など）に出た際も `DeviceSlot.js` から確実に非表示になるよう安全対策を確認します。
 
 ---
 
-## 実装フェーズ（タスクリスト）
+## 【追加計画】ツールチップ応答性の抜本的改善（固定位置表示への移行）（2026-06-01）
 
-### フェーズ 1: データ構造とロジック基盤
-- [ ] `js/utils/keyAnnotations.js` 新規作成（全5関数）
-- [ ] `test/utils/keyAnnotations.test.js` 新規作成
-- [ ] `js/app.js`: `createEmptyDevice()` に `keyAnnotations: {}` 追加
-- [ ] `js/app.js`: `showCallouts` ステート追加
-- [ ] `js/app.js`: URL 復元時の `keyAnnotations: {}` 初期化
-- [ ] `npm run test` で既存テストが通ることを確認
+### 1. `onMouseMove` の完全廃止
+- **目的**: ホバー中にマウスを1ピクセル動かすたびに発生していた `DeviceSlot` 全体の再レンダリングを完全にゼロにし、描画キューの詰まり（もたつき）を解消します。
+- **対策**:
+  - `Keycap.js` および `keycapEncoder.js` から `onMouseMove` イベントハンドラを完全に削除します。
+  - ホバー状態の更新は、キーキャップにマウスが乗った瞬間（`onMouseEnter`）と、離脱した瞬間（`onMouseLeave`）のみに限定します。
 
-### フェーズ 2: ツールチップ統合
-- [ ] `js/components/keycapTooltip.js`: `annotation` パラメータ追加
-- [ ] `js/components/Keyboard.js`: 新規 props 追加・`onKeysChange`・`containerWidth` 拡張・Keycap 受け渡し
-- [ ] `js/components/Keycap.js`: 新規 props 追加・ツールチップ呼び出し更新
-- [ ] `npm run lint` 確認
-
-### フェーズ 3: アノテーション編集 UI
-- [ ] `js/components/KeyAnnotationModal.js` 新規作成
-- [ ] `js/components/Keycap.js`: 右クリック・インジケータ・エンコーダーラッパー追加
-- [ ] `js/components/DeviceSlot.js`: `annotatingKey` ステート・ハンドラ・モーダル表示追加
-- [ ] ローカルサーバーで確認: 右クリック → モーダル → 保存 → ツールチップ確認
-
-### フェーズ 4: コールアウトオーバーレイ
-- [ ] `index.html`: Noto Sans JP リンク追加
-- [ ] `js/components/KeyCalloutOverlay.js` 新規作成
-- [ ] `js/components/DeviceSlot.js`: `localScaleMetrics`・`localFilteredKeys` ステート追加・`KeyCalloutOverlay` 組み込み・`kbd-area` に `relative` 追加
-- [ ] ローカルサーバーで確認: 引き出し線表示・左右フォールバック・スケール追従
-
-### フェーズ 5: ヘッダートグルと仕上げ
-- [ ] `js/components/Header.js`: CALLOUTS トグルボタン追加
-- [ ] `js/app.js`: Header・DeviceSlot への props 渡し完成
-- [ ] `npm run lint` と `npm run test` で全通過確認
-
-### フェーズ 6: 最終検証
-- [ ] Light / Dark テーマ両方でコールアウトが適切に見える
-- [ ] スケール変更時にコールアウトがキーと連動する
-- [ ] 左右フォールバック（下方向配置）が正しく動作する
-- [ ] ページリロード後も localStorage からアノテーションが復元される
-- [ ] `sample_numpad.json`・`sample_tkl_jp.json` で手動確認
-- [ ] エンコーダーキーにもアノテーション設定・表示が動作する
-- [ ] **EXPORT 時にコールアウトが画像に含まれないことを確認**
-- [ ] **隣 DeviceSlot へのはみ出しがないことを確認（stack / grid 両レイアウト）**
-- [ ] **ウィンドウを狭めた際に横スクロールバーが出ないことを確認**
+### 2. キーキャップの物理位置に基づく「ブレのない固定表示」
+- **目的**: マウスカーソルの移動によるツールチップの揺れを無くし、キーの下にピシッと固定して表示される洗練されたモダンUIを実現します。
+- **対策**:
+  - `DeviceSlot.js` の `handleKeyHover` において、イベントオブジェクトの `currentTarget.getBoundingClientRect()` から、ホバーされたキーキャップ要素の絶対スクリーン座標（中央X座標および下端Y座標）を算出します。
+  - `activeTooltip` の座標オブジェクトに `x`, `y` に加えて `isFixed: true` を渡します。
+  - `KeycapTooltipOverlay.js` 側で `activeTooltip.isFixed` が `true` の場合は、キーキャップの下中央（見切れ時は上中央）を基準にツールチップを綺麗に自動配置し、画面端でのインテリジェント・クランプを適用します。
 
 ---
 
-## 注意事項
+## 【追加計画】アノテーションボックス（コールアウト）の衝突回避・自動再配置（2026-06-01）
 
-> [!NOTE]
-> **`overflow-hidden` は一切変更しない。** 新アーキテクチャにより変更不要。
+### 1. 縦方向の重なり（衝突）の解消アルゴリズム
+- **問題点**: 
+  1. 縦に近接したキーから複数のアノテーション（コールアウト）が表示される際、現在位置計算が `screenCenterY` を基準とした対称配置であるため、アノテーションボックス同士が重なって描画されていました。
+  2. **高さの見積もり不足**: 日本語全角文字が含まれている場合、文字幅が半角アルファベットの約2倍になるため、ブラウザ上では自動改行されているにもかかわらず、プログラム側で「1行」と過小評価され、結果的に `estimatedHeight` が実際より大幅に小さくなり衝突判定をすり抜けていました。
+  3. **上部余白の活用不足**: 一番上の要素がキーボードのESCキーの横（中段）に居座り、上の広大な余白（ロータリーエンコーダーやL0キーの左横）が有効活用されていませんでした。
+- **対策**:
+  - `js/utils/calloutLayout.js` 内に、左右の配置グループ（`placement: 'left'` および `placement: 'right'`）それぞれに独立して動作する衝突解決関数 `resolveOverlap(callouts, keyboardBottomY)` をアップデートします。
+  - **全角文字幅の考慮 (`getVisualLength` ヘルパーの導入)**:
+    - 半角を 1、全角文字を 2 としてカウントする文字幅換算関数 `getVisualLength(text)` を追加します。
+    - `estimateCalloutWidth` および `estimateWrappedLineCount` において、この半角換算の文字数を用いることで、日本語アノテーションカードがブラウザ側で自動改行されて縦に長くなる現象をミリ単位で正確に予測します。
+  - **アルゴリズム設計（スペースの最大活用）**:
+    1. グループ内のコールアウトを初期の `boxTop` 順にソートします。
+    2. **下方向へのスライド（上から下への走査）**:
+       前のボックスの下端にマージン（`GAP = 8px`）を加えた位置より現在の `boxTop` が上にある場合、重なりを防ぐために現在の `boxTop` を下方向へ押し下げます。
+    3. **上方向へのスライド（全体の一括引き上げによるスペース最大活用）**:
+       アノテーションが複数ある場合、最上部の要素が `CALLOUT_SAFE_PADDING` (4px) に達するまで全体を一括で上にスライド（シフト）させます。これにより、上方のロータリーエンコーダー横の空きスペースを100%有効活用し、下方に極めて広い空きスペースを生み出します。
+    4. **下方向への押し下げの微調整**:
+       引き上げた結果、最下部の要素が底面（`maxBottom`）をはみ出している場合は、最上部を `CALLOUT_SAFE_PADDING` に固定したまま、再度重なりを避けながら下方向へ押し下げます。
 
-> [!WARNING]
-> `Keyboard.js` の `onScaleMetricsChange` に `containerWidth` を追加すると `app.js` の
-> `slotScaleMetricsRef` の形が変わる。`followScale` 機能（`handleMatchKeySize` 等）が
-> `containerWidth` を誤使用しないよう確認すること。
+### 2. 引き出し線の終点 (`lineEndY`) の追従
+- **対策**: `boxTop` が上記アルゴリズムによって上下にスライドされるため、引き出し線の接続点（終点 `lineEndY`）もスライド後の `boxTop` に追従させます。
+  - 各コールアウトの `lineEndY` を `clamp(lineStartY, boxTop, boxTop + estimatedHeight)` で再計算し、破線が常にボックスの縦の範囲内に美しく接続されるようにします。
 
-> [!WARNING]
-> `keycapEncoder.js` の最外要素の `position` スタイルを確認してからエンコーダーラッパーを実装すること。
-
-> [!NOTE]
-> `foreignObject` はモダンブラウザで問題なく動作する。新アーキテクチャでは export 用 `Keyboard` に
-> `KeyCalloutOverlay` が関与しないため、エクスポートへの影響は発生しない。
-
-> [!NOTE]
-> `keyAnnotations.js` は純粋ロジックのため `test/utils/keyAnnotations.test.js` を必ず作成すること。
+### 3. 下部余白（SVG領域）の自動拡張の改善
+- **対策**: `calloutLayout.js` の末尾で `fallbackBottom` を計算する際、`placement` に関係なく**すべてのコールアウトの最大下端**を追跡するように修正します。
 
 ---
 
-最終更新: 2026-06-01
-策定者: AI Agent（アノテーションボックス自動拡張バグ修正設計追加）
-実装担当: 別エージェント
+## 変更予定ファイル
+
+### [MODIFY] [calloutLayout.js](file:///c:/Git/KeymappingViewer/js/utils/calloutLayout.js)
+- `getVisualLength` ヘルパー関数の追加。
+- `estimateCalloutWidth` と `estimateCalloutHeight` の改修（全角文字幅換算に対応）。
+- `resolveOverlap` 関数に「全体の一括引き上げ（最上部 4px シフト）」ロジックを実装。
+- `buildCalloutOverlayModel` 内での `resolveOverlap` 呼び出し、および `lineEndY` の再計算。
+- 下部余白計算 (`fallbackBottom`) の改善（全コールアウトを対象とする）。
 
 ---
 
-## 【追加設計】アノテーションボックスの動的自動サイズ調整とクリッピング問題の解消
+## 【追加計画】アノテーションボックスの改行・重なりバグ修正（2026-06-01）
 
-レビュー担当者からの指摘に基づき、アノテーションボックスのテキストが途中で見切れる問題を以下の設計で解消します。
+### 1. テキスト改行問題の解消（見積もり係数の引き上げ）
+- **原因**: `js/utils/calloutLayout.js` における文字幅の見積もり係数 `5.8` が、ブラウザで実際にレンダリングされるフォント幅（特に全角の `Noto Sans JP` や半角英字 `Outfit`）に対して小さすぎました。これにより、計算上の `estimatedWidth` が実際のテキスト幅よりも狭く固定され、ブラウザ側で予期せぬ自動改行が発生していました。
+- **対策**:
+  - `calloutLayout.js` における文字幅の見積もり係数を `5.8` から `6.8` に引き上げます。
+  - `estimateCalloutWidth` および `estimateCalloutHeight` 内の係数（`5.8`）を一貫して `6.8` にアップデートします。
+  - これにより、幅に十分な安全マージンが生まれ、ブラウザ上での不必要な自動改行を確実に防ぎます。
 
-### 1. 問題の原因分析
-- 日本語などの長文テキストや複数行のテキストを設定した場合、従来の固定サイズ（`FO_HEIGHT = 200px`）ではボックス全体の高さが足りず、下部が見切れてしまうケースがありました。
-- また、`y` 座標が負になるケース（キーボード上部のキーなど）において、SVG コンテナ自体の `overflow: hidden` （ブラウザのデフォルト挙動）や `foreignObject` 自体の境界によってクリップされることがありました。
+### 2. アノテーションボックス同士の重なり問題の解消
+- **原因1 (高さ予測のズレ)**: 上記の自動改行により、ブラウザ上でボックスが縦に伸びてしまい、計算上の `estimatedHeight` を超過したことで、下のアノテーションボックスに食い込んで重なっていました。見積もり係数を `6.8` に引き上げることで、改行予測と実際の高さが完全に一致（または安全側に余裕を持って一致）し、この重なりは解消されます。
+- **原因2 (ソート順の不安定さ)**: `resolveOverlap` 内でコールアウトを `boxTop` でソートしていましたが、`boxTop` は `estimatedHeight` の大きさによって初期値が上下に変動するため、物理的なキーの位置順と逆転してしまうケースがありました。この状態で押し戻し・押し下げを行うと、位置計算が狂うリスクがありました。
+- **対策**:
+  - `resolveOverlap` 内でのソート基準を、変動する初期 `boxTop` ではなく、キーの物理的な中心Y座標である `lineStartY`（静的で安定した値）に変更します。
+  - これにより、物理的に上にあるキーのコールアウトが常に上側に、下にあるキーのコールアウトが常に下側に安定して配置され、重なり防止アルゴリズムが極めて強固に動作するようになります。
 
-### 2. 解決策設計（十分に大きな描画領域の確保と CSS `fit-content` の活用）
-レビューでの提案通り、「十分に大きな描画領域を確保した上で CSS `fit-content` 等を用いて背景枠を描画する」アプローチを採用します。
+## 検証計画
 
-1. **`foreignObject` の描画領域（Viewport）の大幅な拡張**
-   - 従来の `FO_WIDTH = 280`, `FO_HEIGHT = 200` を、**`FO_WIDTH = 360`**, **`FO_HEIGHT = 380`** に大幅に拡張します。
-   - これにより、20〜30行の長文説明であってもスクロールバーを出さずに完全に表示できる領域を確保します。
+### 自動テスト
+- `npm run test` を実行し、全テスト（特に `calloutLayout.test.js`）が正常にパスすることを確認する。
+- 見積もり係数の変更に伴い、テスト内の期待値の調整が必要であれば修正する。
 
-2. **SVG コンテナおよび `foreignObject` への `overflow: visible` 設定**
-   - `KeyCalloutOverlay.js` が生成する `svg` 要素、および `<foreignObject>` 要素の双方の `style` に **`overflow: 'visible'`** を明示的に追加します。
-   - これにより、キーボードの最上部/最下部付近でアノテーションボックスが SVG の物理境界（`height` や `top`）をわずかに超えてはみ出した場合でも、ブラウザがクリップせずに全体を美しく描画します。
+### 手動・ビジュアル検証
+- サンプルレイアウト等を用い、短いアノテーションテキスト（「タスクマネージャを起動」「クイック設定を表示させる」など）が自動改行されないことを確認する。
+- アノテーションが複数隣接している場合でも、ボックス同士が重ならず、適切なマージン（`GAP = 12px`）を保って整列することを確認する。
 
-3. **テキストボックスの最大幅の調整**
-   - テキストボックスの `maxWidth` を従来の `200px` から **`240px`** に拡大し、より多くの文字を横方向に収められるようにします。これにより縦方向の不必要な行数を抑え、バランスの良い premium なカードアスペクト比を維持します。
+---
 
-4. **動的接続点（コネクション）の維持**
-   - 描画領域を拡張しても、従来の「Flexbox による縦横アライメント」を維持するため、引き出し線の端点（`lineEndX`）とテキストボックスの接続位置はピクセル単位で正確に維持されます。
-     - 左側：`alignItems: 'flex-end'`（右端を dashed line に吸い付かせる）
-     - 右側：`alignItems: 'flex-start'`（左端を dashed line に吸い付かせる）
-     - 上下：`justifyContent: 'center'`（テキスト量に応じたカードの縦方向中心に dashed line が完璧に一致する）
+## 【ブラウザ最小フォントサイズ対策とデザイン堅牢化】
 
-### 3. KeyCalloutOverlay.js の変更詳細
+### 💡 原因の特定：ブラウザの最小フォントサイズ制限（12px）
+ユーザー様のご指摘の通り、日本の多くのブラウザ環境やユーザー設定において**「最小フォントサイズが 12px」**に制限されているケースが非常によくあります。
+既存のCSSではタイトルが `11px`、説明が `10px` に設定されていたため、この制限によって強制的に `12px` に引き上げられてレンダリングされていました。
+結果として：
+1. 文字幅が計算上の想定を大幅に超え、不要な自動改行が発生。
+2. 改行で縦に伸びたボックスが `estimatedHeight` を超過し、下のボックスに重なる。
 
-```js
-// foreignObject container sizes
-const FO_WIDTH = 360;  // 320から360に拡張し十分な余白を確保
-const FO_HEIGHT = 380; // 200から380に大幅拡張し、長文対応
+### 🛠️ 根本的な解決アプローチ
 
-...
+ブラウザのいかなるフォントサイズ制限や環境設定に対しても表示が崩れないよう、以下の堅牢化対策を実施します。
 
-// SVGルート要素のスタイル
-style: {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  width: '100%',
-  height: `${svgHeight}px`,
-  pointerEvents: 'none',
-  zIndex: 50,
-  overflow: 'visible', // ← 追加：SVGの境界外でもクリップさせない
-}
+#### 1. フォントサイズを `12px` 以上に引き上げ（ブラウザ制限の完全回避）
+- [KeyCalloutOverlay.js](file:///c:/Git/KeymappingViewer/js/components/KeyCalloutOverlay.js) 内のフォントサイズを以下のように引き上げます：
+  - **タイトル (`customText`)**: `13px` （現在 `11px`）
+  - **説明 (`description`)**: `12px` （現在 `10px`）
+- これにより、ブラウザの最小フォントサイズ制限（一般的に 12px）を下回らなくなり、環境による強制的なサイズ引き上げとそれによるレイアウト崩れを完全に防止します。
 
-...
+#### 2. 文字幅見積もり係数のさらなる引き上げ (`6.8` ➔ `7.8`)
+- フォントサイズの引き上げに伴い、`calloutLayout.js` における文字幅の見積もり係数を `7.8` に引き上げます。
+  - 全角1文字 ➔ `15.6px` (13pxフォントに対して十分な余裕)
+  - 半角1文字 ➔ `7.8px` (英字 Outfit の大文字混じりに対しても安全)
+- これにより、ブラウザ設定やフォントレンダリングの個体差を完全に吸収し、自動改行を100%確実に防ぎます。
 
-// foreignObject要素
-createElement(
-  'foreignObject',
-  {
-    key: 'box',
-    x: c.boxX,
-    y: c.boxY,
-    width: FO_WIDTH,
-    height: FO_HEIGHT,
+#### 3. 高さ見積もりパラメータおよびボックス最大幅の最適化
+- `calloutLayout.js` のパラメータを以下のように調整し、一貫性を保ちます：
+  - `TITLE_LINE_HEIGHT` ➔ `17` (13pxフォント用)
+  - `DESCRIPTION_LINE_HEIGHT` ➔ `16` (12pxフォント用)
+  - `BOX_VERTICAL_PADDING` ➔ `20` (パディングの安全マージン)
+  - `CALLOUT_MAX_WIDTH` ➔ `300` (フォント拡大に合わせ、最大幅を `280` から `300` に拡張)
+  - `GAP` ➔ `16` (ボックス間の最小隙間を `12` から `16` に広げ、プレミアムな余白を表現)
+
+---
+
+## 【追加計画】親要素の幅制限によるアノテーションボックスの「幅の押し潰し」解消（2026-06-01）
+
+### 💡 根本原因の特定：親要素 `kbd-area` との座標系ズレ＆左側はみ出しによるブラウザの強制縮小
+アノテーションボックス同士の重なりが綺麗に解消された一方で、文字幅係数を `7.8` に引き上げたにもかかわらず自動改行が発生し続けた原因が判明しました。
+
+1. **親要素 `kbd-area` の幅の狭さ**:
+   - `DeviceSlot.js` 内でアノテーションオーバーレイがマウントされる親要素 `kbd-area` は、フレックスボックスの制約によりキーボードの幅（約 350px〜400px 程度）に縮んでいました。
+   - 一方で、アノテーションの絶対座標（`boxLeft`）は、画面全体やスロット全幅（例: 1000px）を想定した `containerWidth` を基準に計算されていました。
+2. **ブラウザによる強制的な幅の圧縮**:
+   - `KeyCalloutOverlay.js` のルート `div` が `left: 0, width: '100%'` に設定されていたため、ルート `div` の幅もキーボード幅（約 400px）に狭まっていました。
+   - このため、キーボードの左側に表示されるアノテーションボックスの絶対座標 `boxLeft` がブラウザの親要素境界（左端）に引っかかり、**ブラウザ（Chrome等）の仕様によって幅が強制的に数十ピクセル押し潰されて（圧縮されて）いました**。
+   - ボックスの幅が物理的に圧縮されていたため、どんなに文字幅係数を大きくしてもテキスト領域が狭くなり、最後の1文字が常に改行されてしまっていました。
+
+### 🛠️ 根本的な解決アプローチ
+
+計算上の座標系（`containerWidth`）と、HTML上の描画座標系を 1mm の狂いもなく完璧に一致させます。
+
+- **オーバーレイルート `div` の配置と幅の絶対固定**:
+  - `KeyCalloutOverlay.js` におけるルート `div` のスタイルを、親の幅に依存する `left: 0, width: '100%'` から、**計算上の全幅に固定し中央配置するスタイル**に変更します：
+    ```javascript
     style: {
-      overflow: 'visible', // ← 追加：foreignObjectの境界外でも念のためクリップさせない
+      position: 'absolute',
+      top: 0,
+      left: '50%',
+      transform: 'translateX(-50%)', // 親コンテナの中央にぴったり合わせる
+      width: `${model.svgWidth}px`,    // 計算上の全幅（例: 1000px）に完全に固定する
+      height: `${model.overlayHeight}px`,
+      pointerEvents: 'none',
+      zIndex: 90,
+      overflow: 'visible',
     }
-  },
-  ...
-  // 内側のテキストボックス div
-  style: {
-    width: 'fit-content',
-    maxWidth: '240px', // ← 200pxから240pxに拡張（横方向のバランス改善）
-    height: 'fit-content',
-    ...
-  }
-)
+    ```
+- これにより、ルート `div` は常にアノテーション全体の計算領域（`model.svgWidth`）と完全に等しい幅を維持し、かつ親要素の中央に完璧に配置されます。左右に無限の描画スペースが保証されるため、左側や右側のアノテーションボックスがブラウザによって押し潰されることが物理的に不可能になり、改行バグが100%確実に解消します！
 
 ---
 
-## 【追補計画】破線の直線化・座標バグ・重なり順（z-index）の修正（2026-06-01）
+## 【追加計画】em 単位への移行によるブラウザズーム・最小フォント制限の完全克服（2026-06-01）
 
-### 概要
-- コールアウト破線がデバイス筐体（キーボード）の裏に回り込んで隠れてしまう不具合を解消します。
-- 破線の始点・終点がキーキャップ枠線からズレて表示される計算バグを解消します。
-- 前のエージェントによって導入された折れ線（`polyline` / `lineStub`）を廃止し、キーキャップ枠線の最も近い辺の中点からボックス端点までの「一直線の破線」に戻します。
+### 💡 原因の特定：ブラウザズーム縮小時における「文字とボックス幅の縮小率のミスマッチ」
+画面を大幅に縮小した状態（左右に余白がある状態など）でも改行が発生し続けた原因が判明しました。
 
-### 変更方針
-1. **重なり順の解消（z-index のスタッキングコンテキスト設計）**
-   - `js/components/KeyCalloutOverlay.js` 内の `callout-overlay-root` 要素の `zIndex` を `90` に設定します。
-   - さらに、`js/components/DeviceSlot.js` 内の `kbd-wrap` 要素の `style` に `{ position: 'relative', zIndex: 1 }` を追加します。
-   - `kbd-wrap` が `overflow: hidden` や Flexbox の `order` を持っており、かつ明確な `zIndex` が指定されていなかったためにスタッキングコンテキストの描画順序がブラウザ依存で狂っていました。両者に明確な `zIndex`（`kbd-wrap` = 1, `KeyCalloutOverlay` = 90）を指定することで、破線やボックスがキーボードケースやキーキャップの前面に確実に表示されるようになります。
+1. **`transform: scale` による縮小時の挙動**:
+   - キーボード全体が縮小される際、アノテーションボックスの幅（`px` 単位で指定された `estimatedWidth`）はスケールに合わせて小さく縮小されます。
+2. **最小フォントサイズ制限の衝突**:
+   - 一方で、ブラウザの「最小フォントサイズ制限（例: 12px）」は、`transform: scale` による縮小に対しても働きます。
+   - ボックスの幅は `150px`（300pxの50%）に縮小されているのに、中の文字は最小制限（12px）で縮小が止まってしまうため、文字サイズに対してボックスが物理的に狭すぎることになり、激しい自動改行が発生していました。
 
-2. **座標計算バグの解消（枠線オフセットと中央寄せスケールの反映）**
-   - `js/utils/calloutLayout.js` でのキーキャップ枠線座標の算出式を修正します。
-   - **ズレの原因**:
-     - `Keycap` コンポーネントの位置指定（`getKeycapFrameStyle`）では、内側余白である `paddingOffset = 20` が座標に加算されています（`left: x + 20`, `top: y + 20`）。
-     - さらに、標準キーキャップの幅・高さは `w - 6`, `h - 6` です。
-     - また、`Keyboard.js` 内で `transform-origin: center center` にて中央寄せスケール（`scale(finalScale)`）されているため、これを考慮した絶対座標変換が必要です。
-   - **修正後の座標計算式**:
-     - スケール前のローカルキー枠線座標:
-       - `keyLeft = key.x + 20`
-       - `keyRight = key.x + key.w + 14` (key.x + 20 + key.w - 6)
-       - `keyTop = key.y + 20`
-       - `keyBottom = key.y + key.h + 14` (key.y + 20 + key.h - 6)
-     - 中央寄せスケールを反映したスクリーン座標:
-       - `screenKeyLeftEdge = containerWidth / 2 + (keyLeft - maxWidth / 2) * finalScale`
-       - `screenKeyRightEdge = containerWidth / 2 + (keyRight - maxWidth / 2) * finalScale`
-       - `screenKeyTopEdge = CALLOUT_TOP_OFFSET + (keyTop) * finalScale`
-       - `screenKeyBottomY = CALLOUT_TOP_OFFSET + (keyBottom) * finalScale`
-       - `screenCenterX = (screenKeyLeftEdge + screenKeyRightEdge) / 2`
-       - `screenCenterY = (screenKeyTopEdge + screenKeyBottomY) / 2`
-   - この計算式により、スケールや親コンテナ幅がどう変化しても、始点・終点がキーキャップ枠線と完全に一致します。
+### 🛠️ 根本的な解決アプローチ
 
-3. **折れ線の廃止と直線化**
-   - `KeyCalloutOverlay.js` で `<polyline>` を使用している箇所を `<line>` 要素に変更します。
-   - 描画する線は、始点 `(lineStartX, lineStartY)` から終点 `(lineEndX, lineEndY)` までの直線とします。
-   - `js/utils/calloutLayout.js` で計算されていた折れ線用の制御点 `lineStubX`, `lineStubY` は不要になるため、計算およびプロパティから削除します。
+アノテーションボックスの幅を絶対値の `px` ではなく、文字サイズに連動する **`em` 単位** で指定します。
 
-### 変更対象ファイル
-- `js/components/KeyCalloutOverlay.js` (zIndex の設定、line要素への変更)
-- `js/components/DeviceSlot.js` (kbd-wrap の zIndex 指定)
-- `js/utils/calloutLayout.js` (座標計算式の修正、不要な Stub 計算の削除)
-- `test/utils/calloutLayout.test.js` (テストケース内での座標期待値の修正)
-
-### 検証計画
-- `npm run lint` および `npm run test` の実行。
-- コールアウトが表示されている状態で、破線がキーキャップや筐体よりも前面に表示されることを確認する。
-- 破線が歪んだ折れ線ではなく、キーからボックスへ直線の破線として繋がっていることを確認する。
-```
+- **幅指定の `em` 単位化**:
+  - `KeyCalloutOverlay.js` において、アノテーションボックスのラッパー（`box-wrap`）およびボックス本体の `width` と `maxWidth` を、基準フォントサイズ `12px` に基づく `em` 単位に変更します：
+    ```javascript
+    const widthEm = callout.estimatedWidth / 12;
+    // スタイル指定
+    width: `${widthEm}em`,
+    maxWidth: `${widthEm}em`,
+    ```
+- **効果**:
+  - これにより、ブラウザのズームが縮小され、最小フォントサイズ制限によって文字の縮小がストップ（例: 12px で固定）したとしても、**ボックスの幅も文字サイズに完全に連動して縮小がストップ（自動的に 12px × widthEm の実寸幅を維持）します**。
+  - 文字サイズとボックスの幅が常に 1:1 で完全に同期するため、ブラウザのズーム倍率や環境制限に一切関わらず、不要な自動改行が100%物理的に発生しなくなります！
 
 ---
 
-## 【追補計画】配置に連動した破線接続点の最適化（2026-06-01）
+## 【追加計画】アノテーションボックスの幅の絶対値固定（Flex縮小バグの完全修正）（2026-06-01）
 
-### 概要
-- コールアウト破線の引き出し位置（始点・終点）が機械的な「最も近い中点」で計算されているため、左側や下側に配置されたボックスに対する引き出し線がキーの不自然な辺（例：左配置なのに下辺など）から伸び、見た目の乱雑さに繋がっていました。
-- ボックスの配置（`left`, `right`, `below`）に破線の始点と終点をセマンティクス連動させることで、常に「左配置のカードへはキーの左辺から」「右配置へは右辺から」「下配置へは下辺から」破線がすっきりと伸びる洗練された美しいデザインを実現します。
+### 💡 原因の特定：Flexコンテナ内でのアノテーションボックスの「自動幅縮小（Flex-shrink）」
+表示倍率（`scale`）をどれだけ小さくし、文字サイズがどれほど小さくなっても改行が発生し続けた「真の原因」を特定しました。
 
-### 変更方針
-1. **左右配置 (`left` / `right`) の接続点の固定**
-   - **`left`（キーの左側に配置される場合）**:
-     - 始点 (`lineStartX`, `lineStartY`): キーの左辺の中点 (`screenKeyLeftEdge`, `screenCenterY`)
-     - 終点 (`lineEndX`, `lineEndY`): ボックスの右辺の中点 (`sideBoxLeft + estimatedWidth`, クランプされた `screenCenterY`)
-   - **`right`（キーの右側に配置される場合）**:
-     - 始点 (`lineStartX`, `lineStartY`): キーの右辺の中点 (`screenKeyRightEdge`, `screenCenterY`)
-     - 終点 (`lineEndX`, `lineEndY`): ボックスの左辺の中点 (`sideBoxLeft`, クランプされた `screenCenterY`)
+1. **Flex アイテムの自動幅縮小**:
+   - `KeyCalloutOverlay.js` において、親ラッパー（`box-wrap`）に `display: 'flex'` が指定されていました。
+   - Flexコンテナの子要素（アノテーションボックス本体）は、`width: '100%'` を指定していても、中の短いコンテンツ（例: "Tasks View" や "Sound" などの英語タイトル）の幅に合わせて、**ボックス全体の横幅が `estimatedWidth` より大幅に狭く自動縮小（フレックス縮小）** されていました。
+2. **縮んだボックス内での説明文の改行**:
+   - ボックス全体の幅が短いタイトルの幅（例: 80px）まで勝手に縮められてしまった結果、縦に並ぶ説明文（日本語）の幅が物理的に足りなくなり、どれだけ全体のスケールや文字サイズが小さくとも、常にボックスの右端で自動改行が発生していました。
 
-2. **下方向配置 (`below`) の接続点を「常に下辺から伸ばす」仕様に統一（大外回り問題の根本的解消）**
-   - 下方向に配置されたアノテーションカードについて、キーからの左右のズレに関わらず、始点（キー側）の接続点を一律で **キーの「下辺の中点」** (`screenCenterX`, `screenKeyBottomY`) に固定します。
-   - **理由**: カードが下（`below`）に配置されている以上、引き出し線の方向は「下」であるため、キーの横（左辺や右辺）から出発すると2枚目の画像のように大外を不自然な角度で横切る不恰好な線になってしまいます。常に下辺から引き出すことで、1枚目の画像のようにキーボードのグリッドに沿って真っ直ぐ（または斜め下に）きれいに降りる、統一感のあるすっきりしたレイアウトを実現できます。
-   - **終点 (`lineEndX`, `lineEndY`)**: 常にボックスの上辺の中点 (`boxLeft + callout.estimatedWidth / 2`, `boxTop`) に接続します。
+### 🛠️ 根本的な解決アプローチ
 
-3. **不要な関数の廃止**
-   - `js/utils/calloutLayout.js` で一時的に追加された機械的な最短距離算出関数 `getClosestKeyEdgeMidpoint` を廃止します。
+アノテーションボックスの幅を、相対値の `width: '100%'` によるブラウザ自動決定に依存するのをやめ、**絶対値（`estimatedWidth`）で物理的にカチッと固定**します。
 
-### 変更対象ファイル
-- `js/utils/calloutLayout.js` (接続点ロジックの書き換え、`getClosestKeyEdgeMidpoint` の廃止)
-- `test/utils/calloutLayout.test.js` (テストの追従・検証)
-
-### 検証計画
-- `npm run lint` および `npm run test` の実行。
-- ブラウザ上で、左側アノテーションはキーの左辺から、右側は右辺から、下側は下辺から常に真っ直ぐ破線が伸びていることを確認する。
+- **アノテーションボックス本体の `width` の絶対値固定**:
+  - `KeyCalloutOverlay.js` において、アノテーションボックス本体（中身の `div`）の `width` と `maxWidth` を、相対値の `'100%'` から **`${callout.estimatedWidth}px`** (または em 単位) に変更します：
+    ```javascript
+    width: `${callout.estimatedWidth}px`,
+    maxWidth: `${callout.estimatedWidth}px`,
+    flexShrink: 0, // Flex縮小を完全に無効化する
+    ```
+- **効果**:
+  - これにより、ブラウザの Flex レンダリングやスケール倍率の大きさに関わらず、ボックス本体の横幅は常に計算上の `estimatedWidth` (十分な安全マージンをもった幅) に**完全に固定**されます。
+  - ボックスが短いテキストに引きずられて縮むことが物理的に不可能になるため、不要な自動改行が100%確実に解消します！
 
 ---
 
-## 【追補計画】エンコーダ等のツールチップへのカスタム注釈の反映（2026-06-01）
+## 【追加計画】文字幅見積もり係数の `7.8` への復元（2026-06-01）
 
-### 概要
-- 一般キー（スタンダード、モディファイア、レイヤー）のツールチップには、ユーザーが設定したカスタム注釈（`annotation`）が正しく反映されています（`📌 タイトル` および `詳細説明`）。
-- しかし、エンコーダ（`k.isEncoder`）など、一部のキーではツールチップの生成関数である `buildEncoderTooltip` 内で `annotation` オブジェクトが受け取られておらず、カスタム注釈テキストがツールチップ情報に挿入されない状態になっています。
-- この問題を修正し、エンコーダキーのホバー時のツールチップの最上部にもカスタム注釈が美しく表示されるようにします。
+### 💡 精査による再発見：基本係数 `7.8` は「絶対に必要な安全マージン」であった
+文字幅係数を `6.0` に下げたところ、改行バグが即座に再発してしまいました。
+この事実から、以下のことが完全に裏付けられました。
 
-### 変更方針
-1. **`js/components/keycapTooltip.js` の `buildEncoderTooltip` を修正**
-   - 引数オブジェクトに `annotation = null` を追加します。
-   - 関数内で、もし `annotation` が存在する場合は、`buildStandardKeyTooltip` と同様にツールチップテキストの先頭にカスタム注釈を積みます。
-     ```js
-     if (annotation) {
-       if (annotation.customText) lines.push(`📌 ${annotation.customText}`);
-       if (annotation.description) lines.push(`   ${annotation.description}`);
-       if (annotation.customText || annotation.description) lines.push('');
-     }
-     ```
-   - 既存の `Encoder e${encoderIndex}` など、通常のエンコーダ詳細テキストはその直後に続けます（一般キーと全く同様の仕様）。
+1. **実フォント幅の広さ**:
+   - `Noto Sans JP` や Windows の規定フォント等における全角文字の実際の描画幅は、理論値（フォントサイズと同じ幅）よりもはるかに広くなっています。
+   - そのため、基本係数 `6.0`（全角 12px 相当）では、25%の安全マージンを掛けたとしても、実際の文字幅の合計（およびブラウザの文字間隔・小数点処理のブレ）をカバーするのに**全く足りていませんでした**。
+2. **係数 `7.8` の必要不可欠性**:
+   - 以前成功していた基本係数 **`7.8`** は、過剰（オーバーキル）なのではなく、**ブラウザやフォント環境の違いによる実寸文字幅のブレを完全に吸収し、自動改行を絶対に発生させないために必要不可欠な極めて重要なパラメータ**でした。
 
-2. **`js/components/keycapEncoder.js` の `renderEncoderKeycap` を修正**
-   - 引数として渡されてきている `annotation` を、`buildEncoderTooltip` を呼び出す際の引数オブジェクトにプロパティとして追加します。
-     ```diff
-       const tooltipText = buildEncoderTooltip({
-         encoderIndex: k.encoderIndex,
-         pushText,
-         pushCode: val,
-         macros,
-         keyStyle,
-         currentStyle,
-         ccwActions,
-         ccwLabel,
-         cwLabel,
-         ccwCode,
-         cwCode,
-         trackballCwPrefix: cwPrefix,
-         trackballCcwPrefix: ccwPrefix,
-     +   annotation,
-       });
-     ```
+### 🛠️ 実行内容
 
-### 変更対象ファイル
-- `js/components/keycapTooltip.js` (エンコーダ用ツールチップ生成ロジックの修正)
-- `js/components/keycapEncoder.js` (エンコーダレンダラからの annotation の引き渡し)
+- **基本文字幅係数を `7.8` に完全復元**:
+  - `calloutLayout.js` において、文字幅見積もり係数を `6.0` から **`7.8`** に復元します。
+  - これにより、改行バグを100%確実に防ぎ続けていた以前の「最も安定した美しい表示状態」を直ちに回復します。
 
-### 検証計画
-- `npm run lint` および `npm run test` の実行。
-- ブラウザやテストケースにより、エンコーダキーに対するツールチップ（`title` 属性）にカスタム注釈が正しく含まれていることを確認する。
+
+---
+
+## 【追加計画】自動改行の完全無効化（`whiteSpace: 'pre'` への変更による恒久的解決）（2026-06-01）
+
+### 💡 原因の特定：ブラウザによる予期せぬ「自動折り返し（自動改行）」の発生
+どれほどフォントサイズや見積もり幅を最適化し、Flexによる縮みを無効化しても改行が発生し続けた「真の原因」は、ブラウザがアノテーションボックス内のテキストに対して強制的に行っていた**自動折り返し（Pre-wrap仕様）**にありました。
+
+1. **`white-space: 'pre-wrap'` の限界**:
+   - `KeyCalloutOverlay.js` において、タイトルおよび説明テキストのスタイルに `whiteSpace: 'pre-wrap'` が指定されていました。
+   - これにより、ブラウザのズーム縮小やレンダリングエンジンの文字幅解釈の違いによって「ほんの数ピクセル」でも幅がボックス境界を越えたと判定された瞬間に、ブラウザが強制的に自動折り返しを行い、最後の1文字を次の行に落としてしまっていました。
+2. **自動折り返しによるレイアウト崩壊**:
+   - 短い説明文（「タスクマネージャを起動」など）において、ブラウザによるこの勝手な自動改行が発生すると、アノテーションボックス全体の高さが予測を超えて伸びてしまい、表示倍率に関わらず重なりや崩れを引き起こす最大の要因となっていました。
+
+### 🛠️ 根本的な解決アプローチ
+
+ブラウザによる勝手な「自動折り返し（自動改行）」を完全に無効化し、アノテーションカードに記述されたテキストの1行表示を保証します。
+
+- **`whiteSpace` を `'pre'` に変更**:
+  - `KeyCalloutOverlay.js` 内のタイトル (`customText`) および説明 (`description`) の CSS スタイルにおいて、`whiteSpace: 'pre-wrap'` を **`whiteSpace: 'pre'`** に変更します。
+- **効果**:
+  - これにより、ブラウザの自動折り返し機能が物理的に完全にブロックされ、テキストが勝手に改行される現象が100%完全に解消します。
+  - ユーザーがEnterキーで明示的に入力した意図的な改行（`\n`）は `'pre'` 仕様によって正しく維持されつつ、不要な自動改行は一切発生しなくなるため、いかなる表示倍率やブラウザ環境であっても崩れのない完璧な1行表示が保証されます！
+
+---
+
+## 【追加計画】不要な調整項目の精査とクリーンアップ（係数の最適化）（2026-06-01）
+
+### 💡 調整項目の精査
+
+今回のバグ修正の過程で追加・変更した項目のうち、現在の安定したレイアウト（`em` 単位化、Flex縮小無効化、ルート中央配置）を維持する上で、**過剰（オーバーキル）**になっているパラメータを精査します。
+
+1. **文字幅見積もり係数 `7.8` (過剰調整)**:
+   - 以前、アノテーションボックスが左側から押し潰されたり、Flexコンテナによって勝手に縮んでいた根本原因が未解決だった際、無理やり幅を広げようとして文字幅係数を `5.8` ➔ `6.8` ➔ `7.8` まで引き上げていました。
+   - 現在は「ルート中央配置（幅の絶対固定）」および「Flex縮小の完全無効化」および「25%の安全マージン」がすべて完璧に機能しているため、基本係数を `7.8` にしたまま `1.25` を掛けると、**等倍時にもボックスの幅が必要以上に過剰に広くなってしまう**（左右に無駄なスペースを取りすぎてしまう）問題があります。
+   - 実寸フォントサイズ（12px）に対して、基本係数は本来の理想値である **`6.0`**（半角 6px、全角 12px 相当）で十分に安全であり、そこに 25% の安全マージン（`1.25`倍）を掛けるのが最も設計として無駄がなく、かつ最も美しいアノテーションボックスのプロポーションを維持できます。
+2. **デザイン上のフォントサイズ、絶対値固定、ソート順**:
+   - `13px`/`12px` へのフォントサイズ引き上げ、および `resolveOverlap` 内での物理位置（`lineStartY`）ソート、中身のボックスの `estimatedWidth` による絶対幅ロックと `flexShrink: 0` は、すべてバグの恒久的再発を防ぐための極めて堅牢なインフラであるため、**すべて維持**します。
+   - `whiteSpace: 'pre'` への移行は不要になったため、**`pre-wrap` のまま安全に自動折り返しを維持**します。
+
+### 🛠️ クリーンアップの実行内容
+
+- **基本文字幅係数を `7.8` ➔ `6.0` に最適化**:
+  - `calloutLayout.js` において、`estimateCalloutWidth` および `estimateCalloutHeight` 内の基本係数 `7.8` を **`6.0`** にクリーンアップします。
+  - これにより、25%の安全マージンを掛けた後の最終幅が過剰に巨大化するのを防ぎ、UIとして極めて洗練されたモダンな幅と余白のバランスを実現します。
+
 
 

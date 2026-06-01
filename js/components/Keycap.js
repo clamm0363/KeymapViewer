@@ -13,7 +13,7 @@ import {
   normalizeTargetIconKey,
   shortenLabel,
 } from './keycapIconUtils.js';
-import { buildStandardKeyTooltip } from './keycapTooltip.js';
+import { buildStandardHoverInfo } from './keycapTooltip.js';
 import { renderEncoderKeycap } from './keycapEncoder.js';
 import { renderLayerKeycap, renderModKeycap, renderStandardKeycap } from './keycapSections.js';
 
@@ -35,6 +35,8 @@ export function Keycap({
   matrixKey,
   annotation,
   onAnnotateKey,
+  onKeyHover,
+  onKeyHoverLeave,
 }) {
   const parsed = parseKeyLabel(val, k.id, displayMode, keyStyle, macroAliases, k.isJIS);
   let {
@@ -120,6 +122,8 @@ export function Keycap({
       matrixKey,
       annotation,
       onAnnotateKey,
+      onKeyHover,
+      onKeyHoverLeave,
     });
   }
 
@@ -258,7 +262,7 @@ export function Keycap({
     displayModel: activeDisplayModel,
     macros: (externalMap && externalMap.macros) || [],
   });
-  const tooltipText = buildStandardKeyTooltip(
+  const hoverContentInfo = buildStandardHoverInfo(
     val || fullRaw,
     keyStyle,
     (externalMap && externalMap.macros) || [],
@@ -322,7 +326,6 @@ export function Keycap({
     {
       key: i,
       className: `key-cap group${k.isJIS ? ' jis-key' : ''}`,
-      title: tooltipText,
       'data-key-raw': displayRaw,
       onClick: (e) => {
         const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);
@@ -335,6 +338,16 @@ export function Keycap({
         if (onAnnotateKey) {
           e.preventDefault();
           onAnnotateKey(matrixKey);
+        }
+      },
+      onMouseEnter: (e) => {
+        if (onKeyHover) {
+          onKeyHover(e, hoverContentInfo);
+        }
+      },
+      onMouseLeave: () => {
+        if (onKeyHoverLeave) {
+          onKeyHoverLeave();
         }
       },
       style: getKeycapFrameStyle({

@@ -145,4 +145,96 @@ describe('calloutLayout', () => {
     expect(model.callouts).toHaveLength(1);
     expect(model.callouts[0].keyId).toBe('0,1');
   });
+
+  it('slides vertically to resolve overlaps for closely placed side callouts', () => {
+    const wideScaleMetrics = {
+      ...scaleMetrics,
+      containerWidth: 1000,
+    };
+    // 縦に極端に隣接する2つのキーを設定
+    const model = buildCalloutOverlayModel({
+      keys: [
+        { x: 40, y: 30, w: 40, h: 40, matrix: [0, 0] },
+        { x: 40, y: 35, w: 40, h: 40, matrix: [0, 1] },
+      ],
+      keyAnnotations: {
+        '0,0': { customText: 'Sound', description: 'Volume UP controls' },
+        '0,1': { customText: 'Mute', description: 'Toggle sound off' },
+      },
+      scaleMetrics: wideScaleMetrics,
+    });
+
+    expect(model.callouts).toHaveLength(2);
+    const [c1, c2] = model.callouts;
+
+    expect(c1.placement).toBe('left');
+    expect(c2.placement).toBe('left');
+
+    // アグレッシブ・トップシフトによって、最上部 c1.boxTop が CALLOUT_SAFE_PADDING (4) まで引き上げられていることを確認
+    expect(c1.boxTop).toBe(4);
+
+    // 衝突回避されて、お互いの間隔が GAP (12px) 以上離れていることを確認
+    expect(c2.boxTop).toBeGreaterThanOrEqual(c1.boxTop + c1.estimatedHeight + 12);
+
+    // lineEndY が再計算されて、それぞれのボックスの範囲内 [boxTop, boxTop + estimatedHeight] に収まっていることを確認
+    expect(c1.lineEndY).toBeGreaterThanOrEqual(c1.boxTop);
+    expect(c1.lineEndY).toBeLessThanOrEqual(c1.boxTop + c1.estimatedHeight);
+
+    expect(c2.lineEndY).toBeGreaterThanOrEqual(c2.boxTop);
+    expect(c2.lineEndY).toBeLessThanOrEqual(c2.boxTop + c2.estimatedHeight);
+  });
+
+  it('resolves overlaps correctly even if initial boxTop order is inverted relative to physical lineStartY', () => {
+    const wideScaleMetrics = {
+      ...scaleMetrics,
+      containerWidth: 1000,
+    };
+    const model = buildCalloutOverlayModel({
+      keys: [
+        { x: 40, y: 30, w: 40, h: 40, matrix: [0, 0] },
+        { x: 40, y: 35, w: 40, h: 40, matrix: [0, 1] },
+      ],
+      keyAnnotations: {
+        '0,0': {
+          customText: 'Very Long Title that is Taller',
+          description: 'This is a long description to make the box high and shift its initial boxTop upward.',
+        },
+        '0,1': { customText: 'Short', description: 'Tiny' },
+      },
+      scaleMetrics: wideScaleMetrics,
+    });
+
+    expect(model.callouts).toHaveLength(2);
+    const [c1, c2] = model.callouts;
+
+    expect(c1.keyId).toBe('0,0');
+    expect(c2.keyId).toBe('0,1');
+
+    expect(c1.boxTop).toBe(4);
+    expect(c2.boxTop).toBeGreaterThanOrEqual(c1.boxTop + c1.estimatedHeight + 12);
+  });
+
+
+  it('estimates box height correctly for Japanese full-width text', () => {
+    const wideScaleMetrics = {
+      ...scaleMetrics,
+      containerWidth: 1000,
+    };
+    const model = buildCalloutOverlayModel({
+      keys: [{ x: 40, y: 30, w: 40, h: 40, matrix: [0, 0] }],
+      keyAnnotations: {
+        '0,0': {
+          customText: 'サウンド出力設定',
+          description: 'Windowsのサウンド出力選択オプションの表示を行います。'
+        }
+      },
+      scaleMetrics: wideScaleMetrics,
+    });
+
+    expect(model.callouts).toHaveLength(1);
+    const c = model.callouts[0];
+    
+    // 全角日本語が正しく半角換算され、十分な高さを確保していることを確認
+    expect(c.estimatedHeight).toBeGreaterThan(60); 
+  });
 });

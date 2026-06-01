@@ -24,6 +24,8 @@ export function Keyboard({
   _showCallouts = false,
   onAnnotateKey = null,
   onKeysChange = null,
+  onKeyHover = null,
+  onKeyHoverLeave = null,
 }) {
   const [codes, setCodes] = useState({});
   const containerRef = useRef(null);
@@ -394,6 +396,7 @@ export function Keyboard({
       className:
         'keyboard-container relative overflow-hidden flex items-center justify-center py-1 px-6',
       style: { width: '100%', height: `${maxHeight * finalScale + 8}px` },
+      onMouseLeave: onKeyHoverLeave,
     },
     createElement(
       'div',
@@ -466,6 +469,8 @@ export function Keyboard({
               matrixKey: mK,
               annotation: keyAnnotations[mK] || null,
               onAnnotateKey,
+              onKeyHover,
+              onKeyHoverLeave,
             });
           }),
         ]
