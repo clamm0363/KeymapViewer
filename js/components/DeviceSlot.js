@@ -1,4 +1,4 @@
-const { createElement, Fragment, useEffect, useState } = React;
+const { createElement, Fragment, useCallback, useEffect, useState } = React;
 import { Keyboard } from './Keyboard.js';
 import { sanitizeDeviceName, findSplitX } from '../utils/helpers.js';
 import { createSVGElement } from '../svg-icons.js';
@@ -9,7 +9,12 @@ import {
   resolveInputDeviceSetting,
   toLegacyEncoderStyle,
 } from './inputDeviceSettings.js';
-import { setAnnotation, clearAnnotation } from '../utils/keyAnnotations.js';
+import {
+  clearAnnotation,
+  getAnnotation,
+  getLayerAnnotations,
+  setAnnotation,
+} from '../utils/keyAnnotations.js';
 import { buildCalloutOverlayModel } from '../utils/calloutLayout.js';
 import { KeyAnnotationModal } from './KeyAnnotationModal.js';
 import { KeyCalloutOverlay } from './KeyCalloutOverlay.js';
@@ -146,17 +151,30 @@ export function DeviceSlot({
   const [annotatingKey, setAnnotatingKey] = useState(null);
   const [localScaleMetrics, setLocalScaleMetrics] = useState(null);
   const [localFilteredKeys, setLocalFilteredKeys] = useState([]);
+  const currentLayer = Number(dev.layer) || 0;
+  const currentLayerAnnotations = getLayerAnnotations(dev.keyAnnotations || {}, currentLayer);
 
   const handleAnnotationSave = (data) => {
+    if (!annotatingKey) return;
     onUpdateDevice(dev.id, {
-      keyAnnotations: setAnnotation(dev.keyAnnotations || {}, annotatingKey, data)
+      keyAnnotations: setAnnotation(
+        dev.keyAnnotations || {},
+        annotatingKey.matrixKey,
+        data,
+        annotatingKey.layer
+      )
     });
     setAnnotatingKey(null);
   };
   
   const handleAnnotationClear = () => {
+    if (!annotatingKey) return;
     onUpdateDevice(dev.id, {
-      keyAnnotations: clearAnnotation(dev.keyAnnotations || {}, annotatingKey)
+      keyAnnotations: clearAnnotation(
+        dev.keyAnnotations || {},
+        annotatingKey.matrixKey,
+        annotatingKey.layer
+      )
     });
     setAnnotatingKey(null);
   };
@@ -192,6 +210,25 @@ export function DeviceSlot({
   const handleKeyHoverLeave = () => {
     setActiveTooltip(null);
   };
+  const handleScaleMetricsChange = useCallback(
+    (metrics) => {
+      setLocalScaleMetrics((prev) => {
+        if (
+          prev &&
+          prev.autoFitScale === metrics.autoFitScale &&
+          prev.finalScale === metrics.finalScale &&
+          prev.maxWidth === metrics.maxWidth &&
+          prev.maxHeight === metrics.maxHeight &&
+          prev.containerWidth === metrics.containerWidth
+        ) {
+          return prev;
+        }
+        return metrics;
+      });
+      if (onScaleMetricsChange) onScaleMetricsChange(metrics);
+    },
+    [onScaleMetricsChange]
+  );
   const layerOptions = (dev.keymapJson && dev.keymapJson.layers) ||
     (dev.design && dev.design.layers) || [0, 1, 2, 3];
   const totalLayerPages = Math.max(1, Math.ceil(layerOptions.length / MAX_VISIBLE_LAYER_BUTTONS));
@@ -975,7 +1012,7 @@ export function DeviceSlot({
     showCallouts && localScaleMetrics && localFilteredKeys.length > 0
       ? buildCalloutOverlayModel({
           keys: localFilteredKeys,
-          keyAnnotations: dev.keyAnnotations || {},
+          keyAnnotations: currentLayerAnnotations,
           scaleMetrics: localScaleMetrics,
         })
       : null;
@@ -1520,13 +1557,10 @@ export function DeviceSlot({
                     encoderStyles: dev.encoderStyles || {},
                     inputDeviceSettings: dev.inputDeviceSettings || {},
                     layoutOptions: dev.layoutOptions || {},
-                    onScaleMetricsChange: (metrics) => {
-                      setLocalScaleMetrics(metrics);
-                      if (onScaleMetricsChange) onScaleMetricsChange(metrics);
-                    },
-                    keyAnnotations: dev.keyAnnotations || {},
+                    onScaleMetricsChange: handleScaleMetricsChange,
+                    keyAnnotations: currentLayerAnnotations,
                     showCallouts,
-                    onAnnotateKey: (matrixKey) => setAnnotatingKey(matrixKey),
+                    onAnnotateKey: (matrixKey) => setAnnotatingKey({ matrixKey, layer: currentLayer }),
                     onKeysChange: setLocalFilteredKeys,
                     onKeyHover: handleKeyHover,
                     onKeyHoverLeave: handleKeyHoverLeave,
@@ -1590,8 +1624,13 @@ export function DeviceSlot({
         createElement(KeyAnnotationModal, {
           key: 'annotation-modal',
           isLightApp,
-          matrixKey: annotatingKey,
-          currentAnnotation: dev.keyAnnotations?.[annotatingKey] || null,
+          matrixKey: annotatingKey.matrixKey,
+          layer: annotatingKey.layer,
+          currentAnnotation: getAnnotation(
+            dev.keyAnnotations || {},
+            annotatingKey.matrixKey,
+            annotatingKey.layer
+          ),
           onSave: handleAnnotationSave,
           onClear: handleAnnotationClear,
           onClose: () => setAnnotatingKey(null),

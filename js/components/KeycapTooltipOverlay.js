@@ -1,8 +1,10 @@
-const { createElement, useRef, useEffect, useState } = React;
+const { createElement, useRef, useLayoutEffect, useState } = React;
 
 // エンコーダのアクション行を描画する純粋ヘルパー関数
 function renderEncoderActionRow(label, actionInfo, isLight, key) {
   const labelColClass = isLight ? 'text-slate-400' : 'text-slate-500';
+  const secondaryTextClass = isLight ? 'text-slate-600' : 'text-slate-300';
+  const tertiaryTextClass = isLight ? 'text-slate-500' : 'text-slate-400';
   return createElement(
     'div',
     { key, className: 'flex flex-col gap-0.5' },
@@ -44,11 +46,35 @@ function renderEncoderActionRow(label, actionInfo, isLight, key) {
             'div',
             {
               key: 'desc',
-              className: 'text-[9.5px] font-medium text-slate-400 break-all leading-normal pl-3',
+              className: `text-[9.5px] font-medium ${secondaryTextClass} break-all leading-normal pl-3`,
               style: { fontFamily: "'Noto Sans JP', sans-serif" },
             },
             actionInfo.desc
           )
+        : null,
+      actionInfo.macros && actionInfo.macros.length > 0
+        ? createElement('div', { key: 'macro-steps', className: 'flex flex-col gap-0.5 pl-3 pt-1' }, [
+            createElement(
+              'div',
+              {
+                key: 'macro-title',
+                className: `text-[8px] font-black tracking-widest uppercase ${labelColClass}`,
+                style: { fontFamily: "'Outfit', sans-serif" },
+              },
+              'Macro Actions'
+            ),
+            ...actionInfo.macros.map((step, idx) =>
+              createElement(
+                'div',
+                {
+                  key: `macro-step-${idx}`,
+                  className: `text-[9px] font-medium ${tertiaryTextClass} break-all leading-normal`,
+                  style: { fontFamily: "'Noto Sans JP', sans-serif" },
+                },
+                step
+              )
+            ),
+          ])
         : null,
     ]
   );
@@ -56,9 +82,9 @@ function renderEncoderActionRow(label, actionInfo, isLight, key) {
 
 export function KeycapTooltipOverlay({ activeTooltip, isLight }) {
   const tooltipRef = useRef(null);
-  const [coords, setCoords] = useState({ left: 0, top: 0 });
+  const [coords, setCoords] = useState(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!activeTooltip || !tooltipRef.current) return;
 
     const tooltipEl = tooltipRef.current;
@@ -137,6 +163,9 @@ export function KeycapTooltipOverlay({ activeTooltip, isLight }) {
 
   const labelColClass = isLight ? 'text-slate-400' : 'text-slate-500';
   const annotationTitleClass = isLight ? 'text-blue-600' : 'text-blue-400';
+  const secondaryTextClass = isLight ? 'text-slate-600' : 'text-slate-300';
+  const tertiaryTextClass = isLight ? 'text-slate-500' : 'text-slate-400';
+  const debugTextClass = isLight ? 'text-slate-500' : 'text-slate-500';
 
   const children = [];
 
@@ -159,12 +188,12 @@ export function KeycapTooltipOverlay({ activeTooltip, isLight }) {
       annotChildren.push(
         createElement(
           'div',
-          {
-            key: 'annot-desc',
-            className: `${isLight ? 'text-slate-600' : 'text-slate-300'} text-[10px] leading-relaxed break-all font-semibold`,
-          },
-          annotation.description
-        )
+            {
+              key: 'annot-desc',
+              className: `${secondaryTextClass} text-[10px] leading-relaxed break-all font-semibold`,
+            },
+            annotation.description
+          )
       );
     }
 
@@ -246,7 +275,7 @@ export function KeycapTooltipOverlay({ activeTooltip, isLight }) {
               'div',
               {
                 key: 'code-desc',
-                className: `text-[10px] font-medium ${isLight ? 'text-slate-600' : 'text-slate-300'}`,
+                className: `text-[10px] font-medium ${secondaryTextClass}`,
                 style: { fontFamily: "'Noto Sans JP', sans-serif" },
               },
               description
@@ -280,7 +309,7 @@ export function KeycapTooltipOverlay({ activeTooltip, isLight }) {
             'div',
             {
               key: `macro-step-${idx}`,
-              className: 'text-[9.5px] font-medium text-slate-400 break-all leading-normal',
+              className: `text-[9.5px] font-medium ${tertiaryTextClass} break-all leading-normal`,
               style: { fontFamily: "'Noto Sans JP', sans-serif" },
             },
             step
@@ -312,12 +341,12 @@ export function KeycapTooltipOverlay({ activeTooltip, isLight }) {
         ...debugLines.map((line, idx) =>
           createElement(
             'div',
-            {
-              key: `debug-line-${idx}`,
-              className: `text-[8.5px] font-mono leading-relaxed ${isLight ? 'text-slate-400' : 'text-slate-500'} break-all`,
-            },
-            line
-          )
+              {
+                key: `debug-line-${idx}`,
+                className: `text-[8.5px] font-mono leading-relaxed ${debugTextClass} break-all`,
+              },
+              line
+            )
         ),
       ])
     );
@@ -329,13 +358,14 @@ export function KeycapTooltipOverlay({ activeTooltip, isLight }) {
       ref: tooltipRef,
       style: {
         position: 'fixed',
-        left: `${coords.left}px`,
-        top: `${coords.top}px`,
+        left: `${coords?.left ?? 0}px`,
+        top: `${coords?.top ?? 0}px`,
         pointerEvents: 'none',
         zIndex: 1000,
         width: 'max-content',
         maxWidth: '280px',
         boxSizing: 'border-box',
+        visibility: coords ? 'visible' : 'hidden',
         fontFamily: "'Outfit', 'Noto Sans JP', sans-serif",
         backgroundColor: bgCol,
         border: `1.2px solid ${borderCol}`,

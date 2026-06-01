@@ -83,6 +83,15 @@ function getMacroContentInfo(code, macros = []) {
   };
 }
 
+function getMacroSteps(code, macros = [], keyStyle = 'Windows') {
+  const macroInfo = getMacroContentInfo(code, macros);
+  if (!macroInfo) return null;
+  if (!macroInfo.content) return ['Empty'];
+
+  const translatedSteps = translateMacroContent(macroInfo.content, keyStyle);
+  return translatedSteps.length > 0 ? translatedSteps : [macroInfo.content];
+}
+
 function appendMacroContentLines(lines, code, macros = [], keyStyle = 'Windows') {
   const macroInfo = getMacroContentInfo(code, macros);
   if (!macroInfo) return;
@@ -257,6 +266,7 @@ export function buildEncoderHoverInfo({
     label: pushText,
     code: pushCode || 'KC_NO',
     desc: getKeycodeTooltipInfo(pushCode || 'KC_NO', pushCode || 'KC_NO', keyStyle).description,
+    macros: getMacroSteps(pushCode || 'KC_NO', macros, keyStyle),
   };
 
   let cwInfo = null;
@@ -282,6 +292,7 @@ export function buildEncoderHoverInfo({
       label: cwLabel,
       code: cwCode,
       desc: getKeycodeTooltipInfo(cwCode, cwCode, keyStyle).description,
+      macros: getMacroSteps(cwCode, macros, keyStyle),
     };
 
     ccwInfo = {
@@ -289,6 +300,7 @@ export function buildEncoderHoverInfo({
       label: ccwLabel,
       code: ccwCode,
       desc: getKeycodeTooltipInfo(ccwCode, ccwCode, keyStyle).description,
+      macros: getMacroSteps(ccwCode, macros, keyStyle),
     };
   }
 

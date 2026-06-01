@@ -103,4 +103,22 @@ describe('keycapTooltip.js buildEncoderHoverInfo tests', () => {
     expect(info.cwInfo.label).toBe('Volume Up');
     expect(info.ccwInfo.label).toBe('Volume Down');
   });
+
+  it('should include macro steps for encoder actions when mapped to macros', () => {
+    const info = buildEncoderHoverInfo({
+      encoderIndex: 0,
+      pushText: 'Macro 0',
+      pushCode: 'MACRO(0)',
+      macros: ['{KC_A}hello', '{KC_B}'],
+      ccwActions: ['MACRO(1)', 'KC_VOLU'],
+      ccwLabel: 'Macro 1',
+      cwLabel: 'Volume Up',
+      ccwCode: 'MACRO(1)',
+      cwCode: 'KC_VOLU',
+    });
+
+    expect(info.pushInfo.macros).toEqual(['Tap a and A', 'Type "hello"']);
+    expect(info.ccwInfo.macros).toEqual(['Tap b and B']);
+    expect(info.cwInfo.macros).toBeNull();
+  });
 });

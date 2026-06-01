@@ -3,6 +3,7 @@ const { createElement, useState } = React;
 export function KeyAnnotationModal({
   isLightApp,
   matrixKey,
+  layer = 0,
   currentAnnotation, // null or { customText, description, iconKey }
   onSave,            // ({ customText, description, iconKey }) => void
   onClear,           // () => void
@@ -54,7 +55,7 @@ export function KeyAnnotationModal({
                 className: 'text-sm font-black uppercase tracking-widest text-blue-500',
                 style: { fontFamily: "'Outfit', sans-serif" },
               },
-              `Key Annotation (${matrixKey})`
+              `Key Annotation (L${layer} / ${matrixKey})`
             ),
             createElement(
               'button',
