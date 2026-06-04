@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildCalloutOverlayModel,
-  CALLOUT_BOTTOM_PADDING,
+  CALLOUT_CONNECTOR_DROP,
   CALLOUT_LINE_LENGTH,
   CALLOUT_MAX_WIDTH,
   CALLOUT_ROW_GAP,
@@ -41,7 +41,39 @@ describe('calloutLayout', () => {
     expect(model.callouts).toHaveLength(1);
     expect(model.bottomPadding).toBe(0);
     expect(model.callouts[0].placement).toBe('left');
-    expect(model.callouts[0].lineEndX).toBe(model.callouts[0].lineStartX - CALLOUT_LINE_LENGTH);
+    expect(model.callouts[0].lineEndX).toBeLessThan(model.callouts[0].lineStartX);
+    expect(model.callouts[0].lineStartX - model.callouts[0].lineEndX).toBeGreaterThan(
+      CALLOUT_LINE_LENGTH - 3
+    );
+  });
+
+  it('places side callouts outside the overall keyboard bounds instead of beside inner keys', () => {
+    const wideScaleMetrics = {
+      finalScale: 1,
+      maxWidth: 620,
+      maxHeight: 160,
+      containerWidth: 1400,
+    };
+    const keys = [
+      { x: 0, y: 20, w: 56, h: 56, matrix: [0, 0] },
+      { x: 180, y: 20, w: 56, h: 56, matrix: [0, 1] },
+      { x: 520, y: 20, w: 56, h: 56, matrix: [0, 2] },
+    ];
+    const model = buildCalloutOverlayModel({
+      keys,
+      keyAnnotations: { '0,1': { customText: 'Inner Key', description: 'Should not overlap keys' } },
+      scaleMetrics: wideScaleMetrics,
+    });
+
+    expect(model.callouts).toHaveLength(1);
+    expect(model.callouts[0].placement).toBe('left');
+
+    const occupiedLeftEdge =
+      wideScaleMetrics.containerWidth / 2 +
+      ((keys[0].x + 20) - wideScaleMetrics.maxWidth / 2) * wideScaleMetrics.finalScale;
+    expect(model.callouts[0].boxLeft + model.callouts[0].estimatedWidth).toBe(
+      occupiedLeftEdge - CALLOUT_LINE_LENGTH
+    );
   });
 
   it('falls back below when side placement would overflow', () => {
@@ -53,9 +85,89 @@ describe('calloutLayout', () => {
 
     expect(model.callouts).toHaveLength(1);
     expect(model.callouts[0].placement).toBe('below');
-    expect(model.bottomPadding).toBe(CALLOUT_BOTTOM_PADDING);
+    expect(model.bottomPadding).toBeGreaterThan(0);
+    expect(model.bottomPadding).toBeLessThan(200);
+    expect(['top', 'left', 'right']).toContain(model.callouts[0].connectorAttachSide);
+    expect(model.callouts[0].connectorPoints.length).toBeGreaterThanOrEqual(3);
+    expect(model.callouts[0].connectorPoints[1].x).toBe(model.callouts[0].lineStartX);
+    expect(model.callouts[0].connectorPoints[1].y).toBe(
+      model.callouts[0].lineStartY + CALLOUT_CONNECTOR_DROP
+    );
     expect(model.callouts[0].boxLeft + CALLOUT_MAX_WIDTH).toBeLessThanOrEqual(scaleMetrics.containerWidth - 4);
     expect(model.callouts[0].boxTop).toBeGreaterThan(scaleMetrics.maxHeight);
+  });
+
+  it('falls back below when the outer side band is unavailable even if the slot still has room', () => {
+    const crampedOuterBandMetrics = {
+      finalScale: 1,
+      maxWidth: 620,
+      maxHeight: 160,
+      containerWidth: 760,
+    };
+    const model = buildCalloutOverlayModel({
+      keys: [
+        { x: 0, y: 20, w: 56, h: 56, matrix: [0, 0] },
+        { x: 180, y: 20, w: 56, h: 56, matrix: [0, 1] },
+        { x: 520, y: 20, w: 56, h: 56, matrix: [0, 2] },
+      ],
+      keyAnnotations: { '0,1': { customText: 'Inner Key', description: 'Move below when side bands are tight' } },
+      scaleMetrics: crampedOuterBandMetrics,
+    });
+
+    expect(model.callouts).toHaveLength(1);
+    expect(model.callouts[0].placement).toBe('below');
+    expect(model.callouts[0].connectorPoints.length).toBeGreaterThanOrEqual(3);
+    expect(model.callouts[0].boxTop).toBeGreaterThan(crampedOuterBandMetrics.maxHeight);
+  });
+
+  it('can keep below connectors attached from the top edge when the card stays near the key center', () => {
+    const centeredMetrics = {
+      finalScale: 1,
+      maxWidth: 520,
+      maxHeight: 160,
+      containerWidth: 520,
+    };
+    const model = buildCalloutOverlayModel({
+      keys: [{ x: 220, y: 20, w: 56, h: 56, matrix: [0, 0] }],
+      keyAnnotations: {
+        '0,0': { customText: 'Centered', description: 'Should enter from the top edge' },
+      },
+      scaleMetrics: centeredMetrics,
+    });
+
+    expect(model.callouts).toHaveLength(1);
+    expect(model.callouts[0].placement).toBe('below');
+    expect(model.callouts[0].connectorAttachSide).toBe('top');
+    expect(model.callouts[0].connectorPoints).toHaveLength(3);
+  });
+
+  it('uses side attachment with at most two bends when a below callout would enter at a steep angle', () => {
+    const wideMetrics = {
+      finalScale: 1,
+      maxWidth: 620,
+      maxHeight: 160,
+      containerWidth: 760,
+    };
+    const model = buildCalloutOverlayModel({
+      keys: [
+        { x: 0, y: 20, w: 56, h: 56, matrix: [0, 0] },
+        { x: 260, y: 20, w: 56, h: 56, matrix: [0, 1] },
+        { x: 520, y: 20, w: 56, h: 56, matrix: [0, 2] },
+      ],
+      keyAnnotations: {
+        '0,2': { customText: 'Far Right', description: 'Connector should prefer the card side' },
+      },
+      scaleMetrics: wideMetrics,
+    });
+
+    expect(model.callouts).toHaveLength(1);
+    expect(model.callouts[0].placement).toBe('below');
+    expect(['left', 'right']).toContain(model.callouts[0].connectorAttachSide);
+    expect(model.callouts[0].connectorPoints.length).toBeLessThanOrEqual(4);
+    expect(model.callouts[0].connectorPoints[1].y).toBe(
+      model.callouts[0].lineStartY + CALLOUT_CONNECTOR_DROP
+    );
+    expect(model.callouts[0].lineEndY).toBeGreaterThan(model.callouts[0].boxTop);
   });
 
   it('keeps side placement by sliding vertically when the box would overflow above the slot area', () => {
@@ -173,8 +285,8 @@ describe('calloutLayout', () => {
     // アグレッシブ・トップシフトによって、最上部 c1.boxTop が CALLOUT_SAFE_PADDING (4) まで引き上げられていることを確認
     expect(c1.boxTop).toBe(4);
 
-    // 衝突回避されて、お互いの間隔が GAP (12px) 以上離れていることを確認
-    expect(c2.boxTop).toBeGreaterThanOrEqual(c1.boxTop + c1.estimatedHeight + 12);
+    // 衝突回避されて、お互いの間隔が GAP (9px) 以上離れていることを確認
+    expect(c2.boxTop).toBeGreaterThanOrEqual(c1.boxTop + c1.estimatedHeight + 9);
 
     // lineEndY が再計算されて、それぞれのボックスの範囲内 [boxTop, boxTop + estimatedHeight] に収まっていることを確認
     expect(c1.lineEndY).toBeGreaterThanOrEqual(c1.boxTop);
@@ -211,7 +323,7 @@ describe('calloutLayout', () => {
     expect(c2.keyId).toBe('0,1');
 
     expect(c1.boxTop).toBe(4);
-    expect(c2.boxTop).toBeGreaterThanOrEqual(c1.boxTop + c1.estimatedHeight + 12);
+    expect(c2.boxTop).toBeGreaterThanOrEqual(c1.boxTop + c1.estimatedHeight + 9);
   });
 
 

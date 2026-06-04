@@ -9,6 +9,7 @@ export function KeyCalloutOverlay({ model, isLight, _isAppDark }) {
   const borderCol = isLight ? 'rgba(100, 116, 139, 0.55)' : 'rgba(100, 116, 139, 0.6)';
   const textCol = isLight ? '#1e293b' : '#e2e8f0';
   const lineCol = isLight ? 'rgba(100, 116, 139, 0.72)' : 'rgba(100, 116, 139, 0.7)';
+  const anchorDotCol = isLight ? 'rgba(96, 165, 250, 0.72)' : 'rgba(96, 165, 250, 0.68)';
   const boxShadow = isLight
     ? '0 14px 28px rgba(148, 163, 184, 0.2), 0 4px 10px rgba(15, 23, 42, 0.08)'
     : '0 6px 15px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)';
@@ -25,7 +26,7 @@ export function KeyCalloutOverlay({ model, isLight, _isAppDark }) {
         width: `${model.svgWidth}px`,
         height: `${model.overlayHeight}px`,
         pointerEvents: 'none',
-        zIndex: 90,
+        zIndex: 45,
         overflow: 'visible',
       },
     },
@@ -43,18 +44,31 @@ export function KeyCalloutOverlay({ model, isLight, _isAppDark }) {
             overflow: 'visible',
           },
         },
-        model.callouts.map((callout) =>
-          createElement('line', {
-            key: `line-${callout.keyId}`,
-            x1: callout.lineStartX,
-            y1: callout.lineStartY,
-            x2: callout.lineEndX,
-            y2: callout.lineEndY,
-            stroke: lineCol,
-            strokeWidth: 1.5,
-            strokeDasharray: '4 3',
-          })
-        )
+        model.callouts.flatMap((callout) => {
+          const polylinePoints = Array.isArray(callout.connectorPoints)
+            ? callout.connectorPoints.map((point) => `${point.x},${point.y}`).join(' ')
+            : `${callout.lineStartX},${callout.lineStartY} ${callout.lineEndX},${callout.lineEndY}`;
+
+          return [
+            createElement('polyline', {
+              key: `line-${callout.keyId}`,
+              points: polylinePoints,
+              fill: 'none',
+              stroke: lineCol,
+              strokeWidth: 1.5,
+              strokeDasharray: '4 3',
+              strokeLinecap: 'round',
+              strokeLinejoin: 'round',
+            }),
+            createElement('circle', {
+              key: `anchor-dot-${callout.keyId}`,
+              cx: callout.lineStartX,
+              cy: callout.lineStartY,
+              r: 1.35,
+              fill: anchorDotCol,
+            }),
+          ];
+        })
       ),
       ...model.callouts.map((callout) => {
         const wrapperStyle =
@@ -89,9 +103,9 @@ export function KeyCalloutOverlay({ model, isLight, _isAppDark }) {
                 width: `${callout.estimatedWidth}px`,
                 maxWidth: `${callout.estimatedWidth}px`,
                 flexShrink: 0,
-                padding: '8px 12px',
+                padding: '7px 12px',
                 border: `1.2px solid ${borderCol}`,
-                borderRadius: '8px',
+                borderRadius: '7px',
                 backgroundColor: bgCol,
                 boxShadow,
                 display: 'flex',
@@ -107,10 +121,10 @@ export function KeyCalloutOverlay({ model, isLight, _isAppDark }) {
                       key: 'custom-text',
                       style: {
                         fontFamily: "'Outfit', 'Noto Sans JP', sans-serif",
-                        fontSize: '13px',
-                        fontWeight: '700',
+                        fontSize: '14px',
+                        fontWeight: '800',
                         lineHeight: '1.35',
-                        marginBottom: callout.description ? '6px' : '0',
+                        marginBottom: callout.description ? '5px' : '0',
                         color: textCol,
                         textAlign: 'left',
                         whiteSpace: 'pre-wrap',
@@ -129,7 +143,7 @@ export function KeyCalloutOverlay({ model, isLight, _isAppDark }) {
                         fontFamily: "'Outfit', 'Noto Sans JP', sans-serif",
                         fontSize: '12px',
                         fontWeight: '400',
-                        opacity: 0.9,
+                        opacity: 0.82,
                         lineHeight: '1.4',
                         color: textCol,
                         textAlign: 'left',
