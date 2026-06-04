@@ -3,10 +3,19 @@ export const CALLOUT_MIN_WIDTH = 160;
 export const CALLOUT_LINE_LENGTH = 48;
 export const CALLOUT_SAFE_PADDING = 4;
 export const CALLOUT_BELOW_OFFSET = 12;
-export const CALLOUT_BOTTOM_PADDING = 360;
 export const CALLOUT_TOP_OFFSET = 4;
 export const CALLOUT_COLUMN_GAP = 16;
-export const CALLOUT_ROW_GAP = 20;
+export const CALLOUT_ROW_GAP = 16;
+export const CALLOUT_CONNECTOR_DROP = 18;
+export const CALLOUT_SIDE_ATTACH_THRESHOLD = 72;
+
+const KEYCAP_FRAME_BORDER_WIDTH = 3;
+const CALLOUT_ANCHOR_INSET = KEYCAP_FRAME_BORDER_WIDTH / 2;
+const CALLOUT_TOP_ATTACH_INSET = 28;
+const CALLOUT_SIDE_ATTACH_INSET_Y = 16;
+const CALLOUT_SIDE_END_OVERLAP = 1.25;
+const CALLOUT_TOP_END_OVERLAP = 1;
+const CALLOUT_SIDE_START_INSET = 3.3;
 
 const TITLE_LINE_HEIGHT = 17;
 const DESCRIPTION_LINE_HEIGHT = 16;
@@ -88,7 +97,7 @@ function resolveOverlap(calloutsList, keyboardBottomY) {
   // 1. 本来の物理的位置 (lineStartY) で昇順ソートする
   calloutsList.sort((a, b) => a.lineStartY - b.lineStartY);
 
-  const GAP = 12; // コールアウト間の最小隙間
+  const GAP = 9; // コールアウト間の最小隙間
 
   // 2. 上から下へのスキャン（下方向への押し出しで重なりを解決）
   for (let i = 1; i < calloutsList.length; i++) {
@@ -157,6 +166,76 @@ function getColumnLefts(svgWidth) {
   return Array.from({ length: columnCount }, (_, index) => startX + index * columnWidth);
 }
 
+function createSideConnectorPath(callout) {
+  const endX =
+    callout.placement === 'left'
+      ? callout.boxLeft + callout.estimatedWidth - CALLOUT_SIDE_END_OVERLAP
+      : callout.boxLeft + CALLOUT_SIDE_END_OVERLAP;
+  const endY = clamp(
+    callout.lineStartY,
+    callout.boxTop + CALLOUT_SIDE_ATTACH_INSET_Y,
+    callout.boxTop + callout.estimatedHeight - CALLOUT_SIDE_ATTACH_INSET_Y
+  );
+
+  return {
+    connectorAttachSide: callout.placement,
+    connectorPoints: [
+      { x: callout.lineStartX, y: callout.lineStartY },
+      { x: endX, y: endY },
+    ],
+    lineEndX: endX,
+    lineEndY: endY,
+  };
+}
+
+function createBelowConnectorPath(callout) {
+  const start = { x: callout.lineStartX, y: callout.lineStartY };
+  const drop = { x: callout.lineStartX, y: callout.lineStartY + CALLOUT_CONNECTOR_DROP };
+  const boxCenterX = callout.boxLeft + callout.estimatedWidth / 2;
+  const horizontalDelta = Math.abs(boxCenterX - callout.lineStartX);
+  const preferSideAttach = horizontalDelta > Math.max(CALLOUT_SIDE_ATTACH_THRESHOLD, callout.estimatedWidth * 0.26);
+
+  if (!preferSideAttach) {
+    const endX = clamp(
+      callout.lineStartX,
+      callout.boxLeft + CALLOUT_TOP_ATTACH_INSET,
+      callout.boxLeft + callout.estimatedWidth - CALLOUT_TOP_ATTACH_INSET
+    );
+    const endY = callout.boxTop + CALLOUT_TOP_END_OVERLAP;
+
+    return {
+      connectorAttachSide: 'top',
+      connectorPoints: [start, drop, { x: endX, y: endY }],
+      lineEndX: endX,
+      lineEndY: endY,
+    };
+  }
+
+  const attachLeftSide = callout.lineStartX < boxCenterX;
+  const sideX = attachLeftSide
+    ? callout.boxLeft + CALLOUT_SIDE_END_OVERLAP
+    : callout.boxLeft + callout.estimatedWidth - CALLOUT_SIDE_END_OVERLAP;
+  const sideY = clamp(
+    drop.y + 10,
+    callout.boxTop + CALLOUT_SIDE_ATTACH_INSET_Y,
+    callout.boxTop + callout.estimatedHeight - CALLOUT_SIDE_ATTACH_INSET_Y
+  );
+  const sideEntry = { x: sideX, y: sideY };
+
+  return {
+    connectorAttachSide: attachLeftSide ? 'left' : 'right',
+    connectorPoints: [start, drop, sideEntry],
+    lineEndX: sideEntry.x,
+    lineEndY: sideEntry.y,
+  };
+}
+
+function decorateConnectorPath(callout) {
+  if (callout.placement === 'below') {
+    return createBelowConnectorPath(callout);
+  }
+  return createSideConnectorPath(callout);
+}
 
 export function buildCalloutOverlayModel({
   keys,
@@ -185,20 +264,12 @@ export function buildCalloutOverlayModel({
   const keyboardHeight = maxHeight * finalScale + CALLOUT_TOP_OFFSET * 2;
   const keyboardBottomY = CALLOUT_TOP_OFFSET + maxHeight * finalScale;
 
-  const leftSideCallouts = [];
-  const rightSideCallouts = [];
-  const fallbackCandidates = [];
+  const annotatedKeys = [];
+  let occupiedLeftEdge = Number.POSITIVE_INFINITY;
+  let occupiedRightEdge = Number.NEGATIVE_INFINITY;
 
   keys.forEach((key) => {
     const matrixKey = key.matrix ? `${key.matrix[0]},${key.matrix[1]}` : key.id;
-    const annotation = keyAnnotations?.[matrixKey];
-    const customText = normalizeAnnotationText(annotation?.customText);
-    const description = normalizeAnnotationText(annotation?.description);
-
-    if (!customText && !description) {
-      return;
-    }
-
     const keyLeft = key.x + 20;
     const keyRight = key.x + key.w + 14;
     const keyTop = key.y + 20;
@@ -210,51 +281,83 @@ export function buildCalloutOverlayModel({
     const screenKeyBottomY = CALLOUT_TOP_OFFSET + keyBottom * finalScale;
     const screenCenterX = (screenKeyLeftEdge + screenKeyRightEdge) / 2;
     const screenCenterY = (screenKeyTopEdge + screenKeyBottomY) / 2;
-    const isLeftSide = key.x + key.w / 2 < maxWidth / 2;
+    occupiedLeftEdge = Math.min(occupiedLeftEdge, screenKeyLeftEdge);
+    occupiedRightEdge = Math.max(occupiedRightEdge, screenKeyRightEdge);
+
+    const annotation = keyAnnotations?.[matrixKey];
+    const customText = normalizeAnnotationText(annotation?.customText);
+    const description = normalizeAnnotationText(annotation?.description);
+
+    if (!customText && !description) {
+      return;
+    }
+
     const estimatedWidth = estimateCalloutWidth({ customText, description });
     const estimatedHeight = estimateCalloutHeight({ customText, description, estimatedWidth });
 
+    annotatedKeys.push({
+      keyId: matrixKey,
+      screenCenterX,
+      screenCenterY,
+      screenKeyLeftEdge,
+      screenKeyRightEdge,
+      screenKeyBottomY,
+      estimatedHeight,
+      estimatedWidth,
+      customText,
+      description,
+    });
+  });
+
+  if (annotatedKeys.length === 0) {
+    return null;
+  }
+
+  const leftSideCallouts = [];
+  const rightSideCallouts = [];
+  const fallbackCandidates = [];
+
+  annotatedKeys.forEach((key) => {
+    const isLeftSide = key.screenCenterX < containerWidth / 2;
     const sideBoxLeft = isLeftSide
-      ? screenKeyLeftEdge - CALLOUT_LINE_LENGTH - estimatedWidth
-      : screenKeyRightEdge + CALLOUT_LINE_LENGTH;
+      ? occupiedLeftEdge - CALLOUT_LINE_LENGTH - key.estimatedWidth
+      : occupiedRightEdge + CALLOUT_LINE_LENGTH;
     const sideBoxTop = clamp(
-      screenCenterY - estimatedHeight / 2,
+      key.screenCenterY - key.estimatedHeight / 2,
       CALLOUT_SAFE_PADDING,
-      Math.max(CALLOUT_SAFE_PADDING, keyboardBottomY - estimatedHeight)
+      Math.max(CALLOUT_SAFE_PADDING, keyboardBottomY - key.estimatedHeight)
     );
     const sideOverflow = isLeftSide
       ? sideBoxLeft < CALLOUT_SAFE_PADDING
-      : sideBoxLeft + estimatedWidth > svgWidth - CALLOUT_SAFE_PADDING;
+      : sideBoxLeft + key.estimatedWidth > svgWidth - CALLOUT_SAFE_PADDING;
 
     if (sideOverflow) {
       fallbackCandidates.push({
-        keyId: matrixKey,
-        screenCenterX,
-        screenKeyBottomY,
-        anchorX: screenCenterX,
-        estimatedHeight,
-        estimatedWidth,
-        customText,
-        description,
+        keyId: key.keyId,
+        screenCenterX: key.screenCenterX,
+        screenKeyBottomY: key.screenKeyBottomY - CALLOUT_ANCHOR_INSET,
+        anchorX: key.screenCenterX,
+        estimatedHeight: key.estimatedHeight,
+        estimatedWidth: key.estimatedWidth,
+        customText: key.customText,
+        description: key.description,
       });
       return;
     }
 
     const calloutObj = {
-      keyId: matrixKey,
+      keyId: key.keyId,
       placement: isLeftSide ? 'left' : 'right',
-      lineStartX: isLeftSide ? screenKeyLeftEdge : screenKeyRightEdge,
-      lineStartY: screenCenterY,
-      lineEndX: isLeftSide
-        ? sideBoxLeft + estimatedWidth
-        : sideBoxLeft,
-      lineEndY: screenCenterY, // 衝突解決後に再計算するため一時的に代入
+      lineStartX:
+        (isLeftSide ? key.screenKeyLeftEdge : key.screenKeyRightEdge) +
+        (isLeftSide ? CALLOUT_SIDE_START_INSET : -CALLOUT_SIDE_START_INSET),
+      lineStartY: key.screenCenterY,
       boxLeft: sideBoxLeft,
       boxTop: sideBoxTop,
-      estimatedHeight,
-      estimatedWidth,
-      customText,
-      description,
+      estimatedHeight: key.estimatedHeight,
+      estimatedWidth: key.estimatedWidth,
+      customText: key.customText,
+      description: key.description,
     };
 
     if (isLeftSide) {
@@ -272,12 +375,10 @@ export function buildCalloutOverlayModel({
 
   // スライドされた boxTop に基づいて lineEndY を正しく再計算し、最終リストに集約
   [...leftSideCallouts, ...rightSideCallouts].forEach((callout) => {
-    callout.lineEndY = clamp(
-      callout.lineStartY,
-      callout.boxTop,
-      callout.boxTop + callout.estimatedHeight
-    );
-    callouts.push(callout);
+    callouts.push({
+      ...callout,
+      ...decorateConnectorPath(callout),
+    });
   });
 
   if (fallbackCandidates.length > 0) {
@@ -324,17 +425,19 @@ export function buildCalloutOverlayModel({
         placement: 'below',
         lineStartX: callout.screenCenterX,
         lineStartY: callout.screenKeyBottomY,
-        lineEndX: boxLeft + callout.estimatedWidth / 2,
-        lineEndY: boxTop,
         boxLeft,
         boxTop,
+        ...decorateConnectorPath({
+          ...callout,
+          placement: 'below',
+          lineStartX: callout.screenCenterX,
+          lineStartY: callout.screenKeyBottomY,
+          boxLeft,
+          boxTop,
+        }),
       });
       columnHeights[chosenColumn] += callout.estimatedHeight + CALLOUT_ROW_GAP;
     });
-  }
-
-  if (callouts.length === 0) {
-    return null;
   }
 
   const hasBelow = callouts.some((callout) => callout.placement === 'below');
@@ -345,11 +448,7 @@ export function buildCalloutOverlayModel({
   let bottomPadding = 0;
   if (fallbackBottom > 0) {
     const overflowDiff = Math.ceil(fallbackBottom - keyboardHeight + CALLOUT_SAFE_PADDING);
-    if (hasBelow) {
-      bottomPadding = Math.max(CALLOUT_BOTTOM_PADDING, overflowDiff);
-    } else {
-      bottomPadding = Math.max(0, overflowDiff);
-    }
+    bottomPadding = hasBelow ? Math.max(0, overflowDiff) : Math.max(0, overflowDiff);
   }
 
   return {
