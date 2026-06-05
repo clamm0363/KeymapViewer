@@ -1,5 +1,6 @@
 const { createElement, memo } = React;
 
+import { isSVGAvailable } from '../svg-icons.js';
 import { parseKeyLabel } from '../utils/labelParser.js';
 import { buildKeyInspectorData } from '../utils/keyInspector.js';
 import { getKeycapFrameStyle, getModColor } from './keycapStyles.js';
@@ -225,6 +226,25 @@ function KeycapInner({
       utilityLabel,
     },
   });
+  const annotationIconKey = normalizeTargetIconKey(annotation?.iconKey || '');
+  const shouldOverrideWithAnnotationIcon =
+    !!annotationIconKey && isSVGAvailable(annotationIconKey);
+  const resolvedStandardDisplayModel = shouldOverrideWithAnnotationIcon
+    ? {
+        ...standardDisplayModel,
+        variant: 'center-svg',
+        resolvedIconKey: annotationIconKey,
+        centerText: '',
+        isFluentCenter: true,
+        manualWrap: false,
+        canWrap: false,
+        targetScale: 1.11,
+        textScalePreset: 1,
+        bottomLabel: null,
+        bottomLabelKind: null,
+        bottomCaption: null,
+      }
+    : standardDisplayModel;
 
   const modDisplayModel = buildModDisplayModel({
     modType,
@@ -257,10 +277,14 @@ function KeycapInner({
   });
 
   const resolvedDisplayModel = isLayerKey
-    ? layerDisplayModel
+    ? shouldOverrideWithAnnotationIcon
+      ? resolvedStandardDisplayModel
+      : layerDisplayModel
     : isModKey
-      ? modDisplayModel
-      : standardDisplayModel;
+      ? shouldOverrideWithAnnotationIcon
+        ? resolvedStandardDisplayModel
+        : modDisplayModel
+      : resolvedStandardDisplayModel;
   const inspectorData = buildKeyInspectorData({
     code: keycode || fullRaw,
     keyStyle,
@@ -389,7 +413,13 @@ function KeycapInner({
         },
       }),
 
-    isLayerKey
+    shouldOverrideWithAnnotationIcon
+      ? renderStandardKeycap({
+          k: keyLayout,
+          model: resolvedStandardDisplayModel,
+          isLight,
+        })
+      : isLayerKey
       ? renderLayerKeycap({
           model: layerDisplayModel,
           isLight,
@@ -403,11 +433,11 @@ function KeycapInner({
           })
         : renderStandardKeycap({
             k: keyLayout,
-            model: standardDisplayModel,
+            model: resolvedStandardDisplayModel,
             isLight,
           }),
 
-    annotation && (annotation.customText || annotation.description) &&
+    annotation && (annotation.customText || annotation.description || annotation.iconKey) &&
       createElement('div', {
         key: 'annotation-dot',
         style: {

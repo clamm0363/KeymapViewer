@@ -1705,6 +1705,7 @@ function DeviceSlotInner({
           isLightApp,
           matrixKey: editingKey.matrixKey,
           layer: editingKey.layer,
+          isEncoder: !!editingKey.isEncoder,
           currentAnnotation: getAnnotation(
             dev.keyAnnotations || {},
             editingKey.matrixKey,

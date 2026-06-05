@@ -8,7 +8,7 @@ export const WIRELESS_ICONS = {
     fallback: '\\uF1DF',
     width: 24,
     height: 24,
-    category: 'keyboard',
+    category: 'connectivity',
   },
 
   ic_fluent_bluetooth_connected_24_regular: {
@@ -19,7 +19,7 @@ export const WIRELESS_ICONS = {
     fallback: '\\uF1DF',
     width: 24,
     height: 24,
-    category: 'keyboard',
+    category: 'connectivity',
   },
 
   ic_fluent_bluetooth_disabled_24_regular: {
@@ -30,7 +30,7 @@ export const WIRELESS_ICONS = {
     fallback: '\\uF1E1',
     width: 24,
     height: 24,
-    category: 'keyboard',
+    category: 'connectivity',
   },
 
   ic_fluent_bluetooth_searching_24_regular: {
@@ -41,7 +41,7 @@ export const WIRELESS_ICONS = {
     fallback: '\\uF1E1',
     width: 24,
     height: 24,
-    category: 'keyboard',
+    category: 'connectivity',
   },
 
   ic_fluent_connector_24_regular: {
@@ -52,7 +52,7 @@ export const WIRELESS_ICONS = {
     fallback: '\\uF0BA1',
     width: 24,
     height: 24,
-    category: 'keyboard',
+    category: 'connectivity',
   },
 
   ic_fluent_wifi_1_24_regular: {
@@ -63,6 +63,6 @@ export const WIRELESS_ICONS = {
     fallback: '\\uF6AA',
     width: 24,
     height: 24,
-    category: 'keyboard',
+    category: 'connectivity',
   },
 };

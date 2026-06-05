@@ -172,6 +172,38 @@ export function listSVGIcons() {
   });
 }
 
+// Export unique SVG icons collapsed by identical render payload.
+export function listUniqueSVGIcons() {
+  const uniqueIcons = new Map();
+
+  Object.keys(SVG_ICONS).forEach((key) => {
+    const icon = getSafeIcon(key);
+    if (!icon) return;
+
+    const signature = [
+      icon.category || '',
+      icon.fallback || '',
+      icon.useWebFontOnly ? '1' : '0',
+      icon.svg || '',
+    ].join('::');
+
+    if (!uniqueIcons.has(signature)) {
+      uniqueIcons.set(signature, {
+        key,
+        category: icon.category || null,
+        hasSVG: !!icon.svg,
+        fallback: icon.fallback || null,
+        aliases: [],
+      });
+      return;
+    }
+
+    uniqueIcons.get(signature).aliases.push(key);
+  });
+
+  return [...uniqueIcons.values()];
+}
+
 // Debug helper: log all available SVG icons to console
 export function debugSVGIcons() {
   console.log('[SVG] Available icons:');
