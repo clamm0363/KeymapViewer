@@ -8,8 +8,8 @@ import {
   resolveKeycodeAlias,
 } from '../keymap-dictionary.js';
 
-export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, isJIS = false) {
-  if (val === null || val === undefined || val === '') {
+export function parseKeyLabel(keycode, keyId, displayMode, keyStyle, macroAliases, isJIS = false) {
+  if (keycode === null || keycode === undefined || keycode === '') {
     return {
       fullRaw: '',
       displayText: '',
@@ -32,7 +32,7 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
 
   const safeKeyId = keyId || '';
   const fullRaw = getRawLabel(
-    val || (safeKeyId.includes('\n') ? safeKeyId.split('\n').pop() : safeKeyId)
+    keycode || (safeKeyId.includes('\n') ? safeKeyId.split('\n').pop() : safeKeyId)
   );
 
   // 1. Smart parsing for single-key Shift modifications: S(KC_X) or LSFT(KC_X)
@@ -86,17 +86,17 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
     const shiftMap = isJIS ? jisShiftMap : usShiftMap;
 
     if (shiftMap[rawKey]) {
-      const sym = shiftMap[rawKey];
+      const shiftedSymbol = shiftMap[rawKey];
       return {
         fullRaw,
-        displayText: sym,
+        displayText: shiftedSymbol,
         isFluentIcon: false,
         isLayerKey: false,
         layerType: null,
         layerNum: null,
         tapLabel: '',
         tapIsFluent: false,
-        visualWeight: sym.length,
+        visualWeight: shiftedSymbol.length,
         layerNum2: null,
         isModKey: false,
         modType: null,
@@ -108,11 +108,18 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
     }
   }
 
-  let complex = null;
-  let m = fullRaw.match(/^LT(\d+)\((L\d+),\s*(.+)\)$/);
-  if (m) complex = { type: 'lt', mod: m[2], base: m[3], symbol: '/' };
-  if (!complex) {
-    m = fullRaw.match(/^MT\(MOD_(\w+),\s*(.+)\)$/);
+  let complexKeyDescriptor = null;
+  let keycodeMatch = fullRaw.match(/^LT(\d+)\((L\d+),\s*(.+)\)$/);
+  if (keycodeMatch) {
+    complexKeyDescriptor = {
+      type: 'lt',
+      mod: keycodeMatch[2],
+      base: keycodeMatch[3],
+      symbol: '/',
+    };
+  }
+  if (!complexKeyDescriptor) {
+    keycodeMatch = fullRaw.match(/^MT\(MOD_(\w+),\s*(.+)\)$/);
     const modMap = {
       LCTL: 'CTRL',
       RCTL: 'CTRL',
@@ -123,10 +130,19 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
       LGUI: 'GUI',
       RGUI: 'GUI',
     };
-    if (m) complex = { type: 'mt', mod: modMap[m[1]] || m[1], base: m[2], symbol: '/' };
+    if (keycodeMatch) {
+      complexKeyDescriptor = {
+        type: 'mt',
+        mod: modMap[keycodeMatch[1]] || keycodeMatch[1],
+        base: keycodeMatch[2],
+        symbol: '/',
+      };
+    }
   }
-  if (!complex) {
-    m = fullRaw.match(/^(LCTL_T|LSFT_T|LALT_T|LGUI_T|RCTL_T|RSFT_T|RALT_T|RGUI_T)\((.+)\)$/);
+  if (!complexKeyDescriptor) {
+    keycodeMatch = fullRaw.match(
+      /^(LCTL_T|LSFT_T|LALT_T|LGUI_T|RCTL_T|RSFT_T|RALT_T|RGUI_T)\((.+)\)$/
+    );
     const modMap = {
       LCTL_T: 'CTRL',
       RCTL_T: 'CTRL',
@@ -137,12 +153,19 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
       LGUI_T: 'GUI',
       RGUI_T: 'GUI',
     };
-    if (m) complex = { type: 'mt', mod: modMap[m[1]], base: m[2], symbol: '/' };
+    if (keycodeMatch) {
+      complexKeyDescriptor = {
+        type: 'mt',
+        mod: modMap[keycodeMatch[1]],
+        base: keycodeMatch[2],
+        symbol: '/',
+      };
+    }
   }
-  if (!complex) {
-    let activeMods = [];
-    let currentRaw = fullRaw;
-    let matched = true;
+  if (!complexKeyDescriptor) {
+    const activeModifierNames = [];
+    let nestedRaw = fullRaw;
+    let foundNestedModifier = true;
     const modWrapperMap = {
       LCTL: 'CTRL',
       RCTL: 'CTRL',
@@ -170,28 +193,28 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
       HYPR: 'CTRL+ALT+SHFT+GUI',
     };
 
-    while (matched) {
-      matched = false;
-      let mw = currentRaw.match(
+    while (foundNestedModifier) {
+      foundNestedModifier = false;
+      const nestedModifierMatch = nestedRaw.match(
         /^(LCTL|LSFT|LALT|LGUI|RCTL|RSFT|RALT|RGUI|A|C|S|G|LCA|LSA|RSA|RCS|LCG|RCG|LSG|RSG|LAG|RAG|MEH|HYPR)\((.+)\)$/
       );
-      if (mw) {
-        const modName = modWrapperMap[mw[1]];
-        if (modName) {
-          const parts = modName.split('+');
-          activeMods.push(...parts);
-          currentRaw = mw[2];
-          matched = true;
+      if (nestedModifierMatch) {
+        const nestedModifierName = modWrapperMap[nestedModifierMatch[1]];
+        if (nestedModifierName) {
+          const nestedModifierParts = nestedModifierName.split('+');
+          activeModifierNames.push(...nestedModifierParts);
+          nestedRaw = nestedModifierMatch[2];
+          foundNestedModifier = true;
         }
       }
     }
 
-    if (activeMods.length > 0) {
-      const uniqueMods = [...new Set(activeMods)];
-      complex = {
+    if (activeModifierNames.length > 0) {
+      const uniqueModifierNames = [...new Set(activeModifierNames)];
+      complexKeyDescriptor = {
         type: 'mod',
-        mod: uniqueMods.join('+'),
-        base: currentRaw,
+        mod: uniqueModifierNames.join('+'),
+        base: nestedRaw,
         symbol: '+',
       };
     }
@@ -216,42 +239,51 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
   };
 
   // Pure dictionary lookup (no locale overrides)
-  const getDictLabel = (kCode) => {
-    const cleanCode = kCode.startsWith('KC_') ? kCode : `KC_${kCode}`;
-    const rawCode = kCode.startsWith('KC_') ? kCode.replace('KC_', '') : kCode;
+  const getDictionaryLabel = (keyToken) => {
+    const normalizedCode = keyToken.startsWith('KC_') ? keyToken : `KC_${keyToken}`;
+    const unprefixedCode = keyToken.startsWith('KC_') ? keyToken.replace('KC_', '') : keyToken;
 
-    const modEntry = getModifierDefinition(cleanCode) || getModifierDefinition(rawCode);
-    if (modEntry) {
+    const modifierEntry =
+      getModifierDefinition(normalizedCode) || getModifierDefinition(unprefixedCode);
+    if (modifierEntry) {
       return displayMode === 'Fluent'
         ? keyStyle === 'Mac'
-          ? modEntry.mac
-          : modEntry.win
-        : (keyStyle === 'Mac' ? modEntry.macText || modEntry.text : modEntry.text) ||
-            kCode.replace('KC_', '');
+          ? modifierEntry.mac
+          : modifierEntry.win
+        : (keyStyle === 'Mac'
+            ? modifierEntry.macText || modifierEntry.text
+            : modifierEntry.text) || keyToken.replace('KC_', '');
     }
 
-    const keyEntry = getKeyDefinition(cleanCode) || getKeyDefinition(rawCode);
+    const keyEntry = getKeyDefinition(normalizedCode) || getKeyDefinition(unprefixedCode);
     if (keyEntry) {
       return displayMode === 'Fluent' && keyEntry.fluent
         ? keyEntry.fluent
         : (keyStyle === 'Mac' ? keyEntry.macText || keyEntry.text : keyEntry.text) ||
-            kCode.replace('KC_', '');
+            keyToken.replace('KC_', '');
     }
     return null;
   };
 
-  if (complex) {
-    const dictMod = getDictLabel(complex.mod);
-    const dictBase = getDictLabel(complex.base);
-    const hasFluentMod = displayMode === 'Fluent' && (dictMod || !!FLUENT_MAP[complex.mod]);
-    const baseStrRaw = complex.base.replace('KC_', '');
-    const hasFluentBase = displayMode === 'Fluent' && (dictBase || !!FLUENT_MAP[baseStrRaw]);
-    const modStr =
-      dictMod || (hasFluentMod ? FLUENT_MAP[complex.mod] : SYMBOL_MAP[complex.mod] || complex.mod);
-    const baseStr =
-      dictBase || (hasFluentBase ? FLUENT_MAP[baseStrRaw] : SYMBOL_MAP[baseStrRaw] || baseStrRaw);
-    displayText = `${modStr}${complex.symbol}${baseStr}`;
-    if (hasFluentMod || hasFluentBase) isFluentIcon = true;
+  if (complexKeyDescriptor) {
+    const modifierDisplayLabel = getDictionaryLabel(complexKeyDescriptor.mod);
+    const baseDisplayLabel = getDictionaryLabel(complexKeyDescriptor.base);
+    const hasFluentModifier =
+      displayMode === 'Fluent' &&
+      (modifierDisplayLabel || !!FLUENT_MAP[complexKeyDescriptor.mod]);
+    const baseRawKey = complexKeyDescriptor.base.replace('KC_', '');
+    const hasFluentBase =
+      displayMode === 'Fluent' && (baseDisplayLabel || !!FLUENT_MAP[baseRawKey]);
+    const resolvedModifierLabel =
+      modifierDisplayLabel ||
+      (hasFluentModifier
+        ? FLUENT_MAP[complexKeyDescriptor.mod]
+        : SYMBOL_MAP[complexKeyDescriptor.mod] || complexKeyDescriptor.mod);
+    const resolvedBaseLabel =
+      baseDisplayLabel ||
+      (hasFluentBase ? FLUENT_MAP[baseRawKey] : SYMBOL_MAP[baseRawKey] || baseRawKey);
+    displayText = `${resolvedModifierLabel}${complexKeyDescriptor.symbol}${resolvedBaseLabel}`;
+    if (hasFluentModifier || hasFluentBase) isFluentIcon = true;
   } else {
     const cleanRawForNo = raw.startsWith('KC_') ? raw : `KC_${raw}`;
     if (canonicalRaw === 'KC_EE_CLR' || raw === 'QK_CLEAR_EEPROM' || raw === 'EE_CLR') {
@@ -262,9 +294,9 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
     } else if (cleanRawForNo === 'KC_NO' || cleanRawForNo === 'KC_NONE' || raw === 'None') {
       displayText = '';
     } else {
-      const dictLabel = getDictLabel(raw);
-      if (dictLabel) {
-        displayText = dictLabel;
+      const dictionaryLabel = getDictionaryLabel(raw);
+      if (dictionaryLabel) {
+        displayText = dictionaryLabel;
         const cleanCode = raw.startsWith('KC_') ? raw : `KC_${raw}`;
         const rawCode = raw.startsWith('KC_') ? raw.replace('KC_', '') : raw;
         const entry =
@@ -298,37 +330,45 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
     displayText = kpMatch[2];
   }
 
-  const layerMatch = raw.match(/^(MO|TG|TT|OSL|TO|DF)\((\d+)\)$/);
-  const ltMatch = raw.match(/^LT\((\d+),\s*(.+)\)$/);
-  const fnMoMatch = raw.match(/^FN_MO(\d)(\d)$/); // FN_MO13 などに対応
-  const isLayerKey = !!(layerMatch || ltMatch || fnMoMatch);
-  const layerType = isLayerKey ? (layerMatch ? layerMatch[1] : ltMatch ? 'LT' : 'FN') : null;
+  const layerActionMatch = raw.match(/^(MO|TG|TT|OSL|TO|DF)\((\d+)\)$/);
+  const layerTapMatch = raw.match(/^LT\((\d+),\s*(.+)\)$/);
+  const fnLayerMatch = raw.match(/^FN_MO(\d)(\d)$/); // FN_MO13 などに対応
+  const isLayerKey = !!(layerActionMatch || layerTapMatch || fnLayerMatch);
+  const layerType = isLayerKey
+    ? layerActionMatch
+      ? layerActionMatch[1]
+      : layerTapMatch
+        ? 'LT'
+        : 'FN'
+    : null;
   const layerNum = isLayerKey
-    ? layerMatch
-      ? layerMatch[2]
-      : ltMatch
-        ? ltMatch[1]
-        : fnMoMatch
-          ? fnMoMatch[1]
+    ? layerActionMatch
+      ? layerActionMatch[2]
+      : layerTapMatch
+        ? layerTapMatch[1]
+        : fnLayerMatch
+          ? fnLayerMatch[1]
           : null
     : null;
-  const layerNum2 = fnMoMatch && fnMoMatch[2] ? fnMoMatch[2] : null;
+  const layerNum2 = fnLayerMatch && fnLayerMatch[2] ? fnLayerMatch[2] : null;
 
   let tapLabel = '';
   let tapIsFluent = false;
-  if (ltMatch) {
-    const tKeyRaw = ltMatch[2];
-    const dictLabel = getDictLabel(tKeyRaw);
-    tapLabel = dictLabel || SYMBOL_MAP[tKeyRaw] || tKeyRaw.replace('KC_', '');
-    const cleanTKey = tKeyRaw.replace('KC_', '');
-    const entry = getKeyDefinition(`KC_${cleanTKey}`) || getModifierDefinition(`KC_${cleanTKey}`);
+  if (layerTapMatch) {
+    const tapRawKey = layerTapMatch[2];
+    const tapDictionaryLabel = getDictionaryLabel(tapRawKey);
+    tapLabel = tapDictionaryLabel || SYMBOL_MAP[tapRawKey] || tapRawKey.replace('KC_', '');
+    const tapKeyWithoutPrefix = tapRawKey.replace('KC_', '');
+    const entry =
+      getKeyDefinition(`KC_${tapKeyWithoutPrefix}`) ||
+      getModifierDefinition(`KC_${tapKeyWithoutPrefix}`);
     if (displayMode === 'Fluent') {
       if (entry && entry.fluent) {
         tapIsFluent = true;
         tapLabel = entry.fluent;
-      } else if (FLUENT_MAP[cleanTKey]) {
+      } else if (FLUENT_MAP[tapKeyWithoutPrefix]) {
         tapIsFluent = true;
-        tapLabel = FLUENT_MAP[cleanTKey];
+        tapLabel = FLUENT_MAP[tapKeyWithoutPrefix];
       } else if (tapLabel.length === 1 && tapLabel.charCodeAt(0) >= 0xe000) {
         // Unicode fallback detection for tap labels (see SVG migration note above)
         tapIsFluent = true;
@@ -394,53 +434,61 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
       variant: 'default',
     });
     modKeys = [canonicalMod];
-  } else if (complex && (complex.type === 'mt' || complex.type === 'mod')) {
+  } else if (
+    complexKeyDescriptor &&
+    (complexKeyDescriptor.type === 'mt' || complexKeyDescriptor.type === 'mod')
+  ) {
     isModKey = true;
-    modType = complex.type === 'mt' ? 'tap' : 'direct';
+    modType = complexKeyDescriptor.type === 'mt' ? 'tap' : 'direct';
 
-    if (complex.mod === 'CTRL+ALT+SHFT') {
+    if (complexKeyDescriptor.mod === 'CTRL+ALT+SHFT') {
       modKeys = ['CTRL', 'ALT', 'SHFT'];
-    } else if (complex.mod === 'CTRL+ALT+SHFT+GUI') {
+    } else if (complexKeyDescriptor.mod === 'CTRL+ALT+SHFT+GUI') {
       modKeys = ['CTRL', 'ALT', 'SHFT', 'GUI'];
     } else {
-      modKeys = complex.mod.split('+').map((k) => k.trim());
+      modKeys = complexKeyDescriptor.mod.split('+').map((modifierKey) => modifierKey.trim());
     }
 
-    const cleanModStr = complex.mod.toUpperCase().replace(/\s+/g, '');
-    if (cleanModStr === 'CTRL+ALT+SHFT') {
+    const normalizedModifierString = complexKeyDescriptor.mod.toUpperCase().replace(/\s+/g, '');
+    if (normalizedModifierString === 'CTRL+ALT+SHFT') {
       modLabel = 'MEH';
-    } else if (cleanModStr === 'CTRL+ALT+SHFT+GUI' || cleanModStr === 'CTRL+ALT+SHIFT+GUI') {
+    } else if (
+      normalizedModifierString === 'CTRL+ALT+SHFT+GUI' ||
+      normalizedModifierString === 'CTRL+ALT+SHIFT+GUI'
+    ) {
       modLabel = 'HYPR';
     } else if (modKeys.length > 1) {
       modLabel =
         keyStyle === 'Mac' && displayMode === 'Fluent'
           ? modKeys
-              .map((k) =>
-                getModifierLabel(k, {
+              .map((modifierKey) =>
+                getModifierLabel(modifierKey, {
                   keyStyle,
                   variant: 'default',
                   preferSymbol: true,
                 })
               )
               .join('+')
-          : modKeys.map((k) => normalizeModifierLabel(k).charAt(0)).join('+');
+          : modKeys.map((modifierKey) => normalizeModifierLabel(modifierKey).charAt(0)).join('+');
     } else {
-      modLabel = formatModifierLabel(complex.mod);
+      modLabel = formatModifierLabel(complexKeyDescriptor.mod);
     }
 
-    const baseRaw = complex.base;
-    const dictBase = getDictLabel(baseRaw);
-    const baseClean = baseRaw.replace('KC_', '');
-    baseLabel = dictBase || SYMBOL_MAP[baseClean] || baseClean;
+    const baseRawKey = complexKeyDescriptor.base;
+    const baseDictionaryLabel = getDictionaryLabel(baseRawKey);
+    const baseKeyWithoutPrefix = baseRawKey.replace('KC_', '');
+    baseLabel = baseDictionaryLabel || SYMBOL_MAP[baseKeyWithoutPrefix] || baseKeyWithoutPrefix;
 
     if (displayMode === 'Fluent') {
-      const entry = getKeyDefinition(`KC_${baseClean}`) || getModifierDefinition(`KC_${baseClean}`);
+      const entry =
+        getKeyDefinition(`KC_${baseKeyWithoutPrefix}`) ||
+        getModifierDefinition(`KC_${baseKeyWithoutPrefix}`);
       if (entry && entry.fluent) {
         baseIsFluent = true;
         baseLabel = entry.fluent;
-      } else if (FLUENT_MAP[baseClean]) {
+      } else if (FLUENT_MAP[baseKeyWithoutPrefix]) {
         baseIsFluent = true;
-        baseLabel = FLUENT_MAP[baseClean];
+        baseLabel = FLUENT_MAP[baseKeyWithoutPrefix];
       } else if (baseLabel.length === 1 && baseLabel.charCodeAt(0) >= 0xe000) {
         // Unicode fallback detection for base labels (see SVG migration note above)
         baseIsFluent = true;
@@ -451,7 +499,7 @@ export function parseKeyLabel(val, keyId, displayMode, keyStyle, macroAliases, i
   // 文字数・視覚的重みの計算
   let visualWeight = displayText.length;
   if (isFluentIcon) visualWeight = 1.2; // アイコンは少し大きめにカウント
-  if (complex) visualWeight += 0.5; // 複合キーは密度が高い
+  if (complexKeyDescriptor) visualWeight += 0.5; // 複合キーは密度が高い
 
   return {
     fullRaw,

@@ -56,9 +56,9 @@ const getEncoderIndices = (design) => {
         const parts = item.split('\n');
         const encoderMatch = parts.find((p) => /^e\d+$/.test(p.trim()));
         if (encoderMatch) {
-          const idx = parseInt(encoderMatch.replace('e', ''), 10);
-          if (!isNaN(idx)) {
-            indices.add(idx);
+          const encoderIndex = parseInt(encoderMatch.replace('e', ''), 10);
+          if (!isNaN(encoderIndex)) {
+            indices.add(encoderIndex);
           }
         }
       }
@@ -67,8 +67,8 @@ const getEncoderIndices = (design) => {
   return [...indices].sort((a, b) => a - b);
 };
 
-const parseLayoutOption = (label, idx) => {
-  let labelName = `OPTION ${idx + 1}`;
+const parseLayoutOption = (label, optionIndex) => {
+  let labelName = `OPTION ${optionIndex + 1}`;
   let originalLabel = '';
   let choices = [
     { value: 0, label: 'MODE A' },
@@ -82,7 +82,7 @@ const parseLayoutOption = (label, idx) => {
       { value: 1, label: 'MODE B' },
     ];
   } else if (Array.isArray(label)) {
-    originalLabel = `Variant ${idx + 1}`;
+    originalLabel = `Variant ${optionIndex + 1}`;
     choices = label.map((c, cIdx) => ({
       value: cIdx,
       label: typeof c === 'string' ? c : String(c),
@@ -109,17 +109,21 @@ const parseLayoutOption = (label, idx) => {
   return { labelName, originalLabel, choices };
 };
 
-const updateInputDeviceSetting = (dev, idx, partialSetting) => {
-  const currentSetting = resolveInputDeviceSetting(dev.inputDeviceSettings, dev.encoderStyles, idx);
+const updateInputDeviceSetting = (device, encoderIndex, partialSetting) => {
+  const currentSetting = resolveInputDeviceSetting(
+    device.inputDeviceSettings,
+    device.encoderStyles,
+    encoderIndex
+  );
   const nextSetting = { ...currentSetting, ...partialSetting };
   return {
     inputDeviceSettings: {
-      ...(dev.inputDeviceSettings || {}),
-      [idx]: nextSetting,
+      ...(device.inputDeviceSettings || {}),
+      [encoderIndex]: nextSetting,
     },
     encoderStyles: {
-      ...(dev.encoderStyles || {}),
-      [idx]: toLegacyEncoderStyle(nextSetting),
+      ...(device.encoderStyles || {}),
+      [encoderIndex]: toLegacyEncoderStyle(nextSetting),
     },
   };
 };
@@ -149,36 +153,36 @@ function DeviceSlotInner({
   onScaleMetricsChange,
 }) {
   perfCounter('DeviceSlot.render');
-  const [copied, setCopied] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const [editingKey, setEditingKey] = useState(null);
-  const [localScaleMetrics, setLocalScaleMetrics] = useState(null);
-  const [localFilteredKeys, setLocalFilteredKeys] = useState([]);
+  const [keyboardScaleMetrics, setKeyboardScaleMetrics] = useState(null);
+  const [renderedKeys, setRenderedKeys] = useState([]);
   const currentLayer = Number(dev.layer) || 0;
-  const currentLayerAnnotations = useMemo(
+  const layerAnnotations = useMemo(
     () => getLayerAnnotations(dev.keyAnnotations || {}, currentLayer),
     [dev.keyAnnotations, currentLayer]
   );
 
-  const handleKeyEditSave = (data) => {
+  const handleKeyEditSave = (annotationData) => {
     if (!editingKey) return;
 
-    const nextUpdate = {
+    const deviceUpdate = {
       keyAnnotations: setAnnotation(
         dev.keyAnnotations || {},
         editingKey.matrixKey,
-        data,
+        annotationData,
         editingKey.layer
       ),
     };
 
     if (editingKey.macroId !== null && editingKey.macroId !== undefined) {
-      nextUpdate.macroAliases = {
+      deviceUpdate.macroAliases = {
         ...(dev.macroAliases || {}),
-        [editingKey.macroId]: data?.macroAlias || '',
+        [editingKey.macroId]: annotationData?.macroAlias || '',
       };
     }
 
-    onUpdateDevice(dev.id, nextUpdate);
+    onUpdateDevice(dev.id, deviceUpdate);
     setEditingKey(null);
   };
   
@@ -215,19 +219,19 @@ function DeviceSlotInner({
     dev.design.layouts.labels.length > 0
   );
   const hasDeviceSpecificOptions = showSeparation || hasEncoders || hasLayoutOptions;
-  const currentDisplayScale = normalizeDisplayScale(dev.displayScale);
+  const displayScaleValue = normalizeDisplayScale(dev.displayScale);
   const isScaleFollowing = !!dev.followScale;
-  const showCallouts = !!dev.showCallouts;
-  const shouldRenderCallouts = showCallouts && !dev.showSettings;
-  const [activeTooltip, setActiveTooltip] = useState(null);
+  const isCalloutsEnabled = !!dev.showCallouts;
+  const shouldShowCallouts = isCalloutsEnabled && !dev.showSettings;
+  const [activeKeyTooltip, setActiveKeyTooltip] = useState(null);
 
   const handleKeyHover = useCallback((e, hoverContentInfo) => {
     perfCounter('DeviceSlot.handleKeyHover');
-    const rect = e.currentTarget.getBoundingClientRect();
-    setActiveTooltip({
-      x: rect.left + rect.width / 2,
-      y: rect.bottom,
-      keycapHeight: rect.height,
+    const keyBounds = e.currentTarget.getBoundingClientRect();
+    setActiveKeyTooltip({
+      x: keyBounds.left + keyBounds.width / 2,
+      y: keyBounds.bottom,
+      keycapHeight: keyBounds.height,
       contentInfo: hoverContentInfo,
       isFixed: true,
     });
@@ -235,40 +239,40 @@ function DeviceSlotInner({
 
   const handleKeyHoverLeave = useCallback(() => {
     perfCounter('DeviceSlot.handleKeyHoverLeave');
-    setActiveTooltip(null);
+    setActiveKeyTooltip(null);
   }, []);
   const handleScaleMetricsChange = useCallback(
-    (metrics) => {
-      setLocalScaleMetrics((prev) => {
+    (nextMetrics) => {
+      setKeyboardScaleMetrics((prev) => {
         if (
           prev &&
-          prev.autoFitScale === metrics.autoFitScale &&
-          prev.finalScale === metrics.finalScale &&
-          prev.maxWidth === metrics.maxWidth &&
-          prev.maxHeight === metrics.maxHeight &&
-          prev.containerWidth === metrics.containerWidth
+          prev.autoFitScale === nextMetrics.autoFitScale &&
+          prev.finalScale === nextMetrics.finalScale &&
+          prev.maxWidth === nextMetrics.maxWidth &&
+          prev.maxHeight === nextMetrics.maxHeight &&
+          prev.containerWidth === nextMetrics.containerWidth
         ) {
           return prev;
         }
-        return metrics;
+        return nextMetrics;
       });
-      if (onScaleMetricsChange) onScaleMetricsChange(metrics);
+      if (onScaleMetricsChange) onScaleMetricsChange(nextMetrics);
     },
     [onScaleMetricsChange]
   );
-  const layerOptions = (dev.keymapJson && dev.keymapJson.layers) ||
+  const availableLayers = (dev.keymapJson && dev.keymapJson.layers) ||
     (dev.design && dev.design.layers) || [0, 1, 2, 3];
-  const totalLayerPages = Math.max(1, Math.ceil(layerOptions.length / MAX_VISIBLE_LAYER_BUTTONS));
+  const totalLayerPages = Math.max(1, Math.ceil(availableLayers.length / MAX_VISIBLE_LAYER_BUTTONS));
   const [layerPage, setLayerPage] = useState(() =>
     Math.min(totalLayerPages - 1, Math.floor((Number(dev.layer) || 0) / MAX_VISIBLE_LAYER_BUTTONS))
   );
   const clampedLayerPage = Math.min(layerPage, totalLayerPages - 1);
   const visibleLayerStart = clampedLayerPage * MAX_VISIBLE_LAYER_BUTTONS;
-  const visibleLayerOptions = layerOptions.slice(
+  const visibleLayerOptions = availableLayers.slice(
     visibleLayerStart,
     visibleLayerStart + MAX_VISIBLE_LAYER_BUTTONS
   );
-  const showLayerPagination = layerOptions.length > MAX_VISIBLE_LAYER_BUTTONS;
+  const showLayerPagination = availableLayers.length > MAX_VISIBLE_LAYER_BUTTONS;
   const actionButtonClass = isGridLayout
     ? 'flex h-9 min-w-[84px] items-center justify-center rounded-xl border px-3 text-[8px] font-black uppercase tracking-[0.18em] transition-all sm:min-w-[92px]'
     : 'flex h-10 min-w-[92px] items-center justify-center rounded-xl border px-3 text-[9px] font-black uppercase tracking-[0.22em] transition-all sm:min-w-[100px]';
@@ -278,7 +282,7 @@ function DeviceSlotInner({
     (isLightApp
       ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200'
       : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 border-slate-700/50');
-  const primaryActionButtonClass =
+  const _primaryActionButtonClass =
     actionButtonClass +
     ' ' +
     (isLightApp
@@ -334,17 +338,20 @@ function DeviceSlotInner({
               createElement(
                 'div',
                 { key: 'btns', className: 'flex flex-wrap gap-4' },
-                ['Fluent', 'Text'].map((opt) =>
+                ['Fluent', 'Text'].map((displayOption) =>
                   createElement(
                     'label',
-                    { key: opt, className: 'flex items-center gap-1.5 cursor-pointer group' },
+                    {
+                      key: displayOption,
+                      className: 'flex items-center gap-1.5 cursor-pointer group',
+                    },
                     [
                       createElement('input', {
                         key: 'i',
                         type: 'radio',
                         name: 'displayMode-' + dev.id,
-                        checked: dev.displayMode === opt,
-                        onChange: () => onUpdateDevice(dev.id, { displayMode: opt }),
+                        checked: dev.displayMode === displayOption,
+                        onChange: () => onUpdateDevice(dev.id, { displayMode: displayOption }),
                         className: 'hidden',
                       }),
                       createElement(
@@ -355,9 +362,9 @@ function DeviceSlotInner({
                             'w-3 h-3 rounded-full border ' +
                             (isLightApp ? 'border-slate-300' : 'border-slate-600') +
                             ' flex items-center justify-center ' +
-                            (dev.displayMode === opt ? 'border-blue-500' : ''),
+                            (dev.displayMode === displayOption ? 'border-blue-500' : ''),
                         },
-                        dev.displayMode === opt
+                        dev.displayMode === displayOption
                           ? createElement('div', {
                               className: 'w-1.5 h-1.5 rounded-full bg-blue-500',
                             })
@@ -369,14 +376,14 @@ function DeviceSlotInner({
                           key: 's',
                           className:
                             'text-[9px] font-bold ' +
-                            (dev.displayMode === opt
+                            (dev.displayMode === displayOption
                               ? isLightApp
                                 ? 'text-slate-900'
                                 : 'text-white'
                               : 'text-slate-500') +
                             ' uppercase',
                         },
-                        opt
+                        displayOption
                       ),
                     ]
                   )
@@ -409,17 +416,20 @@ function DeviceSlotInner({
               createElement(
                 'div',
                 { key: 'btns', className: 'flex flex-wrap gap-4' },
-                ['Dark', 'Light', 'System'].map((opt) =>
+                ['Dark', 'Light', 'System'].map((themeOption) =>
                   createElement(
                     'label',
-                    { key: opt, className: 'flex items-center gap-1.5 cursor-pointer group' },
+                    {
+                      key: themeOption,
+                      className: 'flex items-center gap-1.5 cursor-pointer group',
+                    },
                     [
                       createElement('input', {
                         key: 'i',
                         type: 'radio',
                         name: 'theme-' + dev.id,
-                        checked: (dev.theme || 'System') === opt,
-                        onChange: () => onUpdateDevice(dev.id, { theme: opt }),
+                        checked: (dev.theme || 'System') === themeOption,
+                        onChange: () => onUpdateDevice(dev.id, { theme: themeOption }),
                         className: 'hidden',
                       }),
                       createElement(
@@ -430,9 +440,9 @@ function DeviceSlotInner({
                             'w-3 h-3 rounded-full border ' +
                             (isLightApp ? 'border-slate-300' : 'border-slate-600') +
                             ' flex items-center justify-center ' +
-                            ((dev.theme || 'System') === opt ? 'border-blue-500' : ''),
+                            ((dev.theme || 'System') === themeOption ? 'border-blue-500' : ''),
                         },
-                        (dev.theme || 'System') === opt
+                        (dev.theme || 'System') === themeOption
                           ? createElement('div', {
                               className: 'w-1.5 h-1.5 rounded-full bg-blue-500',
                             })
@@ -444,14 +454,14 @@ function DeviceSlotInner({
                           key: 's',
                           className:
                             'text-[9px] font-bold ' +
-                            ((dev.theme || 'System') === opt
+                            ((dev.theme || 'System') === themeOption
                               ? isLightApp
                                 ? 'text-slate-900'
                                 : 'text-white'
                               : 'text-slate-500') +
                             ' uppercase',
                         },
-                        opt
+                        themeOption
                       ),
                     ]
                   )
@@ -484,17 +494,20 @@ function DeviceSlotInner({
               createElement(
                 'div',
                 { key: 'btns', className: 'flex flex-wrap gap-4' },
-                ['Windows', 'Mac'].map((opt) =>
+                ['Windows', 'Mac'].map((styleOption) =>
                   createElement(
                     'label',
-                    { key: opt, className: 'flex items-center gap-1.5 cursor-pointer group' },
+                    {
+                      key: styleOption,
+                      className: 'flex items-center gap-1.5 cursor-pointer group',
+                    },
                     [
                       createElement('input', {
                         key: 'i',
                         type: 'radio',
                         name: 'keyStyle-' + dev.id,
-                        checked: (dev.keyStyle || 'Windows') === opt,
-                        onChange: () => onUpdateDevice(dev.id, { keyStyle: opt }),
+                        checked: (dev.keyStyle || 'Windows') === styleOption,
+                        onChange: () => onUpdateDevice(dev.id, { keyStyle: styleOption }),
                         className: 'hidden',
                       }),
                       createElement(
@@ -505,9 +518,9 @@ function DeviceSlotInner({
                             'w-3 h-3 rounded-full border ' +
                             (isLightApp ? 'border-slate-300' : 'border-slate-600') +
                             ' flex items-center justify-center ' +
-                            ((dev.keyStyle || 'Windows') === opt ? 'border-blue-500' : ''),
+                            ((dev.keyStyle || 'Windows') === styleOption ? 'border-blue-500' : ''),
                         },
-                        (dev.keyStyle || 'Windows') === opt
+                        (dev.keyStyle || 'Windows') === styleOption
                           ? createElement('div', {
                               className: 'w-1.5 h-1.5 rounded-full bg-blue-500',
                             })
@@ -519,14 +532,14 @@ function DeviceSlotInner({
                           key: 's',
                           className:
                             'text-[9px] font-bold ' +
-                            ((dev.keyStyle || 'Windows') === opt
+                            ((dev.keyStyle || 'Windows') === styleOption
                               ? isLightApp
                                 ? 'text-slate-900'
                                 : 'text-white'
                               : 'text-slate-500') +
                             ' uppercase',
                         },
-                        opt
+                        styleOption
                       ),
                     ]
                   )
@@ -562,7 +575,7 @@ function DeviceSlotInner({
                 min: String(MIN_DISPLAY_SCALE * 100),
                 max: String(MAX_DISPLAY_SCALE * 100),
                 step: '5',
-                value: String(Math.round(currentDisplayScale * 100)),
+                value: String(Math.round(displayScaleValue * 100)),
                 disabled: isScaleFollowing,
                 onInput: (e) =>
                   onUpdateDevice(dev.id, { displayScale: Number(e.target.value) / 100 }),
@@ -583,7 +596,7 @@ function DeviceSlotInner({
                         : 'text-slate-200') +
                     ' uppercase tracking-widest',
                 },
-                `${Math.round(currentDisplayScale * 100)}%`
+                `${Math.round(displayScaleValue * 100)}%`
               ),
               createElement(
                 'button',
@@ -704,20 +717,20 @@ function DeviceSlotInner({
                       createElement(
                         'div',
                         { key: 'btns', className: 'flex flex-wrap gap-4' },
-                        ['Disable', 'Enable'].map((opt) => {
+                        ['Disable', 'Enable'].map((separationOption) => {
                           const isChecked =
-                            opt === 'Enable'
+                            separationOption === 'Enable'
                               ? dev.separation === 'ENABLE'
                               : !dev.separation || dev.separation === 'DISABLE';
                           return createElement(
                             'label',
                             {
-                              key: opt,
+                              key: separationOption,
                               onClick: (e) => {
                                 e.preventDefault();
-                                if (opt === 'Enable') {
-                                  const hasGap = findSplitX(dev.design) !== null;
-                                  if (hasGap) {
+                                if (separationOption === 'Enable') {
+                                  const hasSplitGap = findSplitX(dev.design) !== null;
+                                  if (hasSplitGap) {
                                     onUpdateDevice(dev.id, { separation: 'ENABLE' });
                                   } else {
                                     alert('有効なギャップが検出できませんでした。');
@@ -767,7 +780,7 @@ function DeviceSlotInner({
                                       : 'text-slate-500') +
                                     ' uppercase',
                                 },
-                                opt
+                                separationOption
                               ),
                             ]
                           );
@@ -776,11 +789,11 @@ function DeviceSlotInner({
                     ]
                   )
                 : null,
-              ...encoderIndices.map((idx) => {
+              ...encoderIndices.map((encoderIndex) => {
                 const currentSetting = resolveInputDeviceSetting(
                   dev.inputDeviceSettings,
                   dev.encoderStyles,
-                  idx
+                  encoderIndex
                 );
                 const kindOptions = [
                   { value: INPUT_DEVICE_KINDS.ENCODER, label: 'Encoder' },
@@ -790,7 +803,7 @@ function DeviceSlotInner({
                 return createElement(
                   'div',
                   {
-                    key: 'encoder-sect-' + idx,
+                    key: 'encoder-sect-' + encoderIndex,
                     className:
                       'flex w-full flex-col items-start gap-3 ' +
                       (isLightApp ? 'bg-white' : 'bg-slate-950/30') +
@@ -807,7 +820,7 @@ function DeviceSlotInner({
                           (isLightApp ? 'text-slate-400' : 'text-slate-600') +
                           ' uppercase tracking-widest md:flex-shrink-0',
                       },
-                      'INPUT e' + idx + ':'
+                      'INPUT e' + encoderIndex + ':'
                     ),
                     createElement(
                       'div',
@@ -822,26 +835,26 @@ function DeviceSlotInner({
                             key: 'device-kind-btns',
                             className: 'flex flex-wrap items-center gap-4',
                           },
-                          kindOptions.map((opt) =>
+                          kindOptions.map((kindOption) =>
                             createElement(
                               'label',
                               {
-                                key: opt.value,
+                                key: kindOption.value,
                                 className: 'flex items-center gap-1.5 cursor-pointer group',
                               },
                               [
                                 createElement('input', {
                                   key: 'i',
                                   type: 'radio',
-                                  name: 'inputDeviceKind-' + idx + '-' + dev.id,
-                                  checked: currentSetting.kind === opt.value,
+                                  name: 'inputDeviceKind-' + encoderIndex + '-' + dev.id,
+                                  checked: currentSetting.kind === kindOption.value,
                                   onChange: () =>
                                     onUpdateDevice(
                                       dev.id,
                                       updateInputDeviceSetting(
                                         dev,
-                                        idx,
-                                        getDefaultInputDeviceSetting(opt.value)
+                                        encoderIndex,
+                                        getDefaultInputDeviceSetting(kindOption.value)
                                       )
                                     ),
                                   className: 'hidden',
@@ -854,9 +867,11 @@ function DeviceSlotInner({
                                       'w-3 h-3 rounded-full border ' +
                                       (isLightApp ? 'border-slate-300' : 'border-slate-600') +
                                       ' flex items-center justify-center ' +
-                                      (currentSetting.kind === opt.value ? 'border-blue-500' : ''),
+                                      (currentSetting.kind === kindOption.value
+                                        ? 'border-blue-500'
+                                        : ''),
                                   },
-                                  currentSetting.kind === opt.value
+                                  currentSetting.kind === kindOption.value
                                     ? createElement('div', {
                                         className: 'w-1.5 h-1.5 rounded-full bg-blue-500',
                                       })
@@ -868,14 +883,14 @@ function DeviceSlotInner({
                                     key: 's',
                                     className:
                                       'text-[9px] font-bold ' +
-                                      (currentSetting.kind === opt.value
+                                      (currentSetting.kind === kindOption.value
                                         ? isLightApp
                                           ? 'text-slate-900'
                                           : 'text-white'
                                         : 'text-slate-500') +
                                       ' uppercase',
                                   },
-                                  opt.label
+                                  kindOption.label
                                 ),
                               ]
                             )
@@ -887,23 +902,25 @@ function DeviceSlotInner({
                             key: 'device-variant-btns',
                             className: 'flex flex-wrap items-center gap-4',
                           },
-                          variantOptions.map((opt) =>
+                          variantOptions.map((variantOption) =>
                             createElement(
                               'label',
                               {
-                                key: opt.value,
+                                key: variantOption.value,
                                 className: 'flex items-center gap-1.5 cursor-pointer group',
                               },
                               [
                                 createElement('input', {
                                   key: 'i',
                                   type: 'radio',
-                                  name: 'inputDeviceVariant-' + idx + '-' + dev.id,
-                                  checked: currentSetting.variant === opt.value,
+                                  name: 'inputDeviceVariant-' + encoderIndex + '-' + dev.id,
+                                  checked: currentSetting.variant === variantOption.value,
                                   onChange: () =>
                                     onUpdateDevice(
                                       dev.id,
-                                      updateInputDeviceSetting(dev, idx, { variant: opt.value })
+                                      updateInputDeviceSetting(dev, encoderIndex, {
+                                        variant: variantOption.value,
+                                      })
                                     ),
                                   className: 'hidden',
                                 }),
@@ -915,11 +932,11 @@ function DeviceSlotInner({
                                       'w-3 h-3 rounded-full border ' +
                                       (isLightApp ? 'border-slate-300' : 'border-slate-600') +
                                       ' flex items-center justify-center ' +
-                                      (currentSetting.variant === opt.value
+                                      (currentSetting.variant === variantOption.value
                                         ? 'border-blue-500'
                                         : ''),
                                   },
-                                  currentSetting.variant === opt.value
+                                  currentSetting.variant === variantOption.value
                                     ? createElement('div', {
                                         className: 'w-1.5 h-1.5 rounded-full bg-blue-500',
                                       })
@@ -931,14 +948,14 @@ function DeviceSlotInner({
                                     key: 's',
                                     className:
                                       'text-[9px] font-bold ' +
-                                      (currentSetting.variant === opt.value
+                                      (currentSetting.variant === variantOption.value
                                         ? isLightApp
                                           ? 'text-slate-900'
                                           : 'text-white'
                                         : 'text-slate-500') +
                                       ' uppercase',
                                   },
-                                  opt.label
+                                  variantOption.label
                                 ),
                               ]
                             )
@@ -950,15 +967,19 @@ function DeviceSlotInner({
                 );
               }),
               ...((dev.design && dev.design.layouts && dev.design.layouts.labels) || []).map(
-                (lbl, idx) => {
-                  const { labelName, originalLabel, choices } = parseLayoutOption(lbl, idx);
+                (layoutLabel, optionIndex) => {
+                  const { labelName, originalLabel, choices } = parseLayoutOption(
+                    layoutLabel,
+                    optionIndex
+                  );
                   const activeOptions = dev.layoutOptions || {};
-                  const currentValue = activeOptions[idx] !== undefined ? activeOptions[idx] : 0;
+                  const currentValue =
+                    activeOptions[optionIndex] !== undefined ? activeOptions[optionIndex] : 0;
 
                   return createElement(
                     'div',
                     {
-                      key: 'layout-opt-sect-' + idx,
+                      key: 'layout-opt-sect-' + optionIndex,
                       title: originalLabel ? `Original Label: ${originalLabel}` : null,
                       className:
                         'flex w-full flex-wrap items-center gap-4 ' +
@@ -982,24 +1003,24 @@ function DeviceSlotInner({
                       createElement(
                         'div',
                         { key: 'btns', className: 'flex flex-wrap gap-4' },
-                        choices.map((opt) =>
+                        choices.map((choice) =>
                           createElement(
                             'label',
                             {
-                              key: opt.value,
+                              key: choice.value,
                               className: 'flex items-center gap-1.5 cursor-pointer group',
                             },
                             [
                               createElement('input', {
                                 key: 'i',
                                 type: 'radio',
-                                name: 'layoutOption-' + idx + '-' + dev.id,
-                                checked: currentValue === opt.value,
+                                name: 'layoutOption-' + optionIndex + '-' + dev.id,
+                                checked: currentValue === choice.value,
                                 onChange: () =>
                                   onUpdateDevice(dev.id, {
                                     layoutOptions: {
                                       ...activeOptions,
-                                      [idx]: opt.value,
+                                      [optionIndex]: choice.value,
                                     },
                                   }),
                                 className: 'hidden',
@@ -1012,9 +1033,9 @@ function DeviceSlotInner({
                                     'w-3 h-3 rounded-full border ' +
                                     (isLightApp ? 'border-slate-300' : 'border-slate-600') +
                                     ' flex items-center justify-center ' +
-                                    (currentValue === opt.value ? 'border-blue-500' : ''),
+                                    (currentValue === choice.value ? 'border-blue-500' : ''),
                                 },
-                                currentValue === opt.value
+                                currentValue === choice.value
                                   ? createElement('div', {
                                       className: 'w-1.5 h-1.5 rounded-full bg-blue-500',
                                     })
@@ -1026,14 +1047,14 @@ function DeviceSlotInner({
                                   key: 's',
                                   className:
                                     'text-[9px] font-bold ' +
-                                    (currentValue === opt.value
+                                    (currentValue === choice.value
                                       ? isLightApp
                                         ? 'text-slate-900'
                                         : 'text-white'
                                       : 'text-slate-500') +
                                     ' uppercase',
                                 },
-                                opt.label
+                                choice.label
                               ),
                             ]
                           )
@@ -1049,22 +1070,22 @@ function DeviceSlotInner({
     ]
   );
 
-  const calloutOverlayModel = useMemo(() => {
-    if (!shouldRenderCallouts || !localScaleMetrics || localFilteredKeys.length === 0) {
+  const keyCalloutOverlayModel = useMemo(() => {
+    if (!shouldShowCallouts || !keyboardScaleMetrics || renderedKeys.length === 0) {
       return null;
     }
     const startedAt = perfStart();
-    const model = buildCalloutOverlayModel({
-      keys: localFilteredKeys,
-      keyAnnotations: currentLayerAnnotations,
-      scaleMetrics: localScaleMetrics,
+    const overlayModel = buildCalloutOverlayModel({
+      keys: renderedKeys,
+      keyAnnotations: layerAnnotations,
+      scaleMetrics: keyboardScaleMetrics,
     });
     perfEnd('DeviceSlot.buildCalloutOverlayModel', startedAt, {
-      keys: localFilteredKeys.length,
-      annotations: Object.keys(currentLayerAnnotations || {}).length,
+      keys: renderedKeys.length,
+      annotations: Object.keys(layerAnnotations || {}).length,
     });
-    return model;
-  }, [shouldRenderCallouts, localScaleMetrics, localFilteredKeys, currentLayerAnnotations]);
+    return overlayModel;
+  }, [shouldShowCallouts, keyboardScaleMetrics, renderedKeys, layerAnnotations]);
 
   useEffect(() => {
     const nextPage = Math.min(
@@ -1179,7 +1200,7 @@ function DeviceSlotInner({
           { key: 'opts', className: 'flex gap-1.5' },
           ['ON', 'OFF'].map((option) => {
             const isOnOption = option === 'ON';
-            const isSelected = showCallouts ? isOnOption : !isOnOption;
+            const isSelected = isCalloutsEnabled ? isOnOption : !isOnOption;
             return createElement(
               'button',
               {
@@ -1232,8 +1253,8 @@ function DeviceSlotInner({
       navigator.clipboard
         .writeText(shareUrl)
         .then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
+          setShareCopied(true);
+          setTimeout(() => setShareCopied(false), 2000);
         })
         .catch((err) => {
           console.error('Failed to copy share URL:', err);
@@ -1478,7 +1499,7 @@ function DeviceSlotInner({
                           actionButtonClass +
                           ' ' +
                           (!hasData ? 'opacity-40 cursor-not-allowed border-dashed ' : '') +
-                          (copied
+                          (shareCopied
                             ? isLightApp
                               ? 'bg-green-50 text-green-600 border-green-200 shadow-inner'
                               : 'bg-green-600/20 text-green-400 border-green-500/30 shadow-inner'
@@ -1486,7 +1507,7 @@ function DeviceSlotInner({
                               ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200'
                               : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 border-slate-700/50'),
                       },
-                      copied ? 'COPIED!' : 'SHARE'
+                      shareCopied ? 'COPIED!' : 'SHARE'
                     ),
                     createElement(
                       'button',
@@ -1538,7 +1559,7 @@ function DeviceSlotInner({
                           actionButtonClass +
                           ' ' +
                           (!hasData ? 'opacity-40 cursor-not-allowed border-dashed ' : '') +
-                          (copied
+                          (shareCopied
                             ? isLightApp
                               ? 'bg-green-50 text-green-600 border-green-200 shadow-inner'
                               : 'bg-green-600/20 text-green-400 border-green-500/30 shadow-inner'
@@ -1546,7 +1567,7 @@ function DeviceSlotInner({
                               ? 'bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200'
                               : 'bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 border-slate-700/50'),
                       },
-                      copied ? 'COPIED!' : 'SHARE'
+                      shareCopied ? 'COPIED!' : 'SHARE'
                     ),
                     createElement(
                       'button',
@@ -1571,8 +1592,8 @@ function DeviceSlotInner({
               className:
                 'flex min-w-0 flex-col gap-4 relative ' +
                 (dev.showSettings && !isGridLayout ? 'lg:flex-row lg:items-start' : ''),
-              style: calloutOverlayModel?.bottomPadding
-                ? { paddingBottom: `${calloutOverlayModel.bottomPadding}px` }
+              style: keyCalloutOverlayModel?.bottomPadding
+                ? { paddingBottom: `${keyCalloutOverlayModel.bottomPadding}px` }
                 : undefined,
             },
             [
@@ -1610,16 +1631,16 @@ function DeviceSlotInner({
                     appTheme: appTheme,
                     macroAliases: dev.macroAliases || {},
                     keyStyle: dev.keyStyle || 'Windows',
-                    userScale: currentDisplayScale,
+                    userScale: displayScaleValue,
                     separation: dev.separation || 'DISABLE',
                     encoderStyles: dev.encoderStyles || {},
                     inputDeviceSettings: dev.inputDeviceSettings || {},
                     layoutOptions: dev.layoutOptions || {},
                     onScaleMetricsChange: handleScaleMetricsChange,
-                    keyAnnotations: currentLayerAnnotations,
-                    showCallouts: shouldRenderCallouts,
+                    keyAnnotations: layerAnnotations,
+                    showCallouts: shouldShowCallouts,
                     onEditKey: handleOpenKeyEdit,
-                    onKeysChange: setLocalFilteredKeys,
+                    onKeysChange: setRenderedKeys,
                     onKeyHover: handleKeyHover,
                     onKeyHoverLeave: handleKeyHoverLeave,
                   })
@@ -1639,7 +1660,7 @@ function DeviceSlotInner({
                     settingsPanel
                   )
                 : null,
-              calloutOverlayModel &&
+              keyCalloutOverlayModel &&
                 (() => {
                   const isLight =
                     dev.theme === 'Light' ||
@@ -1649,12 +1670,12 @@ function DeviceSlotInner({
                   
                   return createElement(KeyCalloutOverlay, {
                     key: 'callout-overlay',
-                    model: calloutOverlayModel,
+                    model: keyCalloutOverlayModel,
                     isLight,
                     isAppDark: !isLightApp,
                   });
                 })(),
-              activeTooltip &&
+              activeKeyTooltip &&
                 (() => {
                   const isLight =
                     dev.theme === 'Light' ||
@@ -1664,7 +1685,7 @@ function DeviceSlotInner({
                   
                   return createElement(KeycapTooltipOverlay, {
                     key: 'active-tooltip-overlay',
-                    activeTooltip,
+                    activeTooltip: activeKeyTooltip,
                     isLight,
                   });
                 })(),

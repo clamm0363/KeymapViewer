@@ -152,7 +152,7 @@ function findSVGPath(iconName) {
           }
         }
       }
-    } catch (err) {
+    } catch {
       // ignore read errors
     }
     return null;
@@ -351,7 +351,7 @@ function addIconToFile(keyCode, iconCode, category) {
       try {
         execSync(`node --check "${safePath}"`, { stdio: 'ignore' });
         console.log(`  ✓ Syntax check passed successfully for ${target.file}`);
-      } catch (err) {
+      } catch {
         console.error(
           `  ❌ Syntax validation failed after write! Reverting changes to ${target.file}...`
         );

@@ -55,130 +55,128 @@ function KeyboardInner({
       window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   const isSeparationEnabled = separation === 'ENABLE';
-  const splitX = useMemo(() => {
+  const splitBoundaryX = useMemo(() => {
     if (!isSeparationEnabled) return null;
     return findSplitX(design);
   }, [design, isSeparationEnabled]);
 
-  const activeLayoutOptions = useMemo(() => {
+  const selectedLayoutOptions = useMemo(() => {
     return layoutOptions || {};
   }, [layoutOptions]);
 
-  const keys = useMemo(() => {
+  const layoutKeys = useMemo(() => {
     const startedAt = perfStart();
     if (!design || !design.layouts || !design.layouts.keymap) return [];
-    const list = [];
-    const UNIT = 56;
-    let x = 0,
-      y = 0,
-      w = 1,
-      h = 1;
+    const positionedKeys = [];
+    const keyUnitSize = 56;
+    let cursorXUnits = 0,
+      cursorYUnits = 0,
+      pendingWidthUnits = 1,
+      pendingHeightUnits = 1;
     let isJISKey = false;
     design.layouts.keymap.forEach((row) => {
-      x = 0;
+      cursorXUnits = 0;
       row.forEach((item) => {
         if (typeof item === 'string') {
           const parts = item.split('\n');
-          const m = parts[0].match(/(\d+),(\d+)/);
+          const matrixMatch = parts[0].match(/(\d+),(\d+)/);
           const encoderMatch = parts.find((p) => /^e\d+$/.test(p.trim()));
           const isEncoder = !!encoderMatch;
           const encoderIndex = isEncoder ? parseInt(encoderMatch.replace('e', ''), 10) : null;
 
-          let optionIdx = null;
-          let optionVal = null;
-          for (let i = 1; i < parts.length; i++) {
-            const p = parts[i].trim();
-            if (/^\d+,\d+$/.test(p)) {
-              const [optIdx, optVal] = p.split(',').map((num) => parseInt(num, 10));
-              optionIdx = optIdx;
-              optionVal = optVal;
+          let layoutOptionIndex = null;
+          let requiredOptionValue = null;
+          for (let partIndex = 1; partIndex < parts.length; partIndex++) {
+            const part = parts[partIndex].trim();
+            if (/^\d+,\d+$/.test(part)) {
+              const [optionIndex, optionValue] = part.split(',').map((num) => parseInt(num, 10));
+              layoutOptionIndex = optionIndex;
+              requiredOptionValue = optionValue;
               break;
             }
           }
 
-          let isVisible = true;
-          if (optionIdx !== null && optionIdx !== undefined) {
-            // optionIdx は parseInt 済みの数値。Object.hasOwn で存在確認後にアクセスする
-            const safeIdx = Number(optionIdx);
-            const selectedVal = Object.hasOwn(activeLayoutOptions, safeIdx)
-              ? activeLayoutOptions[safeIdx]
+          let shouldRenderKey = true;
+          if (layoutOptionIndex !== null && layoutOptionIndex !== undefined) {
+            // layoutOptionIndex は parseInt 済みの数値。Object.hasOwn で存在確認後にアクセスする
+            const optionIndex = Number(layoutOptionIndex);
+            const selectedOptionValue = Object.hasOwn(selectedLayoutOptions, optionIndex)
+              ? selectedLayoutOptions[optionIndex]
               : 0;
-            if (selectedVal !== optionVal) {
-              isVisible = false;
+            if (selectedOptionValue !== requiredOptionValue) {
+              shouldRenderKey = false;
             }
           }
 
-          if (isVisible) {
-            list.push({
+          if (shouldRenderKey) {
+            positionedKeys.push({
               id: item,
-              matrix: m ? [parseInt(m[1]), parseInt(m[2])] : null,
-              x: x * UNIT,
-              y: y * UNIT,
-              w: w * UNIT,
-              h: h * UNIT,
+              matrix: matrixMatch ? [parseInt(matrixMatch[1]), parseInt(matrixMatch[2])] : null,
+              x: cursorXUnits * keyUnitSize,
+              y: cursorYUnits * keyUnitSize,
+              w: pendingWidthUnits * keyUnitSize,
+              h: pendingHeightUnits * keyUnitSize,
               isJIS: isJISKey,
               isEncoder,
               encoderIndex,
-              optionIdx,
-              optionVal,
+              optionIdx: layoutOptionIndex,
+              optionVal: requiredOptionValue,
             });
           }
-          x += w;
-          w = 1;
-          h = 1;
+          cursorXUnits += pendingWidthUnits;
+          pendingWidthUnits = 1;
+          pendingHeightUnits = 1;
           isJISKey = false;
         } else {
-          if (item.x !== undefined) x += item.x;
-          if (item.y !== undefined) y += item.y;
-          if (item.w !== undefined) w = item.w;
-          if (item.h !== undefined) h = item.h;
+          if (item.x !== undefined) cursorXUnits += item.x;
+          if (item.y !== undefined) cursorYUnits += item.y;
+          if (item.w !== undefined) pendingWidthUnits = item.w;
+          if (item.h !== undefined) pendingHeightUnits = item.h;
           if (item.isJIS !== undefined) isJISKey = item.isJIS;
         }
       });
-      y++;
+      cursorYUnits++;
     });
 
-    if (isSeparationEnabled && splitX !== null) {
-      const leftKeys = list.filter((k) => k.x + k.w / 2 < splitX);
-      const rightKeys = list.filter((k) => k.x + k.w / 2 >= splitX);
+    if (isSeparationEnabled && splitBoundaryX !== null) {
+      const leftClusterKeys = positionedKeys.filter((key) => key.x + key.w / 2 < splitBoundaryX);
+      const rightClusterKeys = positionedKeys.filter((key) => key.x + key.w / 2 >= splitBoundaryX);
 
-      if (leftKeys.length > 0 && rightKeys.length > 0) {
-        const leftMaxX = Math.max(...leftKeys.map((k) => k.x + k.w));
-        const rightMinX = Math.min(...rightKeys.map((k) => k.x));
+      if (leftClusterKeys.length > 0 && rightClusterKeys.length > 0) {
+        const leftClusterMaxX = Math.max(...leftClusterKeys.map((key) => key.x + key.w));
+        const rightClusterMinX = Math.min(...rightClusterKeys.map((key) => key.x));
 
-        const originalGap = rightMinX - leftMaxX;
-        const targetGap = UNIT * 1.5;
-        const shiftX = targetGap - originalGap;
+        const originalGap = rightClusterMinX - leftClusterMaxX;
+        const targetGap = keyUnitSize * 1.5;
+        const rightClusterOffsetX = targetGap - originalGap;
 
-        rightKeys.forEach((k) => {
-          k.x += shiftX;
+        rightClusterKeys.forEach((key) => {
+          key.x += rightClusterOffsetX;
         });
       }
     }
 
     perfEnd('Keyboard.computeKeys', startedAt, {
-      keyCount: list.length,
+      keyCount: positionedKeys.length,
       separation: isSeparationEnabled,
     });
-    return list;
-  }, [design, isSeparationEnabled, splitX, activeLayoutOptions]);
-
-  const filteredKeys = keys;
+    return positionedKeys;
+  }, [design, isSeparationEnabled, splitBoundaryX, selectedLayoutOptions]);
 
   const maxWidth = useMemo(
-    () => (filteredKeys.length ? Math.max(...filteredKeys.map((k) => k.x + k.w), 0) + 40 : 0),
-    [filteredKeys]
+    () => (layoutKeys.length ? Math.max(...layoutKeys.map((key) => key.x + key.w), 0) + 40 : 0),
+    [layoutKeys]
   );
   const maxHeight = useMemo(
-    () => (filteredKeys.length ? Math.max(...filteredKeys.map((k) => k.y + k.h), 0) + 40 : 0),
-    [filteredKeys]
+    () => (layoutKeys.length ? Math.max(...layoutKeys.map((key) => key.y + key.h), 0) + 40 : 0),
+    [layoutKeys]
   );
 
   useEffect(() => {
     if (typeof onKeysChange === 'function') {
-      onKeysChange(filteredKeys);
+      onKeysChange(layoutKeys);
     }
-  }, [filteredKeys, onKeysChange]);
+  }, [layoutKeys, onKeysChange]);
 
   useEffect(() => {
     if (forcedScale !== null) {
@@ -243,17 +241,17 @@ function KeyboardInner({
     onScaleMetricsChange(nextMetrics);
   }, [autoFitScale, finalScale, maxWidth, maxHeight, onScaleMetricsChange]);
 
-  if (filteredKeys.length === 0) return null;
+  if (layoutKeys.length === 0) return null;
 
   const leftCaseStyle = useMemo(() => {
-    if (!isSeparationEnabled || splitX === null) return null;
-    const leftKeys = filteredKeys.filter((k) => k.x + k.w / 2 < splitX);
-    if (leftKeys.length === 0) return null;
+    if (!isSeparationEnabled || splitBoundaryX === null) return null;
+    const leftClusterKeys = layoutKeys.filter((key) => key.x + key.w / 2 < splitBoundaryX);
+    if (leftClusterKeys.length === 0) return null;
 
-    const minX = Math.min(...leftKeys.map((k) => k.x));
-    const maxX = Math.max(...leftKeys.map((k) => k.x + k.w));
-    const minY = Math.min(...leftKeys.map((k) => k.y));
-    const maxY = Math.max(...leftKeys.map((k) => k.y + k.h));
+    const minX = Math.min(...leftClusterKeys.map((key) => key.x));
+    const maxX = Math.max(...leftClusterKeys.map((key) => key.x + key.w));
+    const minY = Math.min(...leftClusterKeys.map((key) => key.y));
+    const maxY = Math.max(...leftClusterKeys.map((key) => key.y + key.h));
 
     const paddingOffset = 20;
 
@@ -287,17 +285,17 @@ function KeyboardInner({
       border,
       boxShadow,
     };
-  }, [filteredKeys, isSeparationEnabled, splitX, isLight, isAppDark]);
+  }, [layoutKeys, isSeparationEnabled, splitBoundaryX, isLight, isAppDark]);
 
   const rightCaseStyle = useMemo(() => {
-    if (!isSeparationEnabled || splitX === null) return null;
-    const rightKeys = filteredKeys.filter((k) => k.x + k.w / 2 >= splitX);
-    if (rightKeys.length === 0) return null;
+    if (!isSeparationEnabled || splitBoundaryX === null) return null;
+    const rightClusterKeys = layoutKeys.filter((key) => key.x + key.w / 2 >= splitBoundaryX);
+    if (rightClusterKeys.length === 0) return null;
 
-    const minX = Math.min(...rightKeys.map((k) => k.x));
-    const maxX = Math.max(...rightKeys.map((k) => k.x + k.w));
-    const minY = Math.min(...rightKeys.map((k) => k.y));
-    const maxY = Math.max(...rightKeys.map((k) => k.y + k.h));
+    const minX = Math.min(...rightClusterKeys.map((key) => key.x));
+    const maxX = Math.max(...rightClusterKeys.map((key) => key.x + key.w));
+    const minY = Math.min(...rightClusterKeys.map((key) => key.y));
+    const maxY = Math.max(...rightClusterKeys.map((key) => key.y + key.h));
 
     const paddingOffset = 20;
 
@@ -327,7 +325,7 @@ function KeyboardInner({
       border,
       boxShadow,
     };
-  }, [filteredKeys, isSeparationEnabled, splitX, isLight, isAppDark]);
+  }, [layoutKeys, isSeparationEnabled, splitBoundaryX, isLight, isAppDark]);
 
   const getKbdContainerClass = () => {
     return 'kbd-container relative transition-all duration-200';
@@ -343,7 +341,7 @@ function KeyboardInner({
       position: 'relative',
     };
 
-    if (isSeparationEnabled && splitX !== null) {
+    if (isSeparationEnabled && splitBoundaryX !== null) {
       return {
         ...baseStyle,
         border: 'none',
@@ -374,7 +372,7 @@ function KeyboardInner({
   };
 
   const getKbdBackgroundStyle = () => {
-    if (isSeparationEnabled && splitX !== null) return null;
+    if (isSeparationEnabled && splitBoundaryX !== null) return null;
 
     let background;
     if (isLight && isAppDark) {
@@ -459,7 +457,7 @@ function KeyboardInner({
               style: getKbdBackgroundStyle(),
             }),
           isSeparationEnabled &&
-            splitX !== null &&
+            splitBoundaryX !== null &&
             leftCaseStyle &&
             createElement(
               'div',
@@ -471,7 +469,7 @@ function KeyboardInner({
               createElement('div', { style: getCaseBgFillStyle() })
             ),
           isSeparationEnabled &&
-            splitX !== null &&
+            splitBoundaryX !== null &&
             rightCaseStyle &&
             createElement(
               'div',
@@ -482,15 +480,15 @@ function KeyboardInner({
               },
               createElement('div', { style: getCaseBgFillStyle() })
             ),
-          ...filteredKeys.map((k, i) => {
-            const mK = k.matrix ? `${k.matrix[0]},${k.matrix[1]}` : k.id;
-            const val = k.matrix ? codes[mK] : null;
+          ...layoutKeys.map((key, keyIndex) => {
+            const matrixKey = key.matrix ? `${key.matrix[0]},${key.matrix[1]}` : key.id;
+            const keycode = key.matrix ? codes[matrixKey] : null;
 
             return createElement(Keycap, {
-              key: `${mK}:${k.x}:${k.y}:${k.w}:${k.h}`,
-              k,
-              val,
-              i,
+              key: `${matrixKey}:${key.x}:${key.y}:${key.w}:${key.h}`,
+              k: key,
+              val: keycode,
+              i: keyIndex,
               displayMode,
               keyStyle,
               macroAliases,
@@ -501,8 +499,8 @@ function KeyboardInner({
               externalMap,
               isLight,
               isAppDark,
-              matrixKey: mK,
-              annotation: keyAnnotations[mK] || null,
+              matrixKey,
+              annotation: keyAnnotations[matrixKey] || null,
               onEditKey,
               onKeyHover,
               onKeyHoverLeave,

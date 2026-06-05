@@ -19,9 +19,9 @@ import { renderLayerKeycap, renderModKeycap, renderStandardKeycap } from './keyc
 import { perfCounter, perfEnd, perfStart } from '../utils/perfDebug.js';
 
 function KeycapInner({
-  k,
-  val,
-  i,
+  k: keyLayout,
+  val: keycode,
+  i: keyIndex,
   displayMode,
   keyStyle,
   macroAliases,
@@ -41,7 +41,14 @@ function KeycapInner({
   perfCounter('Keycap.render');
   const totalStartedAt = perfStart();
   const parseStartedAt = perfStart();
-  const parsed = parseKeyLabel(val, k.id, displayMode, keyStyle, macroAliases, k.isJIS);
+  const parsedLabel = parseKeyLabel(
+    keycode,
+    keyLayout.id,
+    displayMode,
+    keyStyle,
+    macroAliases,
+    keyLayout.isJIS
+  );
   let {
     fullRaw,
     displayText,
@@ -58,14 +65,14 @@ function KeycapInner({
     modKeys,
     baseLabel,
     baseIsFluent,
-  } = parsed;
+  } = parsedLabel;
 
   displayText = narrowSlash(displayText);
   tapLabel = narrowSlash(tapLabel);
   baseLabel = narrowSlash(baseLabel);
   modLabel = narrowSlash(modLabel);
 
-  const displayRawForRGB = buildDisplayRaw(fullRaw, val);
+  const displayRawForRGB = buildDisplayRaw(fullRaw, keycode);
   const targetIconKey = normalizeTargetIconKey(displayRawForRGB);
   const iconRenderState = getIconRenderState({
     displayRaw: displayRawForRGB,
@@ -89,13 +96,13 @@ function KeycapInner({
     utilityLabel,
   } = iconRenderState;
 
-  const textModeParsed =
+  const textModeLabel =
     displayMode === 'Text'
-      ? parsed
-      : parseKeyLabel(val, k.id, 'Text', keyStyle, macroAliases, k.isJIS);
-  let textFallback = narrowSlash(textModeParsed.displayText);
-  const is1u = (k.w || 56) / 56 < 1.25;
-  if (is1u) {
+      ? parsedLabel
+      : parseKeyLabel(keycode, keyLayout.id, 'Text', keyStyle, macroAliases, keyLayout.isJIS);
+  let textFallback = narrowSlash(textModeLabel.displayText);
+  const isCompactKeyWidth = (keyLayout.w || 56) / 56 < 1.25;
+  if (isCompactKeyWidth) {
     displayText = shortenLabel(displayText);
     tapLabel = shortenLabel(tapLabel);
     baseLabel = shortenLabel(baseLabel);
@@ -104,22 +111,22 @@ function KeycapInner({
 
   const isFluentCenter = isFluentIcon || (isModKey && baseIsFluent);
   const centerText = isModKey && modType !== 'base' ? baseLabel : displayText;
-  const magicLabel = isMagicFluent ? narrowSlash(textModeParsed.displayText) : '';
+  const magicLabel = isMagicFluent ? narrowSlash(textModeLabel.displayText) : '';
   perfEnd('Keycap.parseKeyLabel', parseStartedAt, {
-    isEncoder: !!k.isEncoder,
+    isEncoder: !!keyLayout.isEncoder,
   });
 
-  if (k.isEncoder) {
+  if (keyLayout.isEncoder) {
     perfEnd('Keycap.total', totalStartedAt, { kind: 'encoder' });
-    const encodersSource = (externalMap && externalMap.encoders) || (design && design.encoders);
+    const encoderDefinitions = (externalMap && externalMap.encoders) || (design && design.encoders);
     return renderEncoderKeycap({
-      k,
-      i,
-      val,
+      k: keyLayout,
+      i: keyIndex,
+      val: keycode,
       fullRaw,
       encoderStyles,
       inputDeviceSettings,
-      encodersSource,
+      encodersSource: encoderDefinitions,
       layer,
       keyStyle,
       macroAliases,
@@ -153,45 +160,45 @@ function KeycapInner({
     }
   }
 
-  const kWidth = k.w - 12;
-  const availableWidth = kWidth - 2;
+  const keyInnerWidth = keyLayout.w - 12;
+  const availableTextWidth = keyInnerWidth - 2;
 
-  let visualWeightForScale = centerText.length;
+  let scaleTextWeight = centerText.length;
   if (manualWrap) {
     const lines = finalDisplayText.split('\n');
-    visualWeightForScale = Math.max(...lines.map((l) => l.length));
+    scaleTextWeight = Math.max(...lines.map((line) => line.length));
   }
   if (isFluentCenter) {
-    visualWeightForScale = 1.2;
+    scaleTextWeight = 1.2;
   } else if (isModKey && modType !== 'base') {
-    visualWeightForScale += 0.5;
+    scaleTextWeight += 0.5;
   }
 
   const charWidthMultiplier = 10.5;
-  const estimatedPxWidth = visualWeightForScale * charWidthMultiplier;
-  let targetScale = 1.0;
-  let canWrap = manualWrap;
+  const estimatedTextWidthPx = scaleTextWeight * charWidthMultiplier;
+  let computedTextScale = 1.0;
+  let allowsAutoWrap = manualWrap;
 
-  if (estimatedPxWidth > availableWidth) {
+  if (estimatedTextWidthPx > availableTextWidth) {
     if (centerText.length <= 6) {
-      targetScale = 1.0;
+      computedTextScale = 1.0;
     } else {
-      targetScale = availableWidth / estimatedPxWidth;
-      if (!manualWrap && targetScale < 0.7 && centerText.length > 6) {
-        canWrap = true;
-        targetScale = Math.max(0.75, targetScale * 1.2);
+      computedTextScale = availableTextWidth / estimatedTextWidthPx;
+      if (!manualWrap && computedTextScale < 0.7 && centerText.length > 6) {
+        allowsAutoWrap = true;
+        computedTextScale = Math.max(0.75, computedTextScale * 1.2);
       }
     }
   }
 
   const minScaleLimit = centerText.length >= 7 ? 0.4 : centerText.length >= 5 ? 0.5 : 0.6;
-  targetScale = Math.max(minScaleLimit, Math.min(1.1, targetScale));
-  if (manualWrap) targetScale = Math.min(0.9, targetScale);
+  computedTextScale = Math.max(minScaleLimit, Math.min(1.1, computedTextScale));
+  if (manualWrap) computedTextScale = Math.min(0.9, computedTextScale);
 
   const displayRaw = displayRawForRGB;
 
   if (actuallyShowingSvg) {
-    targetScale = 1.11;
+    computedTextScale = 1.11;
   }
 
   const standardDisplayModel = buildStandardDisplayModel({
@@ -202,9 +209,9 @@ function KeycapInner({
     finalDisplayText,
     isFluentIcon,
     manualWrap,
-    canWrap,
-    targetScale,
-    kWidth: (k.w || 56) / 56,
+    canWrap: allowsAutoWrap,
+    targetScale: computedTextScale,
+    kWidth: (keyLayout.w || 56) / 56,
     iconState: {
       ...iconRenderState,
       isMagicFluent,
@@ -223,11 +230,11 @@ function KeycapInner({
     modType,
     finalDisplayText,
     displayMode,
-    kWidth: (k.w || 56) / 56,
-    targetScale,
+    kWidth: (keyLayout.w || 56) / 56,
+    targetScale: computedTextScale,
     targetIconKey,
     modKeys,
-    canWrap,
+    canWrap: allowsAutoWrap,
     baseLabel,
     baseIsFluent,
     keyStyle,
@@ -245,17 +252,17 @@ function KeycapInner({
     layerNum,
     tapIsFluent,
     tapLabel,
-    kWidth: (k.w || 56) / 56,
-    targetScale,
+    kWidth: (keyLayout.w || 56) / 56,
+    targetScale: computedTextScale,
   });
 
-  const activeDisplayModel = isLayerKey
+  const resolvedDisplayModel = isLayerKey
     ? layerDisplayModel
     : isModKey
       ? modDisplayModel
       : standardDisplayModel;
   const inspectorData = buildKeyInspectorData({
-    code: val || fullRaw,
+    code: keycode || fullRaw,
     keyStyle,
     displayRaw,
     targetIconKey,
@@ -266,11 +273,11 @@ function KeycapInner({
       textFallback,
     },
     iconRenderState,
-    displayModel: activeDisplayModel,
+    displayModel: resolvedDisplayModel,
     macros: (externalMap && externalMap.macros) || [],
   });
-  const hoverContentInfo = buildStandardHoverInfo(
-    val || fullRaw,
+  const hoverTooltipInfo = buildStandardHoverInfo(
+    keycode || fullRaw,
     keyStyle,
     (externalMap && externalMap.macros) || [],
     inspectorData,
@@ -281,10 +288,10 @@ function KeycapInner({
   });
 
   const jisSvg =
-    k.isJIS &&
+    keyLayout.isJIS &&
     (() => {
-      const W = k.w - 6;
-      const H = k.h - 6;
+      const W = keyLayout.w - 6;
+      const H = keyLayout.h - 6;
       const N = 14;
       const H2 = 50;
       const R = 6;
@@ -334,22 +341,22 @@ function KeycapInner({
   return createElement(
     'div',
     {
-      key: i,
-      className: `key-cap group${k.isJIS ? ' jis-key' : ''}`,
+      key: keyIndex,
+      className: `key-cap group${keyLayout.isJIS ? ' jis-key' : ''}`,
       'data-key-raw': displayRaw,
       onClick: (e) => {
-        const macroMatch = fullRaw.match(/MACRO\((\d+)\)/);
+        const macroReferenceMatch = fullRaw.match(/MACRO\((\d+)\)/);
         if (onEditKey) {
           e.stopPropagation();
           onEditKey({
             matrixKey,
-            macroId: macroMatch ? parseInt(macroMatch[1], 10) : null,
+            macroId: macroReferenceMatch ? parseInt(macroReferenceMatch[1], 10) : null,
           });
         }
       },
       onMouseEnter: (e) => {
         if (onKeyHover) {
-          onKeyHover(e, hoverContentInfo);
+          onKeyHover(e, hoverTooltipInfo);
         }
       },
       onMouseLeave: () => {
@@ -358,7 +365,7 @@ function KeycapInner({
         }
       },
       style: getKeycapFrameStyle({
-        k,
+        k: keyLayout,
         isLayerKey: isLayerKey || isModKey,
         encoderStyles,
         inputDeviceSettings,
@@ -395,7 +402,7 @@ function KeycapInner({
             isAppDark,
           })
         : renderStandardKeycap({
-            k,
+            k: keyLayout,
             model: standardDisplayModel,
             isLight,
           }),
