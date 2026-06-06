@@ -1,17 +1,9 @@
 import { FLUENT_FONT_STACK } from '../constants.js';
 import { resolveInputDeviceSetting } from './inputDeviceSettings.js';
 
-const withAlpha = (hexColor, alpha) => {
-  if (typeof hexColor !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(hexColor)) {
-    return hexColor;
-  }
-  const normalized = Math.max(0, Math.min(255, alpha));
-  return `${hexColor}${normalized.toString(16).padStart(2, '0')}`;
-};
-
 export const getKeycapFrameStyle = ({
   k,
-  isLayerKey,
+  _isLayerKey,
   encoderStyles,
   inputDeviceSettings,
   isLight,

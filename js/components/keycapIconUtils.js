@@ -146,9 +146,9 @@ export function narrowSlash(str) {
   return str.replace(/\s+\/\s+/g, '\u200a/\u200a');
 }
 
-export function buildDisplayRaw(fullRaw, val) {
-  if (typeof val === 'string' && val.trim()) {
-    return val.trim().toUpperCase();
+export function buildDisplayRaw(fullRaw, keycode) {
+  if (typeof keycode === 'string' && keycode.trim()) {
+    return keycode.trim().toUpperCase();
   }
   return fullRaw ? fullRaw.toUpperCase() : '';
 }
@@ -173,40 +173,46 @@ export function shortenLabel(label) {
   return label;
 }
 
-export function getKeyCategory(kCode) {
-  if (!kCode) return null;
-  const upper = resolveKeycodeAlias(kCode) || kCode.toUpperCase();
-  if (upper === 'QK_CLEAR_EEPROM' || upper === 'KC_EE_CLR' || upper === 'EE_CLR') return 'QK';
+export function getKeyCategory(keycode) {
+  if (!keycode) return null;
+  const normalizedKeycode = resolveKeycodeAlias(keycode) || keycode.toUpperCase();
   if (
-    upper.startsWith('KC_RGB_') ||
-    upper.startsWith('KC_RM_') ||
-    upper.startsWith('KC_LM_') ||
-    upper.startsWith('KC_BL_')
+    normalizedKeycode === 'QK_CLEAR_EEPROM' ||
+    normalizedKeycode === 'KC_EE_CLR' ||
+    normalizedKeycode === 'EE_CLR'
+  ) {
+    return 'QK';
+  }
+  if (
+    normalizedKeycode.startsWith('KC_RGB_') ||
+    normalizedKeycode.startsWith('KC_RM_') ||
+    normalizedKeycode.startsWith('KC_LM_') ||
+    normalizedKeycode.startsWith('KC_BL_')
   )
     return 'RGB';
 
   if (
-    upper.startsWith('KC_BT_') ||
-    upper.startsWith('KC_OUT_') ||
-    upper.startsWith('BT_') ||
-    upper.startsWith('OUT_')
+    normalizedKeycode.startsWith('KC_BT_') ||
+    normalizedKeycode.startsWith('KC_OUT_') ||
+    normalizedKeycode.startsWith('BT_') ||
+    normalizedKeycode.startsWith('OUT_')
   ) {
     return 'WIRE';
   }
 
   if (
-    upper.startsWith('KC_AUDIO_') ||
-    upper.startsWith('KC_KB_VOLUME_') ||
-    upper === 'KC_KB_MUTE' ||
-    upper === 'KC_MUTE' ||
-    upper === 'KC_VOLU' ||
-    upper === 'KC_VOLD'
+    normalizedKeycode.startsWith('KC_AUDIO_') ||
+    normalizedKeycode.startsWith('KC_KB_VOLUME_') ||
+    normalizedKeycode === 'KC_KB_MUTE' ||
+    normalizedKeycode === 'KC_MUTE' ||
+    normalizedKeycode === 'KC_VOLU' ||
+    normalizedKeycode === 'KC_VOLD'
   ) {
     return 'SOUND';
   }
 
   if (
-    upper.startsWith('KC_MEDIA_') ||
+    normalizedKeycode.startsWith('KC_MEDIA_') ||
     [
       'KC_MNXT',
       'KC_MPRV',
@@ -217,25 +223,25 @@ export function getKeyCategory(kCode) {
       'KC_MFFD',
       'KC_MRWD',
       'KC_MEDIA_PLAY',
-    ].includes(upper)
+    ].includes(normalizedKeycode)
   ) {
     return 'MEDIA';
   }
 
   if (
-    upper.startsWith('KC_WWW_') ||
+    normalizedKeycode.startsWith('KC_WWW_') ||
     ['KC_WBAK', 'KC_WFWD', 'KC_WREF', 'KC_WSTP', 'KC_WFAV', 'KC_WHOM', 'KC_WSRC'].some((prefix) =>
-      upper.startsWith(prefix)
+      normalizedKeycode.startsWith(prefix)
     )
   ) {
     return 'WEB';
   }
 
   if (
-    upper.startsWith('KC_MS_') ||
-    upper.startsWith('KC_BTN') ||
-    upper.startsWith('KC_WH_') ||
-    upper.startsWith('KC_ACL') ||
+    normalizedKeycode.startsWith('KC_MS_') ||
+    normalizedKeycode.startsWith('KC_BTN') ||
+    normalizedKeycode.startsWith('KC_WH_') ||
+    normalizedKeycode.startsWith('KC_ACL') ||
     [
       'MS_U',
       'MS_D',
@@ -253,26 +259,26 @@ export function getKeyCategory(kCode) {
       'ACL0',
       'ACL1',
       'ACL2',
-    ].some((prefix) => upper.startsWith(prefix))
+    ].some((prefix) => normalizedKeycode.startsWith(prefix))
   ) {
     return 'MOUSE';
   }
 
   if (
-    upper.includes('MAGIC_') ||
-    ['KC_AG_TOGG', 'AG_TOGG', 'KC_CG_TOGG', 'CG_TOGG'].includes(upper)
+    normalizedKeycode.includes('MAGIC_') ||
+    ['KC_AG_TOGG', 'AG_TOGG', 'KC_CG_TOGG', 'CG_TOGG'].includes(normalizedKeycode)
   ) {
     return 'MAGIC';
   }
 
   if (
-    upper.startsWith('KC_DM_') ||
-    ['DM_REC', 'DM_PLY', 'DM_RSTP'].some((prefix) => upper.includes(prefix))
+    normalizedKeycode.startsWith('KC_DM_') ||
+    ['DM_REC', 'DM_PLY', 'DM_RSTP'].some((prefix) => normalizedKeycode.includes(prefix))
   ) {
     return 'MACRO';
   }
 
-  if (upper.startsWith('QK_')) {
+  if (normalizedKeycode.startsWith('QK_')) {
     return 'QK';
   }
 
@@ -420,7 +426,7 @@ export function buildStandardDisplayModel({
   iconState,
 }) {
   const resolvedIconKey = targetIconKey || displayRawForRGB || displayRaw;
-  const bottomLabelDescriptor =
+  const activeBottomLabel =
     [
       { matches: iconState.isRGBFluent, label: iconState.rgbLabel, labelKey: 'rgb' },
       { matches: iconState.isMagicFluent, label: iconState.magicLabel, labelKey: 'magic' },
@@ -435,7 +441,7 @@ export function buildStandardDisplayModel({
 
   return {
     route: 'standard',
-    variant: bottomLabelDescriptor
+    variant: activeBottomLabel
       ? 'icon-bottom-label'
       : displayMode === 'Fluent' && isSVGAvailable(targetIconKey || displayRaw)
         ? 'center-svg'
@@ -449,8 +455,8 @@ export function buildStandardDisplayModel({
     kWidth,
     textScalePreset:
       iconState.isWirelessKey || iconState.isMouseKey || iconState.isWebKey ? 0.62 : null,
-    bottomLabel: bottomLabelDescriptor ? bottomLabelDescriptor.label : null,
-    bottomLabelKind: bottomLabelDescriptor ? bottomLabelDescriptor.labelKey : null,
+    bottomLabel: activeBottomLabel ? activeBottomLabel.label : null,
+    bottomLabelKind: activeBottomLabel ? activeBottomLabel.labelKey : null,
     bottomCaption: categoryCaption,
   };
 }

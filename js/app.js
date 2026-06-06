@@ -98,7 +98,7 @@ function normalizeNameForComparison(value) {
 function definitionSeemsToMatchConnectedDevice(definition, selectedDevice) {
   try {
     validateDefinitionForDevice(definition, selectedDevice);
-  } catch (error) {
+  } catch {
     return false;
   }
 
@@ -118,7 +118,7 @@ function readJsonFile(file) {
     reader.onload = (event) => {
       try {
         resolve(JSON.parse(event.target.result));
-      } catch (error) {
+      } catch {
         reject(new Error('JSONファイルの解析に失敗しました。'));
       }
     };
@@ -153,60 +153,60 @@ function createEmptyDevice() {
 export function App() {
   initPerfDebug();
   perfCounter('App.render');
-  const saved = useMemo(() => {
-    const s = loadSavedState();
-    if (s && s.version === CURRENT_VERSION) return s;
+  const savedState = useMemo(() => {
+    const loadedState = loadSavedState();
+    if (loadedState && loadedState.version === CURRENT_VERSION) return loadedState;
     return null;
   }, []);
   const [devices, setDevices] = useState(() => {
     // Try to restore from URL parameter first
     try {
-      const params = new URLSearchParams(window.location.search);
-      const dataParam = params.get('data');
-      if (dataParam && window.LZString) {
-        const decompressed = window.LZString.decompressFromEncodedURIComponent(dataParam);
+      const urlParams = new URLSearchParams(window.location.search);
+      const sharedDataParam = urlParams.get('data');
+      if (sharedDataParam && window.LZString) {
+        const decompressed = window.LZString.decompressFromEncodedURIComponent(sharedDataParam);
         if (decompressed) {
-          const parsed = JSON.parse(decompressed);
-          if (parsed && parsed.design) {
+          const sharedState = JSON.parse(decompressed);
+          if (sharedState && sharedState.design) {
             return [
               {
                 id: createDeviceId(),
-                name: sanitizeDeviceName(parsed.name || 'Shared Device'),
-                design: parsed.design,
-                keymapJson: parsed.keymapJson,
+                name: sanitizeDeviceName(sharedState.name || 'Shared Device'),
+                design: sharedState.design,
+                keymapJson: sharedState.keymapJson,
                 layer: 0,
-                displayMode: parsed.displayMode || 'Fluent',
-                theme: parsed.theme || 'System',
-                keyStyle: parsed.keyStyle || 'Windows',
-                encoderStyles: parsed.encoderStyles || {},
+                displayMode: sharedState.displayMode || 'Fluent',
+                theme: sharedState.theme || 'System',
+                keyStyle: sharedState.keyStyle || 'Windows',
+                encoderStyles: sharedState.encoderStyles || {},
                 inputDeviceSettings: buildInputDeviceSettings(
-                  parsed.inputDeviceSettings,
-                  parsed.encoderStyles
+                  sharedState.inputDeviceSettings,
+                  sharedState.encoderStyles
                 ),
-                layoutOptions: parsed.layoutOptions || {},
-                separation: parsed.separation || 'DISABLE',
-                displayScale: normalizeDisplayScale(parsed.displayScale),
+                layoutOptions: sharedState.layoutOptions || {},
+                separation: sharedState.separation || 'DISABLE',
+                displayScale: normalizeDisplayScale(sharedState.displayScale),
                 displayScaleByLayout: normalizeDisplayScaleByLayout(
-                  parsed.displayScaleByLayout,
-                  parsed.displayScale
+                  sharedState.displayScaleByLayout,
+                  sharedState.displayScale
                 ),
-                followScale: !!parsed.followScale,
-                macroAliases: parsed.keymapJson?.macroAliases || {},
+                followScale: !!sharedState.followScale,
+                macroAliases: sharedState.keymapJson?.macroAliases || {},
                 showSettings: false,
                 showCallouts: false,
-                keyAnnotations: parsed.keyAnnotations || {},
+                keyAnnotations: sharedState.keyAnnotations || {},
               },
             ];
           }
         }
       }
-    } catch (e) {
-      console.error('Failed to restore shared state from URL:', e);
+    } catch (error) {
+      console.error('Failed to restore shared state from URL:', error);
     }
 
-    if (saved && saved.devices && saved.devices.length > 0) {
+    if (savedState && savedState.devices && savedState.devices.length > 0) {
       return normalizeDeviceIds(
-        saved.devices.map((device) => ({
+        savedState.devices.map((device) => ({
           ...device,
           inputDeviceSettings: buildInputDeviceSettings(
             device.inputDeviceSettings,
@@ -225,8 +225,12 @@ export function App() {
     }
     return [createEmptyDevice()];
   });
-  const [layoutMode, setLayoutMode] = useState(() => (saved && saved.layoutMode) || 'stack');
-  const [appTheme, setAppTheme] = useState(() => (saved && saved.appTheme) || 'dark');
+  const [layoutMode, setLayoutMode] = useState(
+    () => (savedState && savedState.layoutMode) || 'stack'
+  );
+  const [appTheme, setAppTheme] = useState(
+    () => (savedState && savedState.appTheme) || 'dark'
+  );
   const [editingDeviceId, setEditingDeviceId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [draggedSlotId, setDraggedSlotId] = useState(null);
@@ -293,40 +297,40 @@ export function App() {
 
       try {
         const devs = await Promise.all(
-          sampleFiles.map(async (s) => {
+          sampleFiles.map(async (sampleFile) => {
             // Use cache busting to ensure we get the latest version from disk
-            const resp = await fetch(`${s.file}?t=${Date.now()}`);
-            if (!resp.ok) throw new Error(`Failed to load ${s.file}`);
-            const data = await resp.json();
+            const response = await fetch(`${sampleFile.file}?t=${Date.now()}`);
+            if (!response.ok) throw new Error(`Failed to load ${sampleFile.file}`);
+            const sampleData = await response.json();
 
             // Separate Layout (design) and Mapping (keymapJson) logic
             const design = {
-              name: data.name,
-              layouts: data.layouts,
-              matrix: data.matrix,
-              encoders: data.encoders || [],
+              name: sampleData.name,
+              layouts: sampleData.layouts,
+              matrix: sampleData.matrix,
+              encoders: sampleData.encoders || [],
             };
 
             const keymapJson = {
-              layers: data.layers || [],
-              macros: data.macros || [],
-              macroAliases: data.macroAliases || {},
-              encoders: data.encoders || [],
+              layers: sampleData.layers || [],
+              macros: sampleData.macros || [],
+              macroAliases: sampleData.macroAliases || {},
+              encoders: sampleData.encoders || [],
             };
 
             return {
               id: createDeviceId(),
-              name: sanitizeDeviceName(data.name),
+              name: sanitizeDeviceName(sampleData.name),
               design: design,
               keymapJson: keymapJson,
               layer: 0,
               displayMode: 'Fluent',
               theme: 'System',
-              keyStyle: s.keyStyle,
-              encoderStyles: data.encoderStyles || {},
+              keyStyle: sampleFile.keyStyle,
+              encoderStyles: sampleData.encoderStyles || {},
               inputDeviceSettings: buildInputDeviceSettings(
-                data.inputDeviceSettings,
-                data.encoderStyles
+                sampleData.inputDeviceSettings,
+                sampleData.encoderStyles
               ),
               layoutOptions: {},
               displayScale: DEFAULT_DISPLAY_SCALE,
@@ -339,8 +343,8 @@ export function App() {
           })
         );
         setDevices(devs);
-      } catch (err) {
-        console.error('Error loading initial samples:', err);
+      } catch (error) {
+        console.error('Error loading initial samples:', error);
       }
     };
 
@@ -355,8 +359,8 @@ export function App() {
     try {
       const state = { devices, layoutMode, appTheme, version: CURRENT_VERSION };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) {
-      console.warn('Failed to save state:', e);
+    } catch (error) {
+      console.warn('Failed to save state:', error);
     }
   }, [devices, layoutMode, appTheme]);
 
@@ -364,8 +368,8 @@ export function App() {
   useEffect(() => {
     if (isExporting && exportRef.current) {
       const runExport = async () => {
-        const dev = devices.find((d) => d.id === exportModalDevId);
-        if (!dev) {
+        const exportDevice = devices.find((device) => device.id === exportModalDevId);
+        if (!exportDevice) {
           setIsExporting(false);
           return;
         }
@@ -389,7 +393,7 @@ export function App() {
               : exportSettings.background === 'Light'
                 ? '#f1f5f9'
                 : '#020617';
-          const dataUrl = await toPng(exportRef.current, {
+          const exportedImageUrl = await toPng(exportRef.current, {
             pixelRatio: 2,
             backgroundColor: bgColor,
             cacheBust: true,
@@ -400,11 +404,11 @@ export function App() {
           }
           // Download the image
           const link = document.createElement('a');
-          link.download = `${dev.name || 'Keymap'}_export.png`;
-          link.href = dataUrl;
+          link.download = `${exportDevice.name || 'Keymap'}_export.png`;
+          link.href = exportedImageUrl;
           link.click();
-        } catch (e) {
-          console.error('Export failed:', e);
+        } catch (error) {
+          console.error('Export failed:', error);
           alert('画像の書き出しに失敗しました。');
           // Reset opacity on error too
           if (exportRef.current) {
@@ -448,10 +452,10 @@ export function App() {
 
   const updateDevice = (id, data) => {
     setDevices((prev) => {
-      const next = prev.map((d) => {
-        if (d.id !== id) return d;
+      const next = prev.map((device) => {
+        if (device.id !== id) return device;
 
-        const nextDevice = { ...d, ...data };
+        const nextDevice = { ...device, ...data };
         const scales = normalizeDisplayScaleByLayout(
           nextDevice.displayScaleByLayout,
           nextDevice.displayScale
@@ -975,26 +979,26 @@ export function App() {
           }
         } else {
           if (devices.length >= 4) return;
-          const nd = createEmptyDevice();
+          const newDevice = createEmptyDevice();
           if (isDroppedLayout) {
             const layoutJson = normalizeLayoutJson(j);
-            nd.design = layoutJson;
-            nd.name = sanitizeDeviceName(layoutJson.name || 'Device');
-            nd.layoutOptions = {};
-            nd.encoderStyles = layoutJson.encoderStyles || {};
-            nd.inputDeviceSettings = buildInputDeviceSettings(
+            newDevice.design = layoutJson;
+            newDevice.name = sanitizeDeviceName(layoutJson.name || 'Device');
+            newDevice.layoutOptions = {};
+            newDevice.encoderStyles = layoutJson.encoderStyles || {};
+            newDevice.inputDeviceSettings = buildInputDeviceSettings(
               layoutJson.inputDeviceSettings,
               layoutJson.encoderStyles
             );
           } else if (isDroppedMapping) {
             const mappingJson = normalizeMappingJson(j);
-            nd.keymapJson = mappingJson;
-            nd.macroAliases = mappingJson.macroAliases || {};
-            nd.name = sanitizeDeviceName(mappingJson.name || 'Mapping');
+            newDevice.keymapJson = mappingJson;
+            newDevice.macroAliases = mappingJson.macroAliases || {};
+            newDevice.name = sanitizeDeviceName(mappingJson.name || 'Mapping');
           }
-          setDevices((prev) => [...prev, nd]);
+          setDevices((prev) => [...prev, newDevice]);
         }
-      } catch (err) {
+      } catch {
         alert('JSONファイルの解析に失敗しました');
       }
     };
@@ -1016,8 +1020,8 @@ export function App() {
         const fromIdx = next.findIndex((d) => d.id === draggedSlotId);
         const toIdx = next.findIndex((d) => d.id === targetDevId);
         if (fromIdx === -1 || toIdx === -1) return prev;
-        const [moved] = next.splice(fromIdx, 1);
-        next.splice(toIdx, 0, moved);
+        const [movedDevice] = next.splice(fromIdx, 1);
+        next.splice(toIdx, 0, movedDevice);
         return next;
       });
     }
@@ -1026,18 +1030,18 @@ export function App() {
 
   const deviceViewItems = useMemo(
     () =>
-      devices.map((dev, idx) => ({
-        idx,
+      devices.map((device, deviceIndex) => ({
+        idx: deviceIndex,
         dev: {
-          ...dev,
-          displayScale: getDisplayScaleForLayout(dev, layoutMode),
+          ...device,
+          displayScale: getDisplayScaleForLayout(device, layoutMode),
           displayScaleByLayout: normalizeDisplayScaleByLayout(
-            dev.displayScaleByLayout,
-            dev.displayScale
+            device.displayScaleByLayout,
+            device.displayScale
           ),
         },
-        onScaleMetricsChange: (metrics) => handleSlotScaleMetrics(dev.id, metrics),
-        onSetExportModal: () => handleOpenExportModal(dev),
+        onScaleMetricsChange: (metrics) => handleSlotScaleMetrics(device.id, metrics),
+        onSetExportModal: () => handleOpenExportModal(device),
       })),
     [devices, layoutMode, handleSlotScaleMetrics, handleOpenExportModal]
   );
@@ -1140,7 +1144,7 @@ export function App() {
       isExporting &&
         exportModalDevId &&
         (() => {
-          const dev = devices.find((d) => d.id === exportModalDevId);
+          const exportDevice = devices.find((device) => device.id === exportModalDevId);
           return createElement(
             'div',
             {
@@ -1161,20 +1165,20 @@ export function App() {
             },
             [
               createElement(Keyboard, {
-                design: dev.design,
-                layer: dev.layer,
-                externalMap: dev.keymapJson,
-                displayMode: dev.displayMode,
-                theme: dev.theme || 'System',
+                design: exportDevice.design,
+                layer: exportDevice.layer,
+                externalMap: exportDevice.keymapJson,
+                displayMode: exportDevice.displayMode,
+                theme: exportDevice.theme || 'System',
                 appTheme: exportSettings.background === 'Light' ? 'light' : 'dark',
-                macroAliases: dev.macroAliases || {},
-                keyStyle: dev.keyStyle || 'Windows',
-                encoderStyles: dev.encoderStyles || {},
-                inputDeviceSettings: dev.inputDeviceSettings || {},
-                layoutOptions: dev.layoutOptions || {},
+                macroAliases: exportDevice.macroAliases || {},
+                keyStyle: exportDevice.keyStyle || 'Windows',
+                encoderStyles: exportDevice.encoderStyles || {},
+                inputDeviceSettings: exportDevice.inputDeviceSettings || {},
+                layoutOptions: exportDevice.layoutOptions || {},
                 forcedScale: EXPORT_KEYBOARD_SCALE,
                 userScale: EXPORT_KEYBOARD_SCALE,
-                separation: dev.separation || 'DISABLE',
+                separation: exportDevice.separation || 'DISABLE',
               }),
             ]
           );

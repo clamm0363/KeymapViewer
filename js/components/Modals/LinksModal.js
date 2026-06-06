@@ -2,8 +2,6 @@ const { createElement } = React;
 
 export function LinksModal({ isLightApp, onClose }) {
   const titleColor = isLightApp ? 'text-slate-900' : 'text-white';
-  const descColor = isLightApp ? 'text-slate-600' : 'text-slate-300';
-  const itemTitleClass = 'font-bold ' + (isLightApp ? 'text-slate-900' : 'text-slate-100');
 
   const links = [
     {

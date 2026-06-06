@@ -274,7 +274,7 @@ function formatViaKeycode(value) {
   return rawLabel || `0x${value.toString(16).toUpperCase()}`;
 }
 
-export async function requestViaDevice(filters) {
+export async function requestViaDevice(_filters) {
   if (!navigator.hid) {
     throw new Error('このブラウザは WebHID に対応していません。');
   }
